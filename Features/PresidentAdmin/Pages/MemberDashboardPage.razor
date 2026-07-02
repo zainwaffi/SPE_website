@@ -3,12 +3,21 @@
 @attribute [Authorize(Roles = "President")]
 @inject AdminService AdminSvc
 @inject TaskItemService TaskSvc
+@inject AuthenticationStateProvider AuthState
 
 <PageTitle>Member Dashboard — SPE Admin</PageTitle>
 
 <div class="max-w-6xl mx-auto px-6 py-12">
-    <h1 class="text-3xl font-bold text-spe-blue mb-2">Member Dashboard</h1>
-    <p class="text-slate-500 mb-10">Oversee all committee members, their tasks, and strike records.</p>
+    <div class="flex items-start justify-between gap-4 mb-10">
+        <div>
+            <h1 class="text-3xl font-bold text-spe-blue mb-2">Member Dashboard</h1>
+            <p class="text-slate-500">Oversee all committee members, their tasks, and strike records.</p>
+        </div>
+        <button @onclick="OpenAddMember"
+                class="shrink-0 text-sm bg-spe-blue text-white hover:bg-blue-800 px-4 py-2.5 rounded-lg transition-colors font-semibold">
+            + Add Member
+        </button>
+    </div>
 
     @if (members is null)
     {
@@ -75,6 +84,17 @@
                                             class="text-xs bg-spe-blue text-white hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors font-semibold">
                                         Assign Task
                                     </button>
+                                    <button @onclick="() => OpenEditMember(member)"
+                                            class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                        Edit
+                                    </button>
+                                    @if (member.Id != currentUserId)
+                                    {
+                                        <button @onclick="() => OpenDeleteMember(member)"
+                                                class="text-xs bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                            Delete
+                                        </button>
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -115,15 +135,188 @@
     </div>
 }
 
+@if (showAddMember)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-spe-blue mb-6">Add Member</h2>
+
+            @if (!string.IsNullOrEmpty(createError))
+            {
+                <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+                    @createError
+                </div>
+            }
+
+            <div class="flex flex-col gap-4">
+                <input class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="Full name" @bind="newName" />
+                <input type="email" class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="Email" @bind="newEmail" />
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Identity Role</label>
+                    <select class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                            @bind="newIdentityRole">
+                        <option value="CommitteeMember">Committee Member</option>
+                        <option value="President">President</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Committee Position</label>
+                    <select class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                            @bind="newCommitteeRole">
+                        @foreach (var role in Enum.GetValues<CommitteeRole>())
+                        {
+                            <option value="@role">@role</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button @onclick="ConfirmCreateMember"
+                        class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
+                    Create
+                </button>
+                <button @onclick="() => showAddMember = false"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (editUserId is not null)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-spe-blue mb-6">Edit Member</h2>
+
+            @if (!string.IsNullOrEmpty(editError))
+            {
+                <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+                    @editError
+                </div>
+            }
+
+            <div class="flex flex-col gap-4">
+                <input class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="Full name" @bind="editName" />
+                <input type="email" class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="Email" @bind="editEmail" />
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Identity Role</label>
+                    <select class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                            @bind="editIdentityRole">
+                        <option value="CommitteeMember">Committee Member</option>
+                        <option value="President">President</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Committee Position</label>
+                    <select class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                            @bind="editCommitteeRole">
+                        @foreach (var role in Enum.GetValues<CommitteeRole>())
+                        {
+                            <option value="@role">@role</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button @onclick="ConfirmEditMember"
+                        class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
+                    Save
+                </button>
+                <button @onclick="() => editUserId = null"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (deleteTarget is not null)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-red-600 mb-4">Remove Member</h2>
+            <p class="text-slate-600 mb-6">
+                Are you sure you want to permanently remove <strong>@deleteTarget.FullName</strong> (@deleteTarget.Email)?
+                This cannot be undone.
+            </p>
+            <div class="flex gap-3">
+                <button @onclick="ConfirmDeleteMember"
+                        class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-lg hover:bg-red-700 transition-colors">
+                    Remove
+                </button>
+                <button @onclick="() => deleteTarget = null"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showSuccessModal)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-green-600 mb-4">Member Created</h2>
+            <p class="text-slate-600 mb-4">
+                Account created successfully for <strong>@successMemberName</strong>
+            </p>
+            <div class="bg-slate-100 rounded-lg p-4 mb-6">
+                <p class="text-sm text-slate-600 mb-2">Share these login credentials:</p>
+                <p class="text-sm font-mono font-semibold text-slate-800 break-all mb-2">📧 @successMemberEmail</p>
+                <p class="text-sm font-mono font-semibold text-slate-800 break-all">🔑 @successMemberPassword</p>
+                <p class="text-xs text-slate-500 mt-3">They should change this password after first login.</p>
+            </div>
+            <button @onclick="() => showSuccessModal = false"
+                    class="w-full bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+}
+
 @code {
     private List<ApplicationUser>? members;
     private string? assignTaskUserId;
     private string taskTitle = "";
     private string taskDescription = "";
     private DateTime taskDeadline = DateTime.Now.AddDays(7);
+    private string? currentUserId;
 
-    protected override async Task OnInitializedAsync() =>
+    private bool showAddMember;
+    private string newName = "";
+    private string newEmail = "";
+    private string newIdentityRole = "CommitteeMember";
+    private CommitteeRole newCommitteeRole = CommitteeRole.Member;
+    private string? createError;
+
+    private string? editUserId;
+    private string editName = "";
+    private string editEmail = "";
+    private string editIdentityRole = "CommitteeMember";
+    private CommitteeRole editCommitteeRole = CommitteeRole.Member;
+    private string? editError;
+
+    private ApplicationUser? deleteTarget;
+
+    private bool showSuccessModal;
+    private string successMemberName = "";
+    private string successMemberEmail = "";
+    private string successMemberPassword = "";
+
+    protected override async Task OnInitializedAsync()
+    {
         members = await AdminSvc.GetAllMembersAsync();
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    }
 
     private async Task AddStrike(string userId)
     {
@@ -135,7 +328,7 @@
     {
         assignTaskUserId = userId;
         taskTitle = taskDescription = "";
-        taskDeadline = DateTime.Now.AddDays(7);
+        taskDeadline = DateTime.Now.AddDays(7);  // Default to 7 days from now
     }
 
     private async Task ConfirmAssignTask()
@@ -143,6 +336,89 @@
         if (string.IsNullOrWhiteSpace(taskTitle) || assignTaskUserId is null) return;
         await AdminSvc.AssignTaskAsync(assignTaskUserId, taskTitle, taskDescription, taskDeadline);
         assignTaskUserId = null;
+        members = await AdminSvc.GetAllMembersAsync();
+    }
+
+    private void OpenAddMember()
+    {
+        showAddMember = true;
+        newName = newEmail = "";
+        newIdentityRole = "CommitteeMember";
+        newCommitteeRole = CommitteeRole.Member;
+        createError = null;
+    }
+
+    private async Task ConfirmCreateMember()
+    {
+        if (string.IsNullOrWhiteSpace(newName) || string.IsNullOrWhiteSpace(newEmail))
+        {
+            createError = "Full name and email are required.";
+            return;
+        }
+
+        if (!newEmail.Contains("@") || !newEmail.Contains("."))
+        {
+            createError = "Please enter a valid email address.";
+            return;
+        }
+
+        var (result, tempPassword) = await AdminSvc.CreateMemberAsync(newName, newEmail, newIdentityRole, newCommitteeRole);
+        if (!result.Succeeded)
+        {
+            createError = string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
+        }
+
+        showAddMember = false;
+        successMemberName = newName;
+        successMemberEmail = newEmail;
+        successMemberPassword = tempPassword ?? "";
+        showSuccessModal = true;
+        members = await AdminSvc.GetAllMembersAsync();
+    }
+
+    private async Task OpenEditMember(ApplicationUser member)
+    {
+        editUserId = member.Id;
+        editName = member.FullName;
+        editEmail = member.Email ?? "";
+        editCommitteeRole = member.CommitteeRole;
+        editIdentityRole = await AdminSvc.GetPrimaryRoleAsync(member.Id);
+        editError = null;
+    }
+
+    private async Task ConfirmEditMember()
+    {
+        if (string.IsNullOrWhiteSpace(editName) || string.IsNullOrWhiteSpace(editEmail) || editUserId is null)
+        {
+            editError = "Full name and email are required.";
+            return;
+        }
+
+        if (!editEmail.Contains("@") || !editEmail.Contains("."))
+        {
+            editError = "Please enter a valid email address.";
+            return;
+        }
+
+        var result = await AdminSvc.UpdateMemberDetailsAsync(editUserId, editName, editEmail, editIdentityRole, editCommitteeRole);
+        if (!result.Succeeded)
+        {
+            editError = string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
+        }
+
+        editUserId = null;
+        members = await AdminSvc.GetAllMembersAsync();
+    }
+
+    private void OpenDeleteMember(ApplicationUser member) => deleteTarget = member;
+
+    private async Task ConfirmDeleteMember()
+    {
+        if (deleteTarget is null) return;
+        await AdminSvc.DeleteMemberAsync(deleteTarget.Id);
+        deleteTarget = null;
         members = await AdminSvc.GetAllMembersAsync();
     }
 }

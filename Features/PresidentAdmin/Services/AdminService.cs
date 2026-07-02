@@ -67,4 +67,91 @@ public class AdminService(
         user.CommitteeRole = role;
         await db.SaveChangesAsync();
     }
+
+    public async Task<(IdentityResult result, string? tempPassword)> CreateMemberAsync(string fullName, string email, string identityRole, CommitteeRole committeeRole)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            FullName = fullName,
+            CommitteeRole = committeeRole
+        };
+
+        var tempPassword = GenerateTempPassword();
+        var result = await userManager.CreateAsync(user, tempPassword);
+        if (!result.Succeeded) return (result, null);
+
+        await userManager.AddToRoleAsync(user, identityRole);
+
+        await emailService.SendAsync(
+            email,
+            fullName,
+            "Welcome to SPE Chapter — Your Account",
+            $"<p>Dear {fullName},</p><p>An account has been created for you on the SPE Chapter portal.</p>" +
+            $"<p>Email: <strong>{email}</strong><br>Temporary password: <strong>{tempPassword}</strong></p>" +
+            $"<p>Please sign in at the chapter website and change your password after logging in.</p>"
+        );
+
+        return (result, tempPassword);
+    }
+
+    private static string GenerateTempPassword()
+    {
+        const string letters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
+        const string digits = "23456789";
+        var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(10);
+
+        var password = new char[10];
+        password[0] = digits[bytes[0] % digits.Length];
+        for (int i = 1; i < 10; i++)
+        {
+            var allChars = letters + digits;
+            password[i] = allChars[bytes[i] % allChars.Length];
+        }
+
+        return new string(password);
+    }
+
+    public async Task<string> GetPrimaryRoleAsync(string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return "CommitteeMember";
+        var roles = await userManager.GetRolesAsync(user);
+        return roles.Contains("President") ? "President" : "CommitteeMember";
+    }
+
+    public async Task<IdentityResult> UpdateMemberDetailsAsync(string userId, string fullName, string email, string identityRole, CommitteeRole committeeRole)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return IdentityResult.Failed(new IdentityError { Description = "Member not found." });
+
+        user.FullName = fullName;
+        user.CommitteeRole = committeeRole;
+
+        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+        {
+            var setEmailResult = await userManager.SetEmailAsync(user, email);
+            if (!setEmailResult.Succeeded) return setEmailResult;
+
+            var setUserNameResult = await userManager.SetUserNameAsync(user, email);
+            if (!setUserNameResult.Succeeded) return setUserNameResult;
+        }
+
+        var currentRoles = await userManager.GetRolesAsync(user);
+        if (!currentRoles.Contains(identityRole))
+        {
+            await userManager.RemoveFromRolesAsync(user, currentRoles);
+            await userManager.AddToRoleAsync(user, identityRole);
+        }
+
+        return await userManager.UpdateAsync(user);
+    }
+
+    public async Task<IdentityResult> DeleteMemberAsync(string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return IdentityResult.Failed(new IdentityError { Description = "Member not found." });
+        return await userManager.DeleteAsync(user);
+    }
 }

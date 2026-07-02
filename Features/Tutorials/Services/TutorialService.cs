@@ -11,7 +11,7 @@ public class TutorialService(AppDbContext db)
         db.Tutorials.OrderBy(t => t.CategoryRole).ThenBy(t => t.Title).ToListAsync();
 
     public Task<List<Tutorial>> GetForRoleAsync(CommitteeRole role) =>
-        db.Tutorials.Where(t => t.CategoryRole == role || t.CategoryRole == CommitteeRole.None)
+        db.Tutorials.Where(t => t.CategoryRole == role || t.CategoryRole == CommitteeRole.Member)
                     .OrderBy(t => t.Title)
                     .ToListAsync();
 

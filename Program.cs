@@ -95,7 +95,7 @@ using (var scope = app.Services.CreateScope())
             UserName = adminEmail,
             Email = adminEmail,
             FullName = "SPE President",
-            CommitteeRole = CommitteeRole.None,
+            CommitteeRole = CommitteeRole.Member,
         };
         var result = await userManager.CreateAsync(admin, "Admin@1234");    // password
         if (result.Succeeded)

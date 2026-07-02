@@ -8,6 +8,6 @@ public class ApplicationUser : IdentityUser
     public string FullName { get; set; } = string.Empty;
     public int StrikeCount { get; set; } = 0;
     public string? ProfilePictureUrl { get; set; }
-    public CommitteeRole CommitteeRole { get; set; } = CommitteeRole.None;
+    public CommitteeRole CommitteeRole { get; set; } = CommitteeRole.Member;
     public ICollection<TaskItem> AssignedTasks { get; set; } = [];
 }

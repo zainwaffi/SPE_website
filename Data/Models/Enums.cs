@@ -2,13 +2,13 @@ namespace SPE_website.Data.Models;
 
 public enum CommitteeRole
 {
-    None,
+    Member,
     President,
     VicePresident,
     Secretary,
     Treasurer,
-    EventsCoordinator,
-    TechnicalDirector,
-    MediaCoordinator,
-    OutreachCoordinator
+    MembershipOfficer,
+    SocialMediaOfficer,
+    ActivitiesOfficer,
+   EventRepresentative
 }

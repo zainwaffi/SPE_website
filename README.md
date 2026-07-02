@@ -6,14 +6,15 @@ A full-stack member portal and administrative dashboard for a local chapter of t
 
 ## Features
 
+- **Account Management** — Admins create member accounts with auto-generated temp passwords; members change passwords on first login
 - **Event Management** — Public upcoming/past event calendar with ratings and Instagram embeds
 - **Member Strike System** — President-initiated strike tracking with automated email notifications
 - **Task Assignment** — Assign tasks to members with deadlines, status tracking, and email alerts
-- **Role-Based Access** — Three access tiers: public, `CommitteeMember`, `President`
+- **Role-Based Access** — Two access tiers: `CommitteeMember` (regular user), `President` (admin)
 - **Tutorial Hub** — YouTube SOP videos filtered by each member's committee role
 - **Opportunities Feed** — External opportunity links for members
 - **Member Profiles** — Strike history, assigned tasks, and profile pictures
-- **Admin Dashboard** — President oversees all members, strikes, and a visual task calendar
+- **Admin Dashboard** — President creates accounts, manages members (edit/delete), assigns tasks, tracks strikes, views task calendar
 
 ---
 
@@ -68,14 +69,51 @@ SPE_website/
 |-------|--------|------|
 | `/` | Public | Home |
 | `/login` | Public | Login |
+| `/change-password` | Authenticated | Change Password |
 | `/events/upcoming` | Public | Upcoming Events |
 | `/events/past` | Public | Past Events |
 | `/opportunities` | Public | Opportunities |
 | `/profile` | Authenticated | Member Profile |
 | `/tasks` | Authenticated | My Tasks |
 | `/tutorials` | Authenticated | Tutorial Hub |
-| `/admin/members` | President only | Member Dashboard |
+| `/admin/members` | President only | Member Dashboard (create/edit/delete members, assign tasks, add strikes) |
 | `/admin/tasks` | President only | Task Calendar |
+
+---
+
+## Member Account Management
+
+### Creating Member Accounts (Admin Only)
+
+Presidents navigate to `/admin/members` and click **"+ Add Member"** to:
+1. Enter member name, email, and role (`President` or `CommitteeMember`)
+2. Assign a committee position (optional)
+3. The system generates a secure temporary password
+4. **On first use**: A success modal displays the email & temp password for the admin to share
+5. Member logs in at `/login` with email + temp password
+
+**Password Generation:** Temporary passwords are 10 characters (letters + digits), guaranteed to satisfy the policy: 8+ characters, at least one digit.
+
+**Email Configuration:** If SMTP is configured in `appsettings.json`, the temp password is also sent via email. If SMTP is not configured, admins must manually share the password displayed in the success modal.
+
+### Managing Members (Admin Only)
+
+From the member table on `/admin/members`, admins can:
+
+| Action | Button | Effect |
+|--------|--------|--------|
+| **Add Strike** | `+ Strike` | Increment strike count, email member notification |
+| **Assign Task** | `Assign Task` | Create task with title, description, deadline; email member |
+| **Edit Member** | `Edit` | Update name, email, committee position, identity role; prevents self-deletion |
+| **Delete Member** | `Delete` | Permanently remove member account; hidden for current logged-in admin (self-protection) |
+
+### Password Management (All Users)
+
+Members who receive temporary passwords (or anyone logged in) can change their password by:
+1. Clicking **"Change Password"** in the navigation bar
+2. Entering current password + new password (with confirmation)
+3. Password must be 8+ characters with at least one digit
+4. On success, they're redirected to home
 
 ---
 
