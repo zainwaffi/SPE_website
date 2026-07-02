@@ -1,0 +1,89 @@
+@page "/tasks"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "CommitteeMember,President")]
+@inject TaskItemService TaskSvc
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>My Tasks — SPE Chapter</PageTitle>
+
+<div class="max-w-4xl mx-auto px-6 py-12">
+    <h1 class="text-3xl font-bold text-spe-blue mb-8">My Tasks</h1>
+
+    @if (tasks is null)
+    {
+        <p class="text-slate-500">Loading tasks...</p>
+    }
+    else if (tasks.Count == 0)
+    {
+        <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
+            <p class="text-slate-400 text-xl font-medium">No tasks assigned yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="flex flex-col gap-4">
+            @foreach (var task in tasks)
+            {
+                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-sm transition-shadow">
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-slate-800 mb-1">@task.Title</h3>
+                            <p class="text-slate-500 text-sm mb-3">@task.Description</p>
+                            <p class="text-xs text-slate-400">
+                                Due <span class="font-semibold @(task.Deadline < DateTime.UtcNow && task.Status == AssignmentStatus.Processing ? "text-red-500" : "text-slate-600")">
+                                    @task.Deadline.ToString("MMMM d, yyyy")
+                                </span>
+                            </p>
+                        </div>
+                        <div class="flex flex-col items-end gap-2 shrink-0">
+                            <span class="text-xs font-bold px-3 py-1 rounded-full @StatusBadge(task.Status)">
+                                @task.Status
+                            </span>
+                            @if (task.Status == AssignmentStatus.Processing)
+                            {
+                                <div class="flex gap-2">
+                                    <button @onclick="() => UpdateStatus(task.Id, AssignmentStatus.Completed)"
+                                            class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1 rounded-lg transition-colors font-semibold">
+                                        Complete
+                                    </button>
+                                    <button @onclick="() => UpdateStatus(task.Id, AssignmentStatus.Failed)"
+                                            class="text-xs bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1 rounded-lg transition-colors font-semibold">
+                                        Mark Failed
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<TaskItem>? tasks;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (userId is not null)
+            tasks = await TaskSvc.GetForUserAsync(userId);
+    }
+
+    private async Task UpdateStatus(int taskId, AssignmentStatus status)
+    {
+        await TaskSvc.UpdateStatusAsync(taskId, status);
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (userId is not null)
+            tasks = await TaskSvc.GetForUserAsync(userId);
+    }
+
+    private static string StatusBadge(AssignmentStatus s) => s switch
+    {
+        AssignmentStatus.Completed => "bg-green-100 text-green-700",
+        AssignmentStatus.Failed => "bg-red-100 text-red-700",
+        _ => "bg-amber-100 text-amber-700"
+    };
+}

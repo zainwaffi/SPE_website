@@ -1,0 +1,140 @@
+@page "/tutorials"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "CommitteeMember,President")]
+@inject TutorialService TutorialSvc
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Tutorials — SPE Chapter</PageTitle>
+
+<div class="max-w-5xl mx-auto px-6 py-12">
+    <div class="flex justify-between items-center mb-10">
+        <div>
+            <h1 class="text-3xl font-bold text-spe-blue">Tutorials Hub</h1>
+            <p class="text-slate-500 mt-1">Standard operating procedures and role-based training.</p>
+        </div>
+        <AuthorizeView Roles="President">
+            <Authorized>
+                <button @onclick="() => showForm = true"
+                        class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+                    + Add Tutorial
+                </button>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+
+    @if (showForm)
+    {
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-slate-200">
+            <h2 class="text-xl font-semibold text-spe-blue mb-4">New Tutorial</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="Title" @bind="newTitle" />
+                <select class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                        @bind="newRole">
+                    @foreach (var role in Enum.GetValues<CommitteeRole>())
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </select>
+                <input class="border border-slate-300 rounded-lg px-4 py-2 sm:col-span-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="YouTube Embed URL (https://www.youtube.com/embed/...)" @bind="newYoutubeUrl" />
+                <textarea class="border border-slate-300 rounded-lg px-4 py-2 sm:col-span-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                          rows="2" placeholder="Description" @bind="newDescription"></textarea>
+            </div>
+            <div class="flex gap-3 mt-4">
+                <button @onclick="SaveTutorial" class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">Save</button>
+                <button @onclick="() => showForm = false" class="border border-slate-300 text-slate-600 px-5 py-2 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+            </div>
+        </div>
+    }
+
+    @if (grouped is null)
+    {
+        <p class="text-slate-500 text-center py-20">Loading tutorials...</p>
+    }
+    else if (!grouped.Any())
+    {
+        <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
+            <p class="text-slate-400 text-xl">No tutorials yet.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var group in grouped)
+        {
+            <div class="mb-10">
+                <h2 class="text-xl font-bold text-slate-700 mb-4 pb-2 border-b border-slate-200">
+                    @group.Key.ToString()
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    @foreach (var t in group.Value)
+                    {
+                        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                            @if (!string.IsNullOrEmpty(t.YoutubeEmbedUrl))
+                            {
+                                <div class="aspect-video">
+                                    <iframe src="@t.YoutubeEmbedUrl"
+                                            class="w-full h-full"
+                                            frameborder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowfullscreen></iframe>
+                                </div>
+                            }
+                            <div class="p-4">
+                                <h3 class="font-bold text-slate-800 mb-1">@t.Title</h3>
+                                <p class="text-slate-500 text-sm">@t.Description</p>
+                                <AuthorizeView Roles="President">
+                                    <Authorized>
+                                        <button @onclick="() => DeleteTutorial(t.Id)"
+                                                class="text-red-400 hover:text-red-600 text-xs mt-3 font-medium transition-colors">
+                                            Delete
+                                        </button>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private Dictionary<CommitteeRole, List<Tutorial>>? grouped;
+    private bool showForm;
+    private string newTitle = "";
+    private string newDescription = "";
+    private string newYoutubeUrl = "";
+    private CommitteeRole newRole = CommitteeRole.None;
+
+    protected override async Task OnInitializedAsync() => await LoadTutorials();
+
+    private async Task LoadTutorials()
+    {
+        var all = await TutorialSvc.GetAllAsync();
+        grouped = all.GroupBy(t => t.CategoryRole)
+                     .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private async Task SaveTutorial()
+    {
+        if (string.IsNullOrWhiteSpace(newTitle)) return;
+        await TutorialSvc.CreateAsync(new Tutorial
+        {
+            Title = newTitle,
+            Description = newDescription,
+            YoutubeEmbedUrl = newYoutubeUrl,
+            CategoryRole = newRole
+        });
+        showForm = false;
+        newTitle = newDescription = newYoutubeUrl = "";
+        await LoadTutorials();
+    }
+
+    private async Task DeleteTutorial(int id)
+    {
+        await TutorialSvc.DeleteAsync(id);
+        await LoadTutorials();
+    }
+}

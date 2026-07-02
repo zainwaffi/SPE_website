@@ -1,0 +1,24 @@
+## .NET / ASP.NET Core
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.swp
+
+## SQLite database (contains real data — do not commit)
+*.db
+*.db-shm
+*.db-wal
+
+## Secrets & environment
+appsettings.Development.json
+secrets.json
+
+## Node / Tailwind build output
+node_modules/
+wwwroot/css/app.css
+
+## OS
+.DS_Store
+Thumbs.db

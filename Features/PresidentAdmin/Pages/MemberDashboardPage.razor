@@ -1,0 +1,148 @@
+@page "/admin/members"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "President")]
+@inject AdminService AdminSvc
+@inject TaskItemService TaskSvc
+
+<PageTitle>Member Dashboard — SPE Admin</PageTitle>
+
+<div class="max-w-6xl mx-auto px-6 py-12">
+    <h1 class="text-3xl font-bold text-spe-blue mb-2">Member Dashboard</h1>
+    <p class="text-slate-500 mb-10">Oversee all committee members, their tasks, and strike records.</p>
+
+    @if (members is null)
+    {
+        <p class="text-slate-500 text-center py-20">Loading members...</p>
+    }
+    else if (members.Count == 0)
+    {
+        <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
+            <p class="text-slate-400 text-xl">No committee members found.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
+                    <tr>
+                        <th class="px-6 py-4 text-left font-semibold">Member</th>
+                        <th class="px-6 py-4 text-left font-semibold">Role</th>
+                        <th class="px-6 py-4 text-center font-semibold">Tasks</th>
+                        <th class="px-6 py-4 text-center font-semibold">Strikes</th>
+                        <th class="px-6 py-4 text-center font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var member in members)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-spe-blue flex items-center justify-center text-white font-bold text-sm shrink-0">
+                                        @(member.FullName.Length > 0 ? member.FullName[0].ToString().ToUpper() : "?")
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-slate-800">@member.FullName</p>
+                                        <p class="text-slate-400 text-xs">@member.Email</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-spe-blue/10 text-spe-blue text-xs font-semibold px-2.5 py-1 rounded-full">
+                                    @member.CommitteeRole
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex justify-center gap-3 text-xs">
+                                    <span class="text-amber-600 font-semibold">@member.AssignedTasks.Count(t => t.Status == AssignmentStatus.Processing) active</span>
+                                    <span class="text-green-600 font-semibold">@member.AssignedTasks.Count(t => t.Status == AssignmentStatus.Completed) done</span>
+                                    <span class="text-red-500 font-semibold">@member.AssignedTasks.Count(t => t.Status == AssignmentStatus.Failed) failed</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="text-xl font-extrabold @(member.StrikeCount >= 3 ? "text-red-500" : member.StrikeCount >= 1 ? "text-amber-500" : "text-green-500")">
+                                    @member.StrikeCount
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex justify-center gap-2">
+                                    <button @onclick="() => AddStrike(member.Id)"
+                                            class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                        + Strike
+                                    </button>
+                                    <button @onclick="() => OpenAssignTask(member.Id)"
+                                            class="text-xs bg-spe-blue text-white hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                        Assign Task
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (assignTaskUserId is not null)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-spe-blue mb-6">Assign Task</h2>
+            <div class="flex flex-col gap-4">
+                <input class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="Task title" @bind="taskTitle" />
+                <textarea class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                          rows="3" placeholder="Description" @bind="taskDescription"></textarea>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Deadline</label>
+                    <input type="date" class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                           @bind="taskDeadline" />
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button @onclick="ConfirmAssignTask"
+                        class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
+                    Assign
+                </button>
+                <button @onclick="() => assignTaskUserId = null"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ApplicationUser>? members;
+    private string? assignTaskUserId;
+    private string taskTitle = "";
+    private string taskDescription = "";
+    private DateTime taskDeadline = DateTime.Now.AddDays(7);
+
+    protected override async Task OnInitializedAsync() =>
+        members = await AdminSvc.GetAllMembersAsync();
+
+    private async Task AddStrike(string userId)
+    {
+        await AdminSvc.AddStrikeAsync(userId);
+        members = await AdminSvc.GetAllMembersAsync();
+    }
+
+    private void OpenAssignTask(string userId)
+    {
+        assignTaskUserId = userId;
+        taskTitle = taskDescription = "";
+        taskDeadline = DateTime.Now.AddDays(7);
+    }
+
+    private async Task ConfirmAssignTask()
+    {
+        if (string.IsNullOrWhiteSpace(taskTitle) || assignTaskUserId is null) return;
+        await AdminSvc.AssignTaskAsync(assignTaskUserId, taskTitle, taskDescription, taskDeadline);
+        assignTaskUserId = null;
+        members = await AdminSvc.GetAllMembersAsync();
+    }
+}

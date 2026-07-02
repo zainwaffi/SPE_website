@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@source "../Components/**/*.razor";
+@source "../Features/**/*.razor";
+
+@theme {
+  --color-spe-blue: #003DA5;
+  --color-spe-gold: #F4A300;
+}

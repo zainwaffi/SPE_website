@@ -1,0 +1,124 @@
+@page "/events/past"
+@rendermode InteractiveServer
+@inject EventService EventSvc
+
+<PageTitle>Our Events — SPE Chapter</PageTitle>
+
+<div class="max-w-6xl mx-auto px-6 py-12">
+    <div class="mb-10">
+        <h1 class="text-3xl font-bold text-spe-blue">Our Events</h1>
+        <p class="text-slate-500 mt-1">A look back at the experiences we've shared.</p>
+    </div>
+
+    @if (events is null)
+    {
+        <p class="text-slate-500 text-center py-20">Loading...</p>
+    }
+    else if (events.Count == 0)
+    {
+        <div class="text-center py-20">
+            <p class="text-slate-400 text-xl">No past events yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            @foreach (var evt in events)
+            {
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
+                    {
+                        <div class="aspect-square overflow-hidden">
+                            <iframe src="@evt.InstagramEmbedUrl" class="w-full h-full" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="w-full h-48 bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                            <span class="text-slate-400 text-4xl">&#x1F4F8;</span>
+                        </div>
+                    }
+
+                    <div class="p-5">
+                        <div class="text-slate-400 text-xs font-medium mb-1">@evt.Date.ToString("MMMM d, yyyy")</div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-1">@evt.Title</h3>
+                        <p class="text-slate-500 text-sm mb-4">@evt.Description</p>
+
+                        @{
+                            var avgRating = evt.Ratings.Any() ? evt.Ratings.Average(r => r.Stars) : 0;
+                            var ratingCount = evt.Ratings.Count;
+                        }
+                        @if (ratingCount > 0)
+                        {
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="flex">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <span class="@(i <= Math.Round(avgRating) ? "text-spe-gold" : "text-slate-300") text-lg">&#9733;</span>
+                                    }
+                                </div>
+                                <span class="text-sm text-slate-500">@avgRating.ToString("0.0") (@ratingCount @(ratingCount == 1 ? "review" : "reviews"))</span>
+                            </div>
+                        }
+
+                        @if (ratingPanelEventId == evt.Id)
+                        {
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                <p class="text-sm font-semibold text-slate-700 mb-2">Rate this event</p>
+                                <div class="flex gap-1 mb-3">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        int star = i;
+                                        <button @onclick="() => pendingStars = star"
+                                                class="text-2xl @(star <= pendingStars ? "text-spe-gold" : "text-slate-300") hover:text-spe-gold transition-colors">
+                                            &#9733;
+                                        </button>
+                                    }
+                                </div>
+                                <textarea class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue mb-3"
+                                          rows="2" placeholder="Optional feedback..." @bind="pendingComment"></textarea>
+                                <div class="flex gap-2">
+                                    <button @onclick="() => SubmitRating(evt.Id)"
+                                            class="bg-spe-blue text-white text-sm px-4 py-1.5 rounded-lg hover:bg-blue-800 transition-colors">Submit</button>
+                                    <button @onclick="() => ratingPanelEventId = null"
+                                            class="border border-slate-300 text-slate-600 text-sm px-4 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <button @onclick="() => OpenRating(evt.Id)"
+                                    class="text-sm text-spe-blue hover:underline font-medium">
+                                Leave a review
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Event>? events;
+    private int? ratingPanelEventId;
+    private int pendingStars = 5;
+    private string pendingComment = "";
+
+    protected override async Task OnInitializedAsync() =>
+        events = await EventSvc.GetPastAsync();
+
+    private void OpenRating(int eventId)
+    {
+        ratingPanelEventId = eventId;
+        pendingStars = 5;
+        pendingComment = "";
+    }
+
+    private async Task SubmitRating(int eventId)
+    {
+        await EventSvc.AddRatingAsync(eventId, pendingStars, pendingComment);
+        ratingPanelEventId = null;
+        events = await EventSvc.GetPastAsync();
+    }
+}

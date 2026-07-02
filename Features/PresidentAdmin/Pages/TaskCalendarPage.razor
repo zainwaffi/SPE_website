@@ -1,0 +1,127 @@
+@page "/admin/calendar"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "President")]
+@inject AdminService AdminSvc
+
+<PageTitle>Task Calendar — SPE Admin</PageTitle>
+
+<div class="max-w-5xl mx-auto px-6 py-12">
+    <h1 class="text-3xl font-bold text-spe-blue mb-2">Task Calendar</h1>
+    <p class="text-slate-500 mb-10">Click a date to assign a task to a committee member.</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <button @onclick="PrevMonth" class="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600">&#8249;</button>
+                <h2 class="text-lg font-bold text-slate-800">@currentDate.ToString("MMMM yyyy")</h2>
+                <button @onclick="NextMonth" class="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600">&#8250;</button>
+            </div>
+
+            <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400 mb-2">
+                @foreach (var day in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+                {
+                    <div class="py-1">@day</div>
+                }
+            </div>
+
+            <div class="grid grid-cols-7 gap-1">
+                @for (int i = 0; i < firstDayOffset; i++)
+                {
+                    <div></div>
+                }
+                @for (int d = 1; d <= daysInMonth; d++)
+                {
+                    int day = d;
+                    var date = new DateTime(currentDate.Year, currentDate.Month, day);
+                    bool isToday = date.Date == DateTime.Today;
+                    bool isSelected = selectedDate?.Date == date.Date;
+                    <button @onclick="() => SelectDate(date)"
+                            class="aspect-square rounded-lg text-sm font-medium transition-colors
+                                   @(isSelected ? "bg-spe-blue text-white" : isToday ? "bg-spe-gold/20 text-spe-blue font-bold" : "hover:bg-slate-100 text-slate-700")">
+                        @d
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            @if (selectedDate is null)
+            {
+                <div class="text-center py-10">
+                    <p class="text-slate-400">Select a date to assign a task.</p>
+                </div>
+            }
+            else
+            {
+                <h3 class="font-bold text-slate-800 mb-4">@selectedDate.Value.ToString("MMMM d, yyyy")</h3>
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Task Title</label>
+                        <input class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                               placeholder="Task title" @bind="taskTitle" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                        <textarea class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                                  rows="3" placeholder="Details..." @bind="taskDescription"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Assign To</label>
+                        <select class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                                @bind="selectedUserId">
+                            <option value="">— Select member —</option>
+                            @if (members is not null)
+                            {
+                                @foreach (var m in members)
+                                {
+                                    <option value="@m.Id">@m.FullName (@m.CommitteeRole)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <button @onclick="AssignTask"
+                            class="w-full bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors mt-2">
+                        Assign Task
+                    </button>
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <p class="text-green-600 text-sm font-medium text-center">@successMessage</p>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private DateTime currentDate = DateTime.Today;
+    private DateTime? selectedDate;
+    private List<ApplicationUser>? members;
+    private string selectedUserId = "";
+    private string taskTitle = "";
+    private string taskDescription = "";
+    private string successMessage = "";
+
+    private int firstDayOffset => (int)new DateTime(currentDate.Year, currentDate.Month, 1).DayOfWeek;
+    private int daysInMonth => DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
+
+    protected override async Task OnInitializedAsync() =>
+        members = await AdminSvc.GetAllMembersAsync();
+
+    private void SelectDate(DateTime date)
+    {
+        selectedDate = date;
+        taskTitle = taskDescription = selectedUserId = successMessage = "";
+    }
+
+    private void PrevMonth() => currentDate = currentDate.AddMonths(-1);
+    private void NextMonth() => currentDate = currentDate.AddMonths(1);
+
+    private async Task AssignTask()
+    {
+        if (string.IsNullOrWhiteSpace(taskTitle) || string.IsNullOrWhiteSpace(selectedUserId) || selectedDate is null) return;
+        await AdminSvc.AssignTaskAsync(selectedUserId, taskTitle, taskDescription, selectedDate.Value);
+        successMessage = "Task assigned successfully!";
+        taskTitle = taskDescription = selectedUserId = "";
+    }
+}
