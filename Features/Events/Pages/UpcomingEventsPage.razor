@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject EventService EventSvc
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Upcoming Events — SPE Chapter</PageTitle>
 
@@ -26,15 +27,12 @@
         <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-slate-200">
             <h2 class="text-xl font-semibold text-spe-blue mb-4">New Event</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                       placeholder="Event title" @bind="newTitle" />
                 <input type="datetime-local" class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
                        @bind="newDate" />
                 <input class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                       placeholder="Location" @bind="newLocation" />
-                <div></div>
-                <textarea class="border border-slate-300 rounded-lg px-4 py-2 w-full sm:col-span-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                          rows="3" placeholder="Description" @bind="newDescription"></textarea>
+                       placeholder="Google Maps link" @bind="newLocation" />
+                <input class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                       placeholder="Instagram post URL" @bind="newInstagramEmbedUrl" />
             </div>
             <div class="flex gap-3 mt-4">
                 <button @onclick="SaveEvent" class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">Save</button>
@@ -60,7 +58,13 @@
             @foreach (var evt in events)
             {
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-                    @if (!string.IsNullOrEmpty(evt.ImageUrl))
+                    @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
+                    {
+                        <div class="overflow-hidden flex justify-center bg-slate-50">
+                            <blockquote class="instagram-media" data-instgrm-permalink="@evt.InstagramEmbedUrl" data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;"></blockquote>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(evt.ImageUrl))
                     {
                         <img src="@evt.ImageUrl" alt="@evt.Title" class="w-full h-40 object-cover" />
                     }
@@ -71,11 +75,24 @@
                         </div>
                     }
                     <div class="p-5">
-                        <div class="text-spe-gold text-xs font-bold uppercase tracking-wider mb-1">
-                            @evt.Date.ToString("MMM d, yyyy · h:mm tt")
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="text-spe-gold text-xs font-bold uppercase tracking-wider">
+                                @evt.Date.ToString("MMM d, yyyy · h:mm tt")
+                            </div>
+                            <AuthorizeView Roles="CommitteeMember,President">
+                                <Authorized>
+                                    <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
+                                            class="text-red-400 hover:text-red-600 text-sm font-medium transition-colors">
+                                        Delete
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
                         </div>
                         <h3 class="text-lg font-bold text-slate-800 mb-1">@evt.Title</h3>
-                        <p class="text-slate-500 text-sm mb-3">@evt.Location</p>
+                        @if (!string.IsNullOrEmpty(evt.Location))
+                        {
+                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer" class="text-spe-blue hover:underline text-sm mb-3 block">📍 View Location</a>
+                        }
                         <p class="text-slate-600 text-sm line-clamp-3">@evt.Description</p>
                     </div>
                 </div>
@@ -87,27 +104,37 @@
 @code {
     private List<Event>? events;
     private bool showForm;
-    private string newTitle = "";
-    private string newDescription = "";
     private string newLocation = "";
+    private string newInstagramEmbedUrl = "";
     private DateTime newDate = DateTime.Now.AddDays(7);
 
     protected override async Task OnInitializedAsync() =>
         events = await EventSvc.GetUpcomingAsync();
 
+    protected override async Task OnAfterRenderAsync(bool firstRender) =>
+        await JS.InvokeVoidAsync("speSite.processInstagramEmbeds");
+
     private async Task SaveEvent()
     {
-        if (string.IsNullOrWhiteSpace(newTitle)) return;
+        if (string.IsNullOrWhiteSpace(newInstagramEmbedUrl) || string.IsNullOrWhiteSpace(newLocation)) return;
         await EventSvc.CreateAsync(new Event
         {
-            Title = newTitle,
-            Description = newDescription,
+            Title = $"Event on {newDate:MMM d}",
+            Description = "",
             Location = newLocation,
+            InstagramEmbedUrl = newInstagramEmbedUrl,
             Date = newDate,
             IsUpcoming = true
         });
         showForm = false;
-        newTitle = newDescription = newLocation = "";
+        newInstagramEmbedUrl = "";
+        newLocation = "";
+        events = await EventSvc.GetUpcomingAsync();
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        await EventSvc.DeleteAsync(id);
         events = await EventSvc.GetUpcomingAsync();
     }
 }

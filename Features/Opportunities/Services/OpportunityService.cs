@@ -9,6 +9,9 @@ public class OpportunityService(AppDbContext db)
     public Task<List<Opportunity>> GetAllAsync() =>
         db.Opportunities.OrderByDescending(o => o.CreatedAt).ToListAsync();
 
+    public Task<Opportunity?> GetByIdAsync(int id) =>
+        db.Opportunities.FirstOrDefaultAsync(o => o.Id == id);
+
     public async Task<Opportunity> CreateAsync(Opportunity opp)
     {
         db.Opportunities.Add(opp);

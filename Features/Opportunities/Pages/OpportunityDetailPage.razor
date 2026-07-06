@@ -1,0 +1,49 @@
+@page "/opportunities/{id:int}"
+@rendermode InteractiveServer
+@inject OpportunityService OppSvc
+@inject NavigationManager Nav
+
+<PageTitle>@(opportunity?.Title ?? "Opportunity") — SPE Chapter</PageTitle>
+
+<div class="max-w-4xl mx-auto px-6 py-12">
+    @if (opportunity is null)
+    {
+        <p class="text-slate-500 text-center py-20">Loading...</p>
+    }
+    else
+    {
+        <button @onclick="GoBack"
+                class="text-spe-blue hover:underline text-sm font-medium mb-6">
+            ← Back to Opportunities
+        </button>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-8">
+            <h1 class="text-4xl font-bold text-spe-blue mb-4">@opportunity.Title</h1>
+            <p class="text-slate-500 text-sm mb-6">Posted on @opportunity.CreatedAt.ToString("MMMM d, yyyy")</p>
+
+            <div class="prose prose-sm max-w-none mb-8">
+                <p class="text-slate-700 whitespace-pre-wrap">@opportunity.Description</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(opportunity.ExternalUrl))
+            {
+                <a href="@opportunity.ExternalUrl" target="_blank" rel="noopener noreferrer"
+                   class="inline-block bg-spe-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+                    Visit External Link →
+                </a>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Opportunity? opportunity;
+
+    protected override async Task OnInitializedAsync() =>
+        opportunity = await OppSvc.GetByIdAsync(Id);
+
+    private void GoBack() => Nav.NavigateTo("/opportunities");
+}

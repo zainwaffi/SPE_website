@@ -6,13 +6,13 @@ A full-stack member portal and administrative dashboard for a local chapter of t
 
 ## Features
 
-- **Account Management** — Admins create member accounts with auto-generated temp passwords; members change passwords on first login
-- **Event Management** — Public upcoming/past event calendar with ratings and Instagram embeds
+- **Account Management** — Presidents create member accounts with auto-generated temp passwords; members change passwords on first login via dedicated Change Password page
+- **Event Management** — Public upcoming/past event calendars with Instagram embeds (official `embed.js` widget), clickable Google Maps location links, member ratings, and delete functionality
 - **Member Strike System** — President-initiated strike tracking with automated email notifications
 - **Task Assignment** — Assign tasks to members with deadlines, status tracking, and email alerts
 - **Role-Based Access** — Two access tiers: `CommitteeMember` (regular user), `President` (admin)
 - **Tutorial Hub** — YouTube SOP videos filtered by each member's committee role
-- **Opportunities Feed** — External opportunity links for members
+- **Opportunities Feed** — Searchable opportunity links with dedicated detail pages for each opportunity
 - **Member Profiles** — Strike history, assigned tasks, and profile pictures
 - **Admin Dashboard** — President creates accounts, manages members (edit/delete), assigns tasks, tracks strikes, views task calendar
 
@@ -72,12 +72,62 @@ SPE_website/
 | `/change-password` | Authenticated | Change Password |
 | `/events/upcoming` | Public | Upcoming Events |
 | `/events/past` | Public | Past Events |
-| `/opportunities` | Public | Opportunities |
+| `/opportunities` | Public | Opportunities List |
+| `/opportunities/{id}` | Public | Opportunity Details |
 | `/profile` | Authenticated | Member Profile |
 | `/tasks` | Authenticated | My Tasks |
 | `/tutorials` | Authenticated | Tutorial Hub |
 | `/admin/members` | President only | Member Dashboard (create/edit/delete members, assign tasks, add strikes) |
 | `/admin/tasks` | President only | Task Calendar |
+
+---
+
+## Event Management
+
+### Creating Events (Members & Admins)
+
+Members and admins navigate to `/events/upcoming` and click **"+ Add Event"** to create a new event by providing:
+1. **Date & Time** — When the event occurs
+2. **Google Maps Link** — Clickable location link that opens in a new tab
+3. **Instagram Post URL** — Direct link to the Instagram post (e.g., `https://www.instagram.com/p/XXXX/`) for embedding
+
+Events are auto-titled based on the date and displayed in a grid view. Instagram embeds are rendered using Instagram's official `embed.js` widget.
+
+### Viewing Events
+
+- **Upcoming Events** (`/events/upcoming`) — Shows future events with full Instagram embed and clickable location links
+- **Past Events** (`/events/past`) — Shows completed events, also with embeds and location links; members can rate events with stars and comments
+
+### Managing Events (Members & Admins)
+
+Both members and admins can:
+- **Delete events** — Delete button appears in the top-right corner of each event card (red text, hover enabled)
+- **View location** — Click the 📍 location badge to open the Google Maps link in a new tab
+- **See Instagram embed** — Full Instagram post embed displays on each event card
+
+---
+
+## Opportunities Management
+
+### Viewing Opportunities
+
+Members navigate to `/opportunities` to browse a list of SPE-related opportunities. Each opportunity card shows:
+- Title and description preview (truncated to 3 lines)
+- "View Details →" link to navigate to the full opportunity page
+
+### Opportunity Details (`/opportunities/{id}`)
+
+Clicking an opportunity card navigates to its dedicated detail page showing:
+- Full title and description
+- "Visit External Link →" button (if an external URL is configured)
+- "Back to Opportunities" navigation link
+
+### Managing Opportunities (Members & Admins)
+
+Both members and admins can:
+- **Create opportunities** — Click "+ Add" on `/opportunities` to add new opportunity links
+- **Delete opportunities** — Delete button (red text) appears on each card; uses `@onclick:stopPropagation` to prevent navigation to detail page
+- **Edit opportunity details** — Full description visible on dedicated detail page
 
 ---
 
@@ -120,10 +170,10 @@ Members who receive temporary passwords (or anyone logged in) can change their p
 ## Data Models
 
 - **ApplicationUser** — Extends `IdentityUser` with `FullName`, `StrikeCount`, `ProfilePictureUrl`, `CommitteeRole`
-- **Event** — Title, description, date, location, image; has many `EventRating`
-- **EventRating** — Stars + comment, linked to an event
-- **TaskItem** — Title, deadline, `AssignmentStatus` (Processing / Completed / Failed), assigned user
-- **Opportunity** — Title, description, external URL
+- **Event** — Title, description, date, location (Google Maps link), `InstagramEmbedUrl`, `ImageUrl`, `IsUpcoming` flag; has many `EventRating`; supports ratings with star scores and comments
+- **EventRating** — Stars (1-5) + optional comment, linked to an event
+- **TaskItem** — Title, description, deadline, `AssignmentStatus` (Processing / Completed / Failed), assigned user
+- **Opportunity** — Title, description, optional external URL; each opportunity has a dedicated detail page
 - **Tutorial** — Title, YouTube embed URL, filtered by `CommitteeRole`
 
 **CommitteeRole enum:** `None`, `President`, `VP`, `Secretary`, `Treasurer`, `EventsCoordinator`, `TechnicalDirector`, `MediaCoordinator`, `OutreachCoordinator`

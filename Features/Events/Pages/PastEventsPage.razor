@@ -1,6 +1,7 @@
 @page "/events/past"
 @rendermode InteractiveServer
 @inject EventService EventSvc
+@inject IJSRuntime JS
 
 <PageTitle>Our Events — SPE Chapter</PageTitle>
 
@@ -28,8 +29,8 @@
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
                     {
-                        <div class="aspect-square overflow-hidden">
-                            <iframe src="@evt.InstagramEmbedUrl" class="w-full h-full" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
+                        <div class="overflow-hidden flex justify-center bg-slate-50">
+                            <blockquote class="instagram-media" data-instgrm-permalink="@evt.InstagramEmbedUrl" data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;"></blockquote>
                         </div>
                     }
                     else
@@ -40,8 +41,22 @@
                     }
 
                     <div class="p-5">
-                        <div class="text-slate-400 text-xs font-medium mb-1">@evt.Date.ToString("MMMM d, yyyy")</div>
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="text-slate-400 text-xs font-medium">@evt.Date.ToString("MMMM d, yyyy")</div>
+                            <AuthorizeView Roles="CommitteeMember,President">
+                                <Authorized>
+                                    <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
+                                            class="text-red-400 hover:text-red-600 text-sm font-medium transition-colors">
+                                        Delete
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
+                        </div>
                         <h3 class="text-lg font-bold text-slate-800 mb-1">@evt.Title</h3>
+                        @if (!string.IsNullOrEmpty(evt.Location))
+                        {
+                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer" class="text-spe-blue hover:underline text-sm mb-2 block">📍 View Location</a>
+                        }
                         <p class="text-slate-500 text-sm mb-4">@evt.Description</p>
 
                         @{
@@ -108,6 +123,9 @@
     protected override async Task OnInitializedAsync() =>
         events = await EventSvc.GetPastAsync();
 
+    protected override async Task OnAfterRenderAsync(bool firstRender) =>
+        await JS.InvokeVoidAsync("speSite.processInstagramEmbeds");
+
     private void OpenRating(int eventId)
     {
         ratingPanelEventId = eventId;
@@ -119,6 +137,12 @@
     {
         await EventSvc.AddRatingAsync(eventId, pendingStars, pendingComment);
         ratingPanelEventId = null;
+        events = await EventSvc.GetPastAsync();
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        await EventSvc.DeleteAsync(id);
         events = await EventSvc.GetPastAsync();
     }
 }

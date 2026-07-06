@@ -1,6 +1,7 @@
 @page "/opportunities"
 @rendermode InteractiveServer
 @inject OpportunityService OppSvc
+@inject NavigationManager Nav
 
 <PageTitle>Opportunities — SPE Chapter</PageTitle>
 
@@ -55,22 +56,18 @@
         <div class="flex flex-col gap-4">
             @foreach (var opp in opportunities)
             {
-                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-sm transition-shadow">
+                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer" @onclick="() => GoToDetail(opp.Id)">
                     <div class="flex justify-between items-start gap-4">
                         <div class="flex-1">
-                            <h3 class="text-lg font-bold text-slate-800 mb-1">@opp.Title</h3>
-                            <p class="text-slate-600 mb-3">@opp.Description</p>
-                            @if (!string.IsNullOrEmpty(opp.ExternalUrl))
-                            {
-                                <a href="@opp.ExternalUrl" target="_blank" rel="noopener"
-                                   class="text-spe-blue font-semibold text-sm hover:underline">
-                                    Learn more →
-                                </a>
-                            }
+                            <h3 class="text-lg font-bold text-slate-800 mb-1 hover:text-spe-blue transition-colors">@opp.Title</h3>
+                            <p class="text-slate-600 mb-3 line-clamp-3">@opp.Description</p>
+                            <span class="text-spe-blue font-semibold text-sm">
+                                View Details →
+                            </span>
                         </div>
                         <AuthorizeView Roles="CommitteeMember,President">
                             <Authorized>
-                                <button @onclick="() => DeleteOpp(opp.Id)"
+                                <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
                                         class="text-red-400 hover:text-red-600 text-sm font-medium transition-colors shrink-0">
                                     Delete
                                 </button>
@@ -112,4 +109,6 @@
         await OppSvc.DeleteAsync(id);
         opportunities = await OppSvc.GetAllAsync();
     }
+
+    private void GoToDetail(int id) => Nav.NavigateTo($"/opportunities/{id}");
 }
