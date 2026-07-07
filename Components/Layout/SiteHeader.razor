@@ -1,0 +1,177 @@
+@rendermode InteractiveServer
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
+@if (_navOpen || _toolsOpen)
+{
+    <div class="fixed inset-0 z-40" @onclick="CloseAll"></div>
+}
+
+<header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+
+    <!-- Main bar -->
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+        <div class="flex justify-between items-center h-12">
+
+            <!-- Left: Hamburger + Logo -->
+            <div class="flex items-center gap-3">
+                <button @onclick="ToggleNav"
+                        class="p-2 rounded-md hover:bg-slate-100 transition-colors text-spe-blue text-2xl leading-none"
+                        aria-label="Open navigation menu">
+                    <i class="fa fa-navicon"></i>
+                </button>
+
+                <a href="/">
+                    <img src="/images/logo-header.png" alt="University of Aberdeen SPE Student Chapter" class="h-11" />
+                </a>
+            </div>
+
+            <!-- Right: Tools + Login -->
+            <div class="flex items-center gap-3">
+                <AuthorizeView>
+                    <Authorized>
+                        <!-- Tools Dropdown -->
+                        <div class="relative">
+                            <button @onclick="ToggleTools"
+                                    class="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200 text-spe-blue font-semibold hover:bg-slate-300 transition-colors">
+                                <i class="fa fa-cog"></i>
+                                Tools
+                            </button>
+
+                            @if (_toolsOpen)
+                            {
+                                <div class="absolute top-full right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-5"
+                                     style="z-index:60">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <a href="/profile" @onclick="CloseAll"
+                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
+                                            <i class="fa fa-user-circle-o fa-lg"></i>
+                                            Profile
+                                        </a>
+                                        <a href="/tutorials" @onclick="CloseAll"
+                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
+                                            <i class="fa fa-book fa-lg"></i>
+                                            Tutorials
+                                        </a>
+                                        <a href="/tasks" @onclick="CloseAll"
+                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
+                                            <i class="fa fa-tasks fa-lg"></i>
+                                            Tasks
+                                        </a>
+                                        <a href="/admin/members" @onclick="CloseAll"
+                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
+                                            <i class="fa fa-tachometer fa-lg"></i>
+                                            Admin Panel
+                                        </a>
+                                    </div>
+                                    <hr class="my-3 border-gray-100" />
+                                    <form method="post" action="/logout">
+                                        <button type="submit"
+                                                class="text-sm text-slate-500 hover:text-red-500 transition-colors cursor-pointer">
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/login"
+                           class="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200 text-spe-blue font-semibold hover:bg-slate-300 transition-colors">
+                            <i class="fa fa-user-circle-o"></i>
+                            Login
+                        </a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Mega-menu nav dropdown — full width below header bar -->
+    @if (_navOpen)
+    {
+        <div class="absolute left-0 right-0 top-full bg-white border-t-2 border-spe-blue shadow-lg" style="z-index:60">
+            <div class="max-w-7xl mx-auto px-8 py-6">
+                <div class="grid grid-cols-2 gap-8">
+
+                    <!-- Left: Events -->
+                    <div>
+                        <div class="flex items-center gap-3 text-spe-blue mb-3">
+                            <i class="fa fa-calendar fa-3x"></i>
+                            <span class="text-3xl font-bold">Events</span>
+                        </div>
+                        <ul class="ml-14 space-y-1 text-spe-blue text-base font-medium">
+                            <li>
+                                <a href="/events/upcoming" @onclick="CloseAll" class="flex items-center gap-2 hover:underline">
+                                    <span>•</span> Upcoming Events
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/events/past" @onclick="CloseAll" class="flex items-center gap-2 hover:underline">
+                                    <span>•</span> Past Events
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Right: Opportunities + News stacked -->
+                    <div class="flex flex-col gap-4">
+                        <a href="/opportunities" @onclick="CloseAll"
+                           class="flex items-center gap-3 text-spe-blue hover:opacity-70 transition-opacity">
+                            <i class="fa fa-search fa-3x"></i>
+                            <span class="text-3xl font-bold">Opportunities</span>
+                        </a>
+                        <a href="/news" @onclick="CloseAll"
+                           class="flex items-center gap-3 text-spe-blue hover:opacity-70 transition-opacity">
+                            <i class="fa fa-newspaper-o fa-3x"></i>
+                            <span class="text-3xl font-bold">News</span>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+
+</header>
+
+@code {
+    private bool _navOpen;
+    private bool _toolsOpen;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _navOpen = false;
+        _toolsOpen = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void ToggleNav()
+    {
+        _navOpen = !_navOpen;
+        _toolsOpen = false;
+    }
+
+    private void ToggleTools()
+    {
+        _toolsOpen = !_toolsOpen;
+        _navOpen = false;
+    }
+
+    private void CloseAll()
+    {
+        _navOpen = false;
+        _toolsOpen = false;
+    }
+}

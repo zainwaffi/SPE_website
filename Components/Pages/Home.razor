@@ -1,70 +1,85 @@
 @page "/"
 
-<PageTitle>SPE Chapter — Home</PageTitle>
+<PageTitle>SPE Chapter — Home</PageTitle><!-- ─── SECTION 1: Hero ─────────────────────────────────────────────── -->
+<section class="relative flex items-end"
+         style="background-image:url('/images/bg1.png'); background-size:cover; background-position:center; min-height:65vh;">
+    <!-- dark tint overlay -->
+    <div class="absolute inset-0" style="background-color:rgba(0,30,80,0.35);"></div>
 
-<div>
-    <section class="bg-gradient-to-br from-spe-blue to-blue-900 text-white py-28 px-6">
-        <div class="max-w-4xl mx-auto text-center">
-            <p class="text-spe-gold text-xs font-bold tracking-widest uppercase mb-4">Society of Petroleum Engineers</p>
-            <h1 class="text-5xl sm:text-6xl font-extrabold mb-6 leading-tight">
-                Welcome to Our<br /><span class="text-spe-gold">Local Chapter</span>
-            </h1>
-            <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Connecting petroleum engineers,
-                fostering knowledge, and building the future of energy together.
-            </p>
-            <div class="flex gap-4 justify-center flex-wrap">
-                <a href="/events/upcoming" class="bg-spe-gold text-spe-blue font-bold px-8 py-3 rounded-lg hover:bg-amber-400 transition-colors shadow-md">
-                    View Events
-                </a>
-                <a href="/opportunities" class="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-spe-blue transition-colors font-semibold">
-                    Opportunities
-                </a>
-            </div>
-        </div>
-    </section>
+    <!-- "About Us?" title bottom-left -->
+    <div class="relative z-10 px-8 pb-20 md:px-16">
+        <h1 class="text-white font-extrabold" style="font-size:clamp(2.5rem,6vw,4rem);">About Us?</h1>
+    </div>
 
-    <section class="py-16 px-6 bg-white">
-        <div class="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
-            <div class="p-6">
-                <div class="text-4xl font-extrabold text-spe-blue mb-2">50+</div>
-                <div class="text-slate-500 font-medium">Active Members</div>
-            </div>
-            <div class="p-6">
-                <div class="text-4xl font-extrabold text-spe-blue mb-2">20+</div>
-                <div class="text-slate-500 font-medium">Events Per Year</div>
-            </div>
-            <div class="p-6">
-                <div class="text-4xl font-extrabold text-spe-blue mb-2">10+</div>
-                <div class="text-slate-500 font-medium">Opportunities Shared</div>
-            </div>
-        </div>
-    </section>
+    <!-- White wave at bottom -->
+    <div class="absolute bottom-0 left-0 right-0 leading-none">
+        <svg viewBox="0 0 1440 70" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full"
+             style="height:70px; display:block;">
+            <path d="M0,70 L0,35 Q360,0 720,28 Q1080,56 1440,20 L1440,70 Z" fill="white" />
+        </svg>
+    </div>
+</section>
 
-    <section class="py-20 px-6 bg-slate-50">
-        <div class="max-w-3xl mx-auto text-center">
-            <h2 class="text-3xl font-bold text-spe-blue mb-6">About Our Chapter</h2>
-            <p class="text-slate-600 text-lg leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-                dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                fugiat nulla pariatur.
-            </p>
-        </div>
-    </section>
+<!-- ─── SECTION 2: About Us body ────────────────────────────────────── -->
+<section class="bg-white py-16 px-6">
+    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 text-slate-700 leading-relaxed">
+        <p>
+            The SPE Student Chapter at the University of Aberdeen is more than just a student society — we are your
+            direct connection to the Society of Petroleum Engineers (SPE), the world's largest community dedicated to
+            the oil, gas, and energy industry.
+        </p>
+        <p>
+            Our role is to introduce students to the industry and guide them toward the wealth of opportunities SPE
+            offers. From technical lectures, international competitions, and networking events to publishing papers,
+            pursuing chartership, and applying for scholarships through SPE International, we make sure our members are
+            well informed and well prepared to take full advantage of what SPE has to offer.
+        </p>
+    </div>
+</section>
 
-    <section class="py-20 px-6 bg-spe-blue text-white" id="contact">
-        <div class="max-w-2xl mx-auto text-center">
-            <h2 class="text-3xl font-bold mb-4">Contact Us</h2>
-            <p class="text-blue-200 mb-8 text-lg">Have questions or want to get involved? Reach out to us.</p>
-            <div class="flex flex-col sm:flex-row gap-6 justify-center">
-                <a href="mailto:spe@chapter.edu" class="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 px-6 py-3 rounded-lg transition-colors">
-                    <span class="text-spe-gold font-semibold">spe&#64;chapter.edu</span>
-                </a>
-                <a href="/events/upcoming" class="flex items-center justify-center gap-2 bg-spe-gold text-spe-blue hover:bg-amber-400 px-6 py-3 rounded-lg font-bold transition-colors">
-                    Join an Event
-                </a>
-            </div>
+<!-- ─── SECTION 3: Cards ─────────────────────────────────────────────── -->
+<section class="py-20 px-6"
+         style="background-image:url('/images/bg2.png'); background-size:cover; background-position:center;">
+    <div class="max-w-3xl mx-auto flex flex-col gap-6">
+        <div class="bg-white rounded-2xl p-8 text-slate-700 leading-relaxed shadow-md">
+            We serve as the link between students and SPE International ensuring our members are aware of the many
+            opportunities available. From technical talks and career workshops to global competitions and publishing
+            platforms, we help students navigate and make the most of what SPE provides.
         </div>
-    </section>
-</div>
+        <div class="bg-white rounded-2xl p-8 text-slate-700 leading-relaxed shadow-md">
+            Most importantly, we are open to all students, no matter your academic background. If you're curious about
+            the oil, gas, and wider energy industry — from traditional resources to the evolving energy transition — you
+            are welcome here.
+        </div>
+    </div>
+</section>
+
+<!-- ─── SECTION 4: Why Join Us ───────────────────────────────────────── -->
+<section class="relative py-16 px-6"
+         style="background-image:url('/images/bg3.png'); background-size:cover; background-position:center; min-height:520px;">
+    <div class="absolute inset-0" style="background-color:rgba(0,30,80,0.55);"></div>
+    <div class="relative z-10 max-w-xl py-8 md:ml-16">
+        <h2 class="text-white font-extrabold mb-8" style="font-size:clamp(2rem,4vw,2.75rem);">Why Join Us?</h2>
+        <div class="bg-white rounded-2xl p-8 text-slate-700 leading-relaxed shadow-md">
+            <ul class="space-y-3 text-sm">
+                <li>• Connect directly with industry experts and future employers.</li>
+                <li>• Gain access to technical lectures, competitions abroad, and international events.</li>
+                <li>• Learn about scholarship opportunities, publishing platforms, and professional development paths offered by SPE International.</li>
+                <li>• Be part of a global network of more than 360 student chapters across the world.</li>
+                <li>• Grow personally and professionally in a community that values knowledge, collaboration, and innovation.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ─── SECTION 5: Our Vision ────────────────────────────────────────── -->
+<section class="py-24 px-6 text-center"
+         style="background-image:url('/images/bg4.png'); background-size:cover; background-position:center;">
+    <div class="max-w-2xl mx-auto">
+        <h2 class="text-white font-extrabold mb-10" style="font-size:clamp(2rem,4vw,2.75rem);">Our Vision</h2>
+        <div class="bg-white rounded-2xl p-8 text-slate-700 leading-relaxed shadow-md">
+            To empower students with the knowledge, skills, and connections they need to thrive in the energy industry while promoting a culture of safety, responsibility, and sustainability.
+        </div>
+    </div>
+</section>
+            

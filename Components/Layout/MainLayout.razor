@@ -1,69 +1,59 @@
 @inherits LayoutComponentBase
 
 <div class="min-h-screen flex flex-col">
-    <nav class="bg-spe-blue shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <a href="/" class="flex items-center gap-2">
-                    <span class="text-spe-gold font-extrabold text-xl tracking-tight">SPE</span>
-                    <span class="text-white font-semibold text-lg">Chapter</span>
-                </a>
-
-                <div class="flex items-center gap-1 sm:gap-4 text-sm font-medium">
-                    <NavLink href="/" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors" ActiveClass="text-white bg-white/10" Match="NavLinkMatch.All">
-                        Home
-                    </NavLink>
-                    <NavLink href="/events/upcoming" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors" ActiveClass="text-white bg-white/10">
-                        Events
-                    </NavLink>
-                    <NavLink href="/events/past" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors" ActiveClass="text-white bg-white/10">
-                        Our Events
-                    </NavLink>
-                    <NavLink href="/opportunities" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors" ActiveClass="text-white bg-white/10">
-                        Opportunities
-                    </NavLink>
-
-                    <AuthorizeView>
-                        <Authorized>
-                            <NavLink href="/profile" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors" ActiveClass="text-white bg-white/10">
-                                Dashboard
-                            </NavLink>
-                            <NavLink href="/tutorials" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors" ActiveClass="text-white bg-white/10">
-                                Tutorials
-                            </NavLink>
-                            <NavLink href="/change-password" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors" ActiveClass="text-white bg-white/10">
-                                Change Password
-                            </NavLink>
-                            <AuthorizeView Roles="President" Context="presidentCtx">
-                                <Authorized>
-                                    <NavLink href="/admin/members" class="text-spe-gold hover:text-amber-300 px-2 py-1 rounded transition-colors font-semibold" ActiveClass="text-amber-300">
-                                        Admin
-                                    </NavLink>
-                                </Authorized>
-                            </AuthorizeView>
-                            <form method="post" action="/logout" class="inline">
-                                <button type="submit" class="text-blue-200 hover:text-white px-2 py-1 rounded transition-colors cursor-pointer">
-                                    Logout
-                                </button>
-                            </form>
-                        </Authorized>
-                        <NotAuthorized>
-                            <NavLink href="/login" class="bg-spe-gold text-spe-blue px-4 py-2 rounded-lg font-semibold hover:bg-amber-400 transition-colors">
-                                Login
-                            </NavLink>
-                        </NotAuthorized>
-                    </AuthorizeView>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <SiteHeader />
 
     <main class="flex-1">
         @Body
     </main>
 
-    <footer class="bg-slate-800 text-slate-400 text-sm py-6 text-center">
-        <p>&copy; @DateTime.Now.Year SPE Local Chapter. All rights reserved.</p>
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start text-center">
+
+                <!-- Contact Us -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-spe-blue text-4xl font-semibold mb-2">Contact us</h3>
+                    <a href="mailto:spe@ausa.org.uk" class="text-spe-blue text-lg hover:underline">
+                        spe@ausa.org.uk
+                    </a>
+                </div>
+
+                <!-- Membership -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-spe-blue text-4xl font-semibold mb-4">Membership</h3>
+                    <div class="flex flex-col items-center gap-3">
+                        <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer">
+                        <img src="/images/logo-footer.png" alt="SPE International" class="h-8 object-contain" />
+                        </a>
+                        <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer">
+                        <img src="/images/student-union.png" alt="Students' Union" class="h-8 object-contain" />
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Follow Us -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-spe-blue text-4xl font-semibold mb-4">Follow Us</h3>
+                    <div class="flex items-center gap-3">
+                        <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" aria-label="Instagram"
+                           class="text-spe-blue hover:opacity-70 transition-opacity" target="_blank" rel="noopener noreferrer">
+                            <i class="fa fa-instagram fa-3x"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/in/spe-aberdeen-university-student-chapter-838896333" aria-label="LinkedIn"
+                           class="text-spe-blue hover:opacity-70 transition-opacity" target="_blank" rel="noopener noreferrer">
+                            <i class="fa fa-linkedin fa-3x"></i>
+                        </a>
+                        <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" aria-label="WhatsApp"
+                           class="text-spe-blue hover:opacity-70 transition-opacity" target="_blank" rel="noopener noreferrer">
+                            <i class="fa fa-whatsapp fa-3x"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </footer>
 </div>
 
