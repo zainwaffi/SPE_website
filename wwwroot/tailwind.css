@@ -657,9 +657,6 @@
   .h-11 {
     height: calc(var(--spacing) * 11);
   }
-  .h-12 {
-    height: calc(var(--spacing) * 12);
-  }
   .h-20 {
     height: calc(var(--spacing) * 20);
   }
@@ -1389,9 +1386,6 @@
   .break-all {
     word-break: break-all;
   }
-  .whitespace-pre-wrap {
-    white-space: pre-wrap;
-  }
   .text-amber-500 {
     color: var(--color-amber-500);
   }
@@ -1699,11 +1693,6 @@
   .sm\:grid-cols-2 {
     @media (width >= 40rem) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-  .sm\:px-4 {
-    @media (width >= 40rem) {
-      padding-inline: calc(var(--spacing) * 4);
     }
   }
   .sm\:px-6 {

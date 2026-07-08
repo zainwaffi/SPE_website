@@ -21,8 +21,8 @@
             <h1 class="text-4xl font-bold text-spe-blue mb-4">@opportunity.Title</h1>
             <p class="text-slate-500 text-sm mb-6">Posted on @opportunity.CreatedAt.ToString("MMMM d, yyyy")</p>
 
-            <div class="prose prose-sm max-w-none mb-8">
-                <p class="text-slate-700 whitespace-pre-wrap">@opportunity.Description</p>
+            <div class="prose prose-sm max-w-none mb-8 text-slate-700">
+                @((MarkupString)RenderMarkdown(opportunity.Description))
             </div>
 
             @if (!string.IsNullOrEmpty(opportunity.ExternalUrl))
@@ -46,4 +46,7 @@
         opportunity = await OppSvc.GetByIdAsync(Id);
 
     private void GoBack() => Nav.NavigateTo("/opportunities");
+
+    private static string RenderMarkdown(string? markdown) =>
+        string.IsNullOrEmpty(markdown) ? "" : Markdig.Markdown.ToHtml(markdown);
 }

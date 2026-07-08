@@ -117,8 +117,15 @@
                           rows="3" placeholder="Description" @bind="taskDescription"></textarea>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 mb-1">Deadline</label>
-                    <input type="date" class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                           @bind="taskDeadline" />
+                    <input type="text" class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                           placeholder="DD/MM/YYYY"
+                           value="@taskDeadlineString"
+                           @oninput="HandleDeadlineInput"
+                           maxlength="10" />
+                    @if (deadlineParseError)
+                    {
+                        <p class="text-red-500 text-xs mt-1">Invalid date. Use DD/MM/YYYY (e.g. 25/07/2025)</p>
+                    }
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
@@ -288,6 +295,21 @@
     private string taskTitle = "";
     private string taskDescription = "";
     private DateTime taskDeadline = DateTime.Now.AddDays(7);
+    private string taskDeadlineString = DateTime.Now.AddDays(7).ToString("dd/MM/yyyy");
+    private bool deadlineParseError;
+
+    private void HandleDeadlineInput(ChangeEventArgs e)
+    {
+        var raw = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
+        if (raw.Length > 8) raw = raw[..8];
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < raw.Length; i++)
+        {
+            if (i == 2 || i == 4) sb.Append('/');
+            sb.Append(raw[i]);
+        }
+        taskDeadlineString = sb.ToString();
+    }
     private string? currentUserId;
 
     private bool showAddMember;
@@ -328,11 +350,21 @@
     {
         assignTaskUserId = userId;
         taskTitle = taskDescription = "";
-        taskDeadline = DateTime.Now.AddDays(7);  // Default to 7 days from now
+        taskDeadline = DateTime.Now.AddDays(7);
+        taskDeadlineString = taskDeadline.ToString("dd/MM/yyyy");
+        deadlineParseError = false;
     }
 
     private async Task ConfirmAssignTask()
     {
+        deadlineParseError = false;
+        if (!DateTime.TryParseExact(taskDeadlineString, "dd/MM/yyyy",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out taskDeadline))
+        {
+            deadlineParseError = true;
+            return;
+        }
         if (string.IsNullOrWhiteSpace(taskTitle) || assignTaskUserId is null) return;
         await AdminSvc.AssignTaskAsync(assignTaskUserId, taskTitle, taskDescription, taskDeadline);
         assignTaskUserId = null;

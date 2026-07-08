@@ -27,9 +27,18 @@
         <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-slate-200">
             <h2 class="text-xl font-semibold text-spe-blue mb-4">New Event</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input type="datetime-local"
-                       class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                       @bind="newDate" />
+                <div>
+                    <input type="text"
+                           class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                           placeholder="DD/MM/YYYY HH:MM"
+                           value="@newDateString"
+                           @oninput="HandleDateInput"
+                           maxlength="16" />
+                    @if (dateParseError)
+                    {
+                        <p class="text-red-500 text-xs mt-1">Invalid date. Use DD/MM/YYYY HH:MM (e.g. 25/07/2025 14:30)</p>
+                    }
+                </div>
                 <input
                 class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
                 placeholder="Event Title" @bind="newTitle" />
@@ -119,6 +128,23 @@
     private string newLocation = "";
     private string newInstagramEmbedUrl = "";
     private DateTime newDate = DateTime.Now.AddDays(7);
+    private string newDateString = DateTime.Now.AddDays(7).ToString("dd/MM/yyyy HH:mm");
+    private bool dateParseError;
+
+    private void HandleDateInput(ChangeEventArgs e)
+    {
+        var raw = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
+        if (raw.Length > 12) raw = raw[..12];
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < raw.Length; i++)
+        {
+            if (i == 2 || i == 4) sb.Append('/');
+            else if (i == 8) sb.Append(' ');
+            else if (i == 10) sb.Append(':');
+            sb.Append(raw[i]);
+        }
+        newDateString = sb.ToString();
+    }
 
     protected override async Task OnInitializedAsync() =>
         events = await EventSvc.GetUpcomingAsync();
@@ -128,6 +154,14 @@
 
     private async Task SaveEvent()
     {
+        dateParseError = false;
+        if (!DateTime.TryParseExact(newDateString, "dd/MM/yyyy HH:mm",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out newDate))
+        {
+            dateParseError = true;
+            return;
+        }
         if (string.IsNullOrWhiteSpace(newTitle) || string.IsNullOrWhiteSpace(newLocation) ||
 string.IsNullOrWhiteSpace(newInstagramEmbedUrl)) return;
         await EventSvc.CreateAsync(new Event
