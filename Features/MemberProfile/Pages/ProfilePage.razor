@@ -24,77 +24,95 @@
                 else
                 {
                     <div class="w-20 h-20 rounded-full bg-spe-blue flex items-center justify-center mb-4">
-                        <span class="text-white text-2xl font-bold">@(user.FullName.Length > 0 ? user.FullName[0].ToString().ToUpper() : "?")</span>
-                    </div>
-                }
-                <h2 class="text-xl font-bold text-slate-800">@user.FullName</h2>
-                <p class="text-slate-500 text-sm">@user.Email</p>
-                <span class="mt-2 inline-block bg-spe-blue/10 text-spe-blue text-xs font-semibold px-3 py-1 rounded-full">
-                    @user.CommitteeRole.ToString()
-                </span>
-            </div>
-
-            <div class="bg-white rounded-xl border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
-                <div class="text-5xl font-extrabold @(user.StrikeCount >= 3 ? "text-red-500" : user.StrikeCount >= 1 ? "text-amber-500" : "text-green-500") mb-2">
-                    @user.StrikeCount
-                </div>
-                <p class="text-slate-500 text-sm font-medium">Strike@(user.StrikeCount == 1 ? "" : "s")</p>
-                @if (user.StrikeCount == 0)
-                {
-                    <p class="text-green-500 text-xs mt-1">Good standing</p>
-                }
-                else if (user.StrikeCount >= 3)
-                {
-                    <p class="text-red-500 text-xs mt-1">Action required</p>
-                }
-            </div>
-
-            <div class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Task Overview</h3>
-                @{
-                    var total = user.AssignedTasks.Count;
-                    var done = user.AssignedTasks.Count(t => t.Status == AssignmentStatus.Completed);
-                    var failed = user.AssignedTasks.Count(t => t.Status == AssignmentStatus.Failed);
-                    var active = user.AssignedTasks.Count(t => t.Status == AssignmentStatus.Processing);
-                }
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between"><span class="text-slate-500">Active</span><span class="font-semibold text-slate-800">@active</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Completed</span><span class="font-semibold text-green-600">@done</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Failed</span><span class="font-semibold text-red-500">@failed</span></div>
-                    <div class="flex justify-between border-t pt-2 mt-2"><span class="text-slate-500">Total</span><span class="font-bold text-slate-800">@total</span></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-slate-800">My Tasks</h3>
-                <a href="/tasks" class="text-spe-blue text-sm font-semibold hover:underline">View all →</a>
-            </div>
-            @if (!user.AssignedTasks.Any())
-            {
-                <p class="text-slate-400 text-center py-6">No tasks assigned yet.</p>
-            }
-            else
-            {
-                <div class="divide-y divide-slate-100">
-                    @foreach (var task in user.AssignedTasks.OrderBy(t => t.Deadline).Take(5))
-                    {
-                        <div class="py-4 flex justify-between items-center">
-                            <div>
-                                <p class="font-semibold text-slate-800">@task.Title</p>
-                                <p class="text-xs text-slate-400 mt-0.5">Due @task.Deadline.ToString("MMM d, yyyy")</p>
-                            </div>
-                            <span class="text-xs font-bold px-3 py-1 rounded-full @(task.Status == AssignmentStatus.Completed ? "bg-green-100 text-green-700" : task.Status == AssignmentStatus.Failed ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")">
-                                @task.Status
-                            </span>
+                        <span class="text-white text-2xl font-bold">@(user.FullName.Length > 0 ?
+                                                                                                        user.FullName[0].ToString().ToUpper() : "?")</span>
                         </div>
                     }
+                    <h2 class="text-xl font-bold text-slate-800">@user.FullName</h2>
+                    <p class="text-slate-500 text-sm">@user.Email</p>
+                    <span class="mt-2 inline-block bg-spe-blue/10 text-spe-blue text-xs font-semibold px-3 py-1 rounded-full">
+                        @user.CommitteeRole.ToString()
+                    </span>
+                    <span class="mt-2 inline-block bg-spe-blue/10 text-spe-blue text-xs font-semibold px-3 py-1 rounded-full">
+                        <a href="/change-password"
+                            class="hover:underline">
+                            Change Password
+                        </a>
+                    </span>
+
                 </div>
-            }
-        </div>
-    }
-</div>
+
+                <div
+                    class="bg-white rounded-xl border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+                    <div
+                        class="text-5xl font-extrabold @(user.StrikeCount >= 3 ? "text-red-500" : user.StrikeCount >= 1 ? "text-amber-500" : "text-green-500") mb-2">
+                        @user.StrikeCount
+                    </div>
+                    <p class="text-slate-500 text-sm font-medium">Strike@(user.StrikeCount == 1 ? "" : "s")</p>
+                    @if (user.StrikeCount == 0)
+                    {
+                        <p class="text-green-500 text-xs mt-1">Good standing</p>
+                    }
+                    else if (user.StrikeCount >= 3)
+                    {
+                        <p class="text-red-500 text-xs mt-1">Action required</p>
+                    }
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Task Overview</h3>
+                    @{
+                        var total = user.AssignedTasks.Count;
+                        var done = user.AssignedTasks.Count(t => t.Status == AssignmentStatus.Completed);
+                        var failed = user.AssignedTasks.Count(t => t.Status == AssignmentStatus.Failed);
+                        var active = user.AssignedTasks.Count(t => t.Status == AssignmentStatus.Processing);
+                    }
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-slate-500">Active</span><span
+                            class="font-semibold text-slate-800">@active</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Completed</span><span
+                                class="font-semibold text-green-600">@done</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Failed</span><span
+                                    class="font-semibold text-red-500">@failed</span></div>
+                                    <div class="flex justify-between border-t pt-2 mt-2"><span class="text-slate-500">Total</span><span
+                                        class="font-bold text-slate-800">@total</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-bold text-slate-800">My Tasks</h3>
+                                    <a href="/tasks" class="text-spe-blue text-sm font-semibold hover:underline">View all →</a>
+                                </div>
+                                @if (!user.AssignedTasks.Any())
+                                {
+                                    <p class="text-slate-400 text-center py-6">No tasks assigned yet.</p>
+                                }
+                                else
+                                {
+                                    <div class="divide-y divide-slate-100">
+                                        @foreach (var task in user.AssignedTasks.OrderBy(t => t.Deadline).Take(5))
+                                        {
+                                            <div class="py-4 flex justify-between items-center">
+                                                <div>
+                                                    <p class="font-semibold text-slate-800">@task.Title</p>
+                                                    <p class="text-xs text-slate-400 mt-0.5">Due @task.Deadline.ToString("MMM d, yyyy")</p>
+                                                </div>
+                                                <span
+                                                    class="text-xs font-bold px-3 py-1 rounded-full @(task.Status == AssignmentStatus.Completed ? "bg-green-100 text-green-700" : task.Status == AssignmentStatus.Failed ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")">
+                                                    @task.Status
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+
+     
+
+                    </div>
 
 @code {
     private ApplicationUser? user;

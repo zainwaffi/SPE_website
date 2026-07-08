@@ -13,6 +13,7 @@ using SPE_website.Shared.Models;
 using SPE_website.Shared.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -20,7 +21,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=spe.db"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=spe.db"));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
