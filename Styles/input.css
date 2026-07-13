@@ -3,6 +3,8 @@
 @source "../Components/**/*.razor";
 @source "../Features/**/*.razor";
 
+/* here where you add your custom styles and components*/
+
 @theme {
   --color-spe-blue: #003DA5;
   --color-spe-gold: #F4A300;
