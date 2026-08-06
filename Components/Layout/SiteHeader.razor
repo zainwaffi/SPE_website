@@ -7,133 +7,60 @@
     <div class="fixed inset-0 z-40" @onclick="CloseAll"></div>
 }
 
-<header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+<header class="sticky top-0 z-50 border-b border-white/10 bg-spe-cobalt/95 shadow-lg backdrop-blur">
+    <div class="mx-auto max-w-[1440px] px-6 lg:px-20">
+        <div class="flex h-16 items-center justify-between">
+            <a href="/" class="group flex items-center gap-3" @onclick="CloseAll">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white">
+                    <i class="fa fa-globe text-xl text-spe-cobalt"></i>
+                </div>
+                <div class="hidden text-left sm:block">
+                    <p class="text-sm font-bold leading-tight text-white" style="font-family:Montserrat, sans-serif;">SPE Student Chapter</p>
+                    <p class="text-xs leading-tight text-white/70">Society of Petroleum Engineers</p>
+                </div>
+            </a>
 
-    <!-- Main bar -->
-    <div class="w-full px-4 lg:px-6">
-        <div class="flex justify-between items-center h-20">
-
-            <!-- Left: Hamburger + Logo -->
-            <div class="flex items-center gap-3">
-                <button @onclick="ToggleNav"
-                        class="p-2 rounded-md hover:bg-slate-100 transition-colors text-spe-blue text-2xl leading-none"
-                        aria-label="Open navigation menu">
-                    <i class="fa fa-navicon"></i>
-                </button>
-
-                <a href="/">
-                    <img src="/images/logo-header.png" alt="University of Aberdeen SPE Student Chapter" class="h-11" />
-                </a>
-            </div>
-
-            <!-- Right: Tools + Login -->
-            <div class="flex items-center gap-3">
-                <AuthorizeView>
-                    <Authorized>
-                        <!-- Tools Dropdown -->
-                        <div class="relative">
-                            <button @onclick="ToggleTools"
-                                    class="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200 text-spe-blue font-semibold hover:bg-slate-300 transition-colors">
-                                <i class="fa fa-cog"></i>
-                                Tools
-                            </button>
-
-                            @if (_toolsOpen)
-                            {
-                                <div class="absolute top-full right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-5"
-                                     style="z-index:60">
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <a href="/profile" @onclick="CloseAll"
-                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
-                                            <i class="fa fa-user-circle-o fa-lg"></i>
-                                            Profile
-                                        </a>
-                                        <a href="/tutorials" @onclick="CloseAll"
-                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
-                                            <i class="fa fa-book fa-lg"></i>
-                                            Tutorials
-                                        </a>
-                                        <a href="/tasks" @onclick="CloseAll"
-                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
-                                            <i class="fa fa-tasks fa-lg"></i>
-                                            Tasks
-                                        </a>
-                                        <a href="/admin/members" @onclick="CloseAll"
-                                           class="flex items-center gap-3 text-spe-blue font-bold text-lg hover:opacity-70 transition-opacity">
-                                            <i class="fa fa-tachometer fa-lg"></i>
-                                            Admin Panel
-                                        </a>
-                                    </div>
-                                    <hr class="my-3 border-gray-100" />
-                                    <form method="post" action="/logout">
-                                        <button type="submit"
-                                                class="text-sm text-slate-500 hover:text-red-500 transition-colors cursor-pointer">
-                                            Logout
-                                        </button>
-                                    </form>
-                                </div>
-                            }
-                        </div>
-                    </Authorized>
-                    <NotAuthorized>
-                        <a href="/login"
-                           class="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200 text-spe-blue font-semibold hover:bg-slate-300 transition-colors">
-                            <i class="fa fa-user-circle-o"></i>
-                            Login
-                        </a>
-                    </NotAuthorized>
-                </AuthorizeView>
-            </div>
-
+            <button @onclick="ToggleNav" class="rounded p-2 text-white transition-colors hover:bg-white/10" aria-label="Open navigation menu">
+                <i class="@(_navOpen ? "fa fa-close" : "fa fa-bars") text-xl"></i>
+            </button>
         </div>
     </div>
 
-    <!-- Mega-menu nav dropdown — full width below header bar -->
     @if (_navOpen)
     {
-        <div class="absolute left-0 right-0 top-full bg-white border-t-2 border-spe-blue shadow-lg" style="z-index:60">
-            <div class="max-w-7xl mx-auto px-8 py-6">
-                <div class="grid sm:grid-cols-2 gap-8">
+        <div class="border-t border-white/10 bg-spe-endeavor shadow-xl">
+            <div class="mx-auto max-w-[1440px] px-6 py-2 lg:px-20">
+                <a href="/" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Home</a>
+                <a href="/events/upcoming" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Events</a>
+                <a href="/opportunities" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Opportunities</a>
+                <a href="/tutorials" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Tutorials</a>
+                <a href="https://www.spe-aberdeen.org/news" target="_blank" rel="noopener noreferrer" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">News</a>
 
-                    <!-- Left: Events -->
-                    <div>
-                        <div class="flex items-center gap-3 text-spe-blue mb-3">
-                            <i class="fa fa-calendar fa-3x"></i>
-                            <span class="text-3xl font-bold">Events</span>
-                        </div>
-                        <ul class="list-disc ml-14 space-y-1 text-spe-blue text-base font-medium">
-                            <li>
-                                <a href="/events/upcoming" @onclick="CloseAll" class="flex items-center gap-2 hover:underline">
-                                    Upcoming Events
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/events/past" @onclick="CloseAll" class="flex items-center gap-2 hover:underline">
-                                    Past Events
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Right: Opportunities + News stacked -->
-                    <div class="flex flex-col gap-4">
-                        <a href="/opportunities" @onclick="CloseAll"
-                           class="flex items-center gap-3 text-spe-blue hover:opacity-70 transition-opacity">
-                            <i class="fa fa-search fa-3x"></i>
-                            <span class="text-3xl font-bold">Opportunities</span>
-                        </a>
-                        <a href="https://www.spe-aberdeen.org/news" target="_blank" @onclick="CloseAll"
-                           class="flex items-center gap-3 text-spe-blue hover:opacity-70 transition-opacity">
-                            <i class="fa fa-newspaper-o fa-3x"></i>
-                            <span class="text-3xl font-bold">News</span>
-                        </a>
-                    </div>
-
-                </div>
+                <AuthorizeView>
+                    <Authorized>
+                        <button @onclick="ToggleTools" class="mt-2 w-full rounded border border-white/20 px-2 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                            Tools
+                        </button>
+                        @if (_toolsOpen)
+                        {
+                            <div class="mt-2 space-y-1 rounded-lg bg-white/10 p-2 text-sm">
+                                <a href="/profile" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Profile</a>
+                                <a href="/tasks" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Tasks</a>
+                                <a href="/tutorials" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Tutorials</a>
+                                <a href="/admin/members" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Admin Panel</a>
+                                <form method="post" action="/logout" class="pt-1">
+                                    <button type="submit" class="w-full rounded px-2 py-2 text-left text-white/80 transition-colors hover:bg-white/10 hover:text-white">Logout</button>
+                                </form>
+                            </div>
+                        }
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/login" @onclick="CloseAll" class="mt-2 block rounded border border-white/20 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Login</a>
+                    </NotAuthorized>
+                </AuthorizeView>
             </div>
         </div>
     }
-
 </header>
 
 @code {
@@ -160,13 +87,15 @@
     private void ToggleNav()
     {
         _navOpen = !_navOpen;
-        _toolsOpen = false;
+        if (!_navOpen)
+        {
+            _toolsOpen = false;
+        }
     }
 
     private void ToggleTools()
     {
         _toolsOpen = !_toolsOpen;
-        _navOpen = false;
     }
 
     private void CloseAll()

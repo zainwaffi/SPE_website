@@ -1,121 +1,111 @@
 @page "/events/upcoming"
 @rendermode InteractiveServer
 @inject EventService EventSvc
-@inject NavigationManager Nav
 @inject IJSRuntime JS
 
 <PageTitle>Upcoming Events — SPE Chapter</PageTitle>
 
-<div class="max-w-6xl mx-auto px-6 py-12">
-    <div class="flex justify-between items-center mb-10">
+<div class="spe-page-shell md:max-w-[1200px]">
+    <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-spe-blue">Upcoming Events</h1>
-            <p class="text-slate-500 mt-1">Stay connected with what's happening in our chapter.</p>
+            <p class="spe-page-kicker">Events</p>
+            <h1 class="spe-page-title">Upcoming Events</h1>
+            <p class="mt-2 text-sm text-slate-600">Stay connected with what's happening in our chapter.</p>
         </div>
         <AuthorizeView Roles="CommitteeMember,President">
             <Authorized>
-                <button @onclick="() => showForm = true"
-                        class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
-                    + Add Event
-                </button>
+                <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add Event</button>
             </Authorized>
         </AuthorizeView>
     </div>
 
     @if (showForm)
     {
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-slate-200">
-            <h2 class="text-xl font-semibold text-spe-blue mb-4">New Event</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section class="spe-card mb-8 border-slate-200 p-6">
+            <h2 class="mb-4 text-xl font-bold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">New Event</h2>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <input type="text"
-                           class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                           class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
                            placeholder="DD/MM/YYYY HH:MM"
                            value="@newDateString"
                            @oninput="HandleDateInput"
                            maxlength="16" />
                     @if (dateParseError)
                     {
-                        <p class="text-red-500 text-xs mt-1">Invalid date. Use DD/MM/YYYY HH:MM (e.g. 25/07/2025 14:30)</p>
+                        <p class="mt-1 text-xs text-red-500">Invalid date. Use DD/MM/YYYY HH:MM (e.g. 25/07/2025 14:30)</p>
                     }
                 </div>
-                <input
-                class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                placeholder="Event Title" @bind="newTitle" />
-                <input
-                class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                placeholder="Google Maps link" @bind="newLocation" />
-                <input
-                class="border border-slate-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                placeholder="Instagram post URL" @bind="newInstagramEmbedUrl" />
+                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                       placeholder="Event Title" @bind="newTitle" />
+                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                       placeholder="Google Maps link" @bind="newLocation" />
+                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                       placeholder="Instagram post URL" @bind="newInstagramEmbedUrl" />
             </div>
-            <div class="flex gap-3 mt-4">
-                <button @onclick="SaveEvent"
-                        class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">Save</button>
-                <button @onclick="() => showForm = false"
-                        class="border border-slate-300 text-slate-600 px-5 py-2 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+            <div class="mt-4 flex gap-3">
+                <button @onclick="SaveEvent" class="spe-primary-btn">Save</button>
+                <button @onclick="() => showForm = false" class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
             </div>
-        </div>
+        </section>
     }
 
     @if (events is null)
     {
-        <p class="text-slate-500 text-center py-20">Loading events...</p>
+        <p class="py-20 text-center text-slate-500">Loading events...</p>
     }
     else if (events.Count == 0)
     {
-        <div class="text-center py-20">
-            <p class="text-slate-400 text-xl">No upcoming events at the moment.</p>
-            <p class="text-slate-400 mt-2">Check back soon!</p>
+        <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+            <p class="text-xl text-slate-400">No upcoming events at the moment.</p>
+            <p class="mt-2 text-slate-400">Check back soon.</p>
         </div>
     }
     else
     {
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             @foreach (var evt in events)
             {
-                <div
-                    class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                <article class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
                     @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
                     {
-                        <div class="overflow-hidden flex justify-center bg-slate-50">
+                        <div class="flex justify-center overflow-hidden bg-slate-50">
                             <blockquote class="instagram-media" data-instgrm-permalink="@evt.InstagramEmbedUrl"
                                         data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;"></blockquote>
                         </div>
                     }
                     else if (!string.IsNullOrEmpty(evt.ImageUrl))
                     {
-                        <img src="@evt.ImageUrl" alt="@evt.Title" class="w-full h-40 object-cover" />
+                        <img src="@evt.ImageUrl" alt="@evt.Title" class="h-40 w-full object-cover" />
                     }
                     else
                     {
-                        <div class="w-full h-40 bg-gradient-to-br from-spe-blue to-blue-700 flex items-center justify-center">
-                            <span class="text-white/40 text-5xl">&#x1F4C5;</span>
+                        <div class="flex h-40 w-full items-center justify-center bg-gradient-to-br from-spe-cobalt to-spe-endeavor">
+                            <span class="text-5xl text-white/40">&#x1F4C5;</span>
                         </div>
                     }
                     <div class="p-5">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="text-spe-gold text-xs font-bold uppercase tracking-wider">
+                        <div class="mb-2 flex items-start justify-between">
+                            <p class="text-xs font-bold uppercase tracking-wider text-spe-gold" style="font-family:'Roboto Mono', monospace;">
                                 @evt.Date.ToString("MMM d, yyyy · h:mm tt")
-                            </div>
+                            </p>
                             <AuthorizeView Roles="CommitteeMember,President">
                                 <Authorized>
                                     <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
-                                            class="text-red-400 hover:text-red-600 text-sm font-medium transition-colors">
+                                            class="text-sm font-medium text-red-400 transition-colors hover:text-red-600">
                                         Delete
                                     </button>
                                 </Authorized>
                             </AuthorizeView>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-800 mb-1">@evt.Title</h3>
+                        <h3 class="mb-1 text-lg font-bold text-black" style="font-family:Montserrat, sans-serif;">@evt.Title</h3>
                         @if (!string.IsNullOrEmpty(evt.Location))
                         {
-                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer"
-                               class="text-spe-blue hover:underline text-sm mb-3 block">📍 View Location</a>
+                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer" class="mb-3 block text-sm text-spe-cobalt hover:underline">📍 View Location</a>
                         }
-                        <p class="text-slate-600 text-sm line-clamp-3">@evt.Description</p>
+                        <p class="text-sm text-slate-600 line-clamp-3">@evt.Description</p>
                     </div>
-                </div>
+                </article>
             }
         </div>
     }

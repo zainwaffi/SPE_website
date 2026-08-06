@@ -5,59 +5,60 @@
 
 <PageTitle>Our Events — SPE Chapter</PageTitle>
 
-<div class="max-w-6xl mx-auto px-6 py-12">
+<div class="spe-page-shell md:max-w-[1200px]">
     <div class="mb-10">
-        <h1 class="text-3xl font-bold text-spe-blue">Our Events</h1>
-        <p class="text-slate-500 mt-1">A look back at the experiences we've shared.</p>
+        <p class="spe-page-kicker">Events</p>
+        <h1 class="spe-page-title">Past Events</h1>
+        <p class="mt-2 text-sm text-slate-600">A look back at the experiences we've shared.</p>
     </div>
 
     @if (events is null)
     {
-        <p class="text-slate-500 text-center py-20">Loading...</p>
+        <p class="py-20 text-center text-slate-500">Loading...</p>
     }
     else if (events.Count == 0)
     {
-        <div class="text-center py-20">
-            <p class="text-slate-400 text-xl">No past events yet.</p>
+        <div class="py-20 text-center">
+            <p class="text-xl text-slate-400">No past events yet.</p>
         </div>
     }
     else
     {
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
             @foreach (var evt in events)
             {
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <article class="spe-card overflow-hidden border-slate-200">
                     @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
                     {
-                        <div class="overflow-hidden flex justify-center bg-slate-50">
+                        <div class="flex justify-center overflow-hidden bg-slate-50">
                             <blockquote class="instagram-media" data-instgrm-permalink="@evt.InstagramEmbedUrl" data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;"></blockquote>
                         </div>
                     }
                     else
                     {
-                        <div class="w-full h-48 bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
-                            <span class="text-slate-400 text-4xl">&#x1F4F8;</span>
+                        <div class="flex h-48 w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+                            <span class="text-4xl text-slate-400">&#x1F4F8;</span>
                         </div>
                     }
 
                     <div class="p-5">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="text-slate-400 text-xs font-medium">@evt.Date.ToString("MMMM d, yyyy")</div>
+                        <div class="mb-2 flex items-start justify-between">
+                            <p class="text-xs text-slate-400">@evt.Date.ToString("MMMM d, yyyy")</p>
                             <AuthorizeView Roles="CommitteeMember,President">
                                 <Authorized>
                                     <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
-                                            class="text-red-400 hover:text-red-600 text-sm font-medium transition-colors">
+                                            class="text-sm font-medium text-red-400 transition-colors hover:text-red-600">
                                         Delete
                                     </button>
                                 </Authorized>
                             </AuthorizeView>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-800 mb-1">@evt.Title</h3>
+                        <h3 class="mb-1 text-lg font-bold text-black" style="font-family:Montserrat, sans-serif;">@evt.Title</h3>
                         @if (!string.IsNullOrEmpty(evt.Location))
                         {
-                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer" class="text-spe-blue hover:underline text-sm mb-2 block">📍 View Location</a>
+                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer" class="mb-2 block text-sm text-spe-cobalt hover:underline">📍 View Location</a>
                         }
-                        <p class="text-slate-500 text-sm mb-4">@evt.Description</p>
+                        <p class="mb-4 text-sm text-slate-600">@evt.Description</p>
 
                         @{
                             var avgRating = evt.Ratings.Any() ? evt.Ratings.Average(r => r.Stars) : 0;
@@ -65,11 +66,11 @@
                         }
                         @if (ratingCount > 0)
                         {
-                            <div class="flex items-center gap-2 mb-4">
+                            <div class="mb-4 flex items-center gap-2">
                                 <div class="flex">
                                     @for (int i = 1; i <= 5; i++)
                                     {
-                                        <span class="@(i <= Math.Round(avgRating) ? "text-spe-gold" : "text-slate-300") text-lg">&#9733;</span>
+                                        <span class="text-lg @(i <= Math.Round(avgRating) ? "text-spe-gold" : "text-slate-300")">&#9733;</span>
                                     }
                                 </div>
                                 <span class="text-sm text-slate-500">@avgRating.ToString("0.0") (@ratingCount @(ratingCount == 1 ? "review" : "reviews"))</span>
@@ -78,37 +79,34 @@
 
                         @if (ratingPanelEventId == evt.Id)
                         {
-                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                                <p class="text-sm font-semibold text-slate-700 mb-2">Rate this event</p>
-                                <div class="flex gap-1 mb-3">
+                            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <p class="mb-2 text-sm font-semibold text-slate-700">Rate this event</p>
+                                <div class="mb-3 flex gap-1">
                                     @for (int i = 1; i <= 5; i++)
                                     {
                                         int star = i;
                                         <button @onclick="() => pendingStars = star"
-                                                class="text-2xl @(star <= pendingStars ? "text-spe-gold" : "text-slate-300") hover:text-spe-gold transition-colors">
+                                                class="text-2xl @(star <= pendingStars ? "text-spe-gold" : "text-slate-300") transition-colors hover:text-spe-gold">
                                             &#9733;
                                         </button>
                                     }
                                 </div>
-                                <textarea class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue mb-3"
+                                <textarea class="mb-3 w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
                                           rows="2" placeholder="Optional feedback..." @bind="pendingComment"></textarea>
                                 <div class="flex gap-2">
-                                    <button @onclick="() => SubmitRating(evt.Id)"
-                                            class="bg-spe-blue text-white text-sm px-4 py-1.5 rounded-lg hover:bg-blue-800 transition-colors">Submit</button>
-                                    <button @onclick="() => ratingPanelEventId = null"
-                                            class="border border-slate-300 text-slate-600 text-sm px-4 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+                                    <button @onclick="() => SubmitRating(evt.Id)" class="spe-primary-btn px-4 py-1.5">Submit</button>
+                                    <button @onclick="() => ratingPanelEventId = null" class="rounded-lg border border-slate-300 px-4 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100">Cancel</button>
                                 </div>
                             </div>
                         }
                         else
                         {
-                            <button @onclick="() => OpenRating(evt.Id)"
-                                    class="text-sm text-spe-blue hover:underline font-medium">
+                            <button @onclick="() => OpenRating(evt.Id)" class="text-sm font-semibold text-spe-cobalt hover:underline">
                                 Leave a review
                             </button>
                         }
                     </div>
-                </div>
+                </article>
             }
         </div>
     }

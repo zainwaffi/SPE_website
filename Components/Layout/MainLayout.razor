@@ -1,5 +1,12 @@
 @inherits LayoutComponentBase
 
+<div class="fixed inset-0 -z-10">
+    <img src="/images/banner.jpg"
+         alt="Offshore oil platform background"
+         class="h-full w-full object-cover" />
+    <div class="absolute inset-0 bg-[rgba(0,20,60,0.72)]"></div>
+</div>
+
 <div class="min-h-screen flex flex-col">
     <SiteHeader />
 
@@ -7,51 +14,58 @@
         @Body
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 py-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start text-center">
+    <footer class="mt-20 bg-black text-white">
+        <div class="mx-auto max-w-[1440px] px-6 py-16 lg:px-20">
+            <div class="grid grid-cols-1 gap-12 md:grid-cols-3">
+                <div>
+                    <div class="mb-4 flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-spe-cobalt">
+                            <i class="fa fa-globe text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold" style="font-family:Montserrat, sans-serif;">SPE Student Chapter</p>
+                            <p class="text-xs text-white/60">Society of Petroleum Engineers</p>
+                        </div>
+                    </div>
+                    <p class="text-sm leading-relaxed text-white/70">
+                        Connecting petroleum engineering students and professionals to advance technical knowledge, careers, and leadership.
+                    </p>
+                </div>
 
-                <!-- Contact Us -->
-                <div class="flex flex-col items-center">
-                    <h3 class="text-spe-blue text-4xl font-semibold mb-2">Contact us</h3>
-                    <a href="mailto:spe@ausa.org.uk" class="text-spe-blue text-lg hover:underline">
-                        spe@ausa.org.uk
+                <div>
+                    <h4 class="mb-5 text-sm font-bold uppercase tracking-[0.2em] text-spe-gold" style="font-family:Montserrat, sans-serif;">Quick Links</h4>
+                    <ul class="space-y-3 text-sm text-white/70">
+                        <li><a class="transition-colors hover:text-white" href="/">About Us</a></li>
+                        <li><a class="transition-colors hover:text-white" href="/events/upcoming">Events</a></li>
+                        <li><a class="transition-colors hover:text-white" href="/opportunities">Opportunities</a></li>
+                        <li><a class="transition-colors hover:text-white" href="/tutorials">Tutorials</a></li>
+                        <li><a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news" target="_blank" rel="noopener noreferrer">News</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="mb-5 text-sm font-bold uppercase tracking-[0.2em] text-spe-gold" style="font-family:Montserrat, sans-serif;">Contact Us</h4>
+                    <div class="space-y-3 text-sm text-white/70">
+                        <p>University of Aberdeen<br />Department of Engineering</p>
+                        <p><a href="mailto:spe@ausa.org.uk" class="hover:text-white">spe@ausa.org.uk</a></p>
+                        <p><a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="hover:text-white" target="_blank" rel="noopener noreferrer">Instagram</a></p>
+                        <p><a href="https://www.linkedin.com/in/spe-aberdeen-university-student-chapter-838896333" class="hover:text-white" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>
+                        <p><a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" class="hover:text-white" target="_blank" rel="noopener noreferrer">WhatsApp</a></p>
+                    </div>
+                    <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-gold-btn mt-6 inline-block">
+                        Join the Chapter
                     </a>
                 </div>
-
-                <!-- Membership -->
-                <div class="flex flex-col items-center">
-                    <h3 class="text-spe-blue text-4xl font-semibold mb-4">Membership</h3>
-                    <div class="flex flex-col items-center gap-3">
-                        <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer">
-                        <img src="/images/logo-footer.png" alt="SPE International" class="h-8 object-contain" />
-                        </a>
-                        <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer">
-                        <img src="/images/student-union.png" alt="Students' Union" class="h-8 object-contain" />
-                        </a>
-                    </div>
+            </div>
+        </div>
+        <div class="border-t border-white/10">
+            <div class="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-3 px-6 py-5 text-xs text-white/40 sm:flex-row lg:px-20">
+                <p>© @DateTime.UtcNow.Year SPE Student Chapter. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a class="transition-colors hover:text-white/70" href="/">Privacy Policy</a>
+                    <a class="transition-colors hover:text-white/70" href="/">Terms of Service</a>
+                    <a class="transition-colors hover:text-white/70" href="/">Code of Conduct</a>
                 </div>
-
-                <!-- Follow Us -->
-                <div class="flex flex-col items-center">
-                    <h3 class="text-spe-blue text-4xl font-semibold mb-4">Follow Us</h3>
-                    <div class="flex items-center gap-3">
-                        <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" aria-label="Instagram"
-                           class="text-spe-blue hover:opacity-70 transition-opacity" target="_blank" rel="noopener noreferrer">
-                            <i class="fa fa-instagram fa-3x"></i>
-                        </a>
-                        <a href="https://www.linkedin.com/in/spe-aberdeen-university-student-chapter-838896333" aria-label="LinkedIn"
-                           class="text-spe-blue hover:opacity-70 transition-opacity" target="_blank" rel="noopener noreferrer">
-                            <i class="fa fa-linkedin fa-3x"></i>
-                        </a>
-                        <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" aria-label="WhatsApp"
-                           class="text-spe-blue hover:opacity-70 transition-opacity" target="_blank" rel="noopener noreferrer">
-                            <i class="fa fa-whatsapp fa-3x"></i>
-                        </a>
-                    </div>
-                </div>
-
             </div>
         </div>
     </footer>
