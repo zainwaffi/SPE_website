@@ -5,76 +5,72 @@
 
 <PageTitle>Opportunities — SPE Chapter</PageTitle>
 
-<div class="max-w-4xl mx-auto px-6 py-12">
-    <div class="flex justify-between items-center mb-10">
+<div class="spe-page-shell md:max-w-[1200px]">
+    <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-spe-blue">Opportunities</h1>
-            <p class="text-slate-500 mt-1">SPE-related opportunities for our members.</p>
+            <p class="spe-page-kicker">Opportunities</p>
+            <h1 class="spe-page-title">Jobs & Internships</h1>
+            <p class="mt-2 text-sm text-slate-600">Curated opportunities from leading energy companies.</p>
         </div>
         <AuthorizeView Roles="CommitteeMember,President">
             <Authorized>
-                <button @onclick="() => showForm = true"
-                        class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
-                    + Add
-                </button>
+                <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add</button>
             </Authorized>
         </AuthorizeView>
     </div>
 
     @if (showForm)
     {
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-slate-200">
-            <h2 class="text-xl font-semibold text-spe-blue mb-4">New Opportunity</h2>
+        <section class="spe-card mb-8 p-6">
+            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">New Opportunity</h2>
             <div class="flex flex-col gap-3">
-                <input class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
                        placeholder="Title" @bind="newTitle" />
-                <textarea class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                <textarea class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
                           rows="3" placeholder="Description" @bind="newDescription"></textarea>
-                <input class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
                        placeholder="External URL (optional)" @bind="newUrl" />
             </div>
-            <div class="flex gap-3 mt-4">
-                <button @onclick="SaveOpp" class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">Save</button>
-                <button @onclick="() => showForm = false" class="border border-slate-300 text-slate-600 px-5 py-2 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+            <div class="mt-4 flex gap-3">
+                <button @onclick="SaveOpp" class="spe-primary-btn">Save</button>
+                <button @onclick="() => showForm = false" class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
             </div>
-        </div>
+        </section>
     }
 
     @if (opportunities is null)
     {
-        <p class="text-slate-500 text-center py-20">Loading...</p>
+        <p class="py-20 text-center text-slate-500">Loading...</p>
     }
     else if (opportunities.Count == 0)
     {
-        <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
-            <p class="text-slate-400 text-xl font-medium">No opportunities posted yet.</p>
-            <p class="text-slate-400 mt-2 text-sm">Check back soon for SPE opportunities.</p>
+        <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+            <p class="text-xl font-medium text-slate-400">No opportunities posted yet.</p>
+            <p class="mt-2 text-sm text-slate-400">Check back soon for SPE opportunities.</p>
         </div>
     }
     else
     {
-        <div class="flex flex-col gap-4">
+        <div class="space-y-4">
             @foreach (var opp in opportunities)
             {
-                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer" @onclick="() => GoToDetail(opp.Id)">
-                    <div class="flex justify-between items-start gap-4">
+                <article class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md" @onclick="() => GoToDetail(opp.Id)">
+                    <div class="flex items-start justify-between gap-4">
                         <div class="flex-1">
-                            <h3 class="text-lg font-bold text-slate-800 mb-1 hover:text-spe-blue transition-colors">@opp.Title</h3>
-                            <p class="text-slate-600 mb-3 line-clamp-3">@opp.Description</p>
-                            <span class="text-spe-blue font-semibold text-sm">
-                                View Details →
-                            </span>
+                            <h3 class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor" style="font-family:Montserrat, sans-serif;">@opp.Title</h3>
+                            <p class="mb-3 line-clamp-3 text-slate-600">@opp.Description</p>
+                            <span class="text-sm font-semibold text-spe-cobalt">View Details →</span>
                         </div>
                         <AuthorizeView Roles="CommitteeMember,President">
                             <Authorized>
                                 <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
-                                        class="text-red-400 hover:text-red-600 text-sm font-medium transition-colors shrink-0">
+                                        class="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-600">
                                     Delete
                                 </button>
                             </Authorized>
                         </AuthorizeView>
                     </div>
-                </div>
+                </article>
             }
         </div>
     }

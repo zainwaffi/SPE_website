@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&family=Roboto+Mono:wght@600;700&display=swap");
 
 @source "../Components/**/*.razor";
 @source "../Features/**/*.razor";
@@ -8,4 +9,44 @@
 @theme {
   --color-spe-blue: #003DA5;
   --color-spe-gold: #F4A300;
+  --color-spe-cobalt: #0046AD;
+  --color-spe-endeavor: #0067B1;
+  --color-spe-ink: #000000;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: "Open Sans", sans-serif;
+  }
+}
+
+@layer components {
+  .spe-page-shell {
+    @apply mx-4 my-6 rounded-2xl border border-slate-200 bg-white/95 px-6 py-12 shadow-sm backdrop-blur md:mx-auto md:max-w-6xl lg:px-8;
+  }
+
+  .spe-page-kicker {
+    @apply mb-2 text-xs font-bold uppercase tracking-[0.22em] text-spe-cobalt;
+    font-family: "Roboto Mono", monospace;
+  }
+
+  .spe-page-title {
+    @apply text-3xl font-extrabold text-black;
+    font-family: "Montserrat", sans-serif;
+  }
+
+  .spe-primary-btn {
+    @apply rounded-lg bg-spe-cobalt px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90;
+    font-family: "Montserrat", sans-serif;
+  }
+
+  .spe-gold-btn {
+    @apply rounded-lg bg-spe-gold px-5 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90;
+    font-family: "Montserrat", sans-serif;
+  }
+
+  .spe-card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
 }

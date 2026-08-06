@@ -2,100 +2,94 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "CommitteeMember,President")]
 @inject TutorialService TutorialSvc
-@inject AuthenticationStateProvider AuthState
 
 <PageTitle>Tutorials — SPE Chapter</PageTitle>
 
-<div class="max-w-5xl mx-auto px-6 py-12">
-    <div class="flex justify-between items-center mb-10">
+<div class="spe-page-shell md:max-w-[1200px]">
+    <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-spe-blue">Tutorials Hub</h1>
-            <p class="text-slate-500 mt-1">Standard operating procedures and role-based training.</p>
+            <p class="spe-page-kicker">Tutorials & Courses</p>
+            <h1 class="spe-page-title">Technical Learning Library</h1>
+            <p class="mt-2 text-sm text-slate-600">Role-based SOP and learning content for committee members.</p>
         </div>
         <AuthorizeView Roles="President">
             <Authorized>
-                <button @onclick="() => showForm = true"
-                        class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
-                    + Add Tutorial
-                </button>
+                <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add Tutorial</button>
             </Authorized>
         </AuthorizeView>
     </div>
 
     @if (showForm)
     {
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-slate-200">
-            <h2 class="text-xl font-semibold text-spe-blue mb-4">New Tutorial</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+        <section class="spe-card mb-8 p-6">
+            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">New Tutorial</h2>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
                        placeholder="Title" @bind="newTitle" />
-                <select class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                        @bind="newRole">
+                <select class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt" @bind="newRole">
                     @foreach (var role in Enum.GetValues<CommitteeRole>())
                     {
                         <option value="@role">@role</option>
                     }
                 </select>
-                <input class="border border-slate-300 rounded-lg px-4 py-2 sm:col-span-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt sm:col-span-2"
                        placeholder="YouTube Embed URL (https://www.youtube.com/embed/...)" @bind="newYoutubeUrl" />
-                <textarea class="border border-slate-300 rounded-lg px-4 py-2 sm:col-span-2 focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                <textarea class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt sm:col-span-2"
                           rows="2" placeholder="Description" @bind="newDescription"></textarea>
             </div>
-            <div class="flex gap-3 mt-4">
-                <button @onclick="SaveTutorial" class="bg-spe-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors">Save</button>
-                <button @onclick="() => showForm = false" class="border border-slate-300 text-slate-600 px-5 py-2 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+            <div class="mt-4 flex gap-3">
+                <button @onclick="SaveTutorial" class="spe-primary-btn">Save</button>
+                <button @onclick="() => showForm = false" class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
             </div>
-        </div>
+        </section>
     }
 
     @if (grouped is null)
     {
-        <p class="text-slate-500 text-center py-20">Loading tutorials...</p>
+        <p class="py-20 text-center text-slate-500">Loading tutorials...</p>
     }
     else if (!grouped.Any())
     {
-        <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
-            <p class="text-slate-400 text-xl">No tutorials yet.</p>
+        <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+            <p class="text-xl text-slate-400">No tutorials yet.</p>
         </div>
     }
     else
     {
         @foreach (var group in grouped)
         {
-            <div class="mb-10">
-                <h2 class="text-xl font-bold text-slate-700 mb-4 pb-2 border-b border-slate-200">
-                    @group.Key.ToString()
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section class="mb-10">
+                <h2 class="mb-4 border-b border-slate-200 pb-2 text-xl font-bold text-slate-700">@group.Key.ToString()</h2>
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     @foreach (var t in group.Value)
                     {
-                        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                        <article class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
                             @if (!string.IsNullOrEmpty(t.YoutubeEmbedUrl))
                             {
                                 <div class="aspect-video">
                                     <iframe src="@t.YoutubeEmbedUrl"
-                                            class="w-full h-full"
+                                            class="h-full w-full"
                                             frameborder="0"
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowfullscreen></iframe>
                                 </div>
                             }
-                            <div class="p-4">
-                                <h3 class="font-bold text-slate-800 mb-1">@t.Title</h3>
-                                <p class="text-slate-500 text-sm">@t.Description</p>
+                            <div class="p-5">
+                                <h3 class="mb-1 text-base font-bold text-black" style="font-family:Montserrat, sans-serif;">@t.Title</h3>
+                                <p class="text-sm text-slate-600">@t.Description</p>
                                 <AuthorizeView Roles="President">
                                     <Authorized>
                                         <button @onclick="() => DeleteTutorial(t.Id)"
-                                                class="text-red-400 hover:text-red-600 text-xs mt-3 font-medium transition-colors">
+                                                class="mt-3 text-xs font-medium text-red-400 transition-colors hover:text-red-600">
                                             Delete
                                         </button>
                                     </Authorized>
                                 </AuthorizeView>
                             </div>
-                        </div>
+                        </article>
                     }
                 </div>
-            </div>
+            </section>
         }
     }
 </div>

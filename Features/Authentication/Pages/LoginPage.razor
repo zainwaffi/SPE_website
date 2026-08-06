@@ -4,57 +4,58 @@
 
 <PageTitle>Login — SPE Chapter</PageTitle>
 
-<div class="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-    <div class="w-full max-w-md">
-        <div class="text-center mb-8">
-            <span class="text-spe-blue font-extrabold text-4xl">SPE</span>
-            <p class="text-slate-500 mt-2">Sign in to your chapter account</p>
+<div class="flex min-h-[70vh] items-center justify-center px-4 py-16">
+    <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
+        <div class="mb-6 flex justify-center">
+            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-spe-cobalt">
+                <i class="fa fa-globe text-2xl text-white"></i>
+            </div>
         </div>
+        <h1 class="mb-1 text-center text-2xl font-extrabold text-black" style="font-family:Montserrat, sans-serif;">Welcome Back</h1>
+        <p class="mb-8 text-center text-sm text-slate-500">Sign in to your SPE member account</p>
 
-        <div class="bg-white rounded-2xl shadow-md p-8 border border-slate-200">
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-6">
-                    @errorMessage
-                </div>
-            }
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                @errorMessage
+            </div>
+        }
 
-            <EditForm Model="input" method="post" OnValidSubmit="HandleLogin" FormName="login">
-                <DataAnnotationsValidator />
-                <div class="flex flex-col gap-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Email</label>
-                        <InputText @bind-Value="input.Email" type="email"
-                                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue text-slate-800"
-                                   placeholder="you@example.com" autocomplete="email" />
-                        <ValidationMessage For="() => input.Email" class="text-red-500 text-xs mt-1" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
-                        <InputText @bind-Value="input.Password" type="password"
-                                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue text-slate-800"
-                                   placeholder="••••••••" autocomplete="current-password" />
-                        <ValidationMessage For="() => input.Password" class="text-red-500 text-xs mt-1" />
-                    </div>
-                    <button type="submit"
-                            class="w-full bg-spe-blue text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-colors mt-1">
-                        Sign In
-                    </button>
+        <EditForm Model="FormInput" method="post" OnValidSubmit="HandleLogin" FormName="login">
+            <DataAnnotationsValidator />
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-black" style="font-family:Montserrat, sans-serif;">Email Address</label>
+                    <InputText @bind-Value="FormInput.Email" type="email"
+                               class="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                               placeholder="you@example.com" autocomplete="email" />
+                    <ValidationMessage For="() => FormInput.Email" class="mt-1 text-xs text-red-500" />
                 </div>
-            </EditForm>
-        </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-black" style="font-family:Montserrat, sans-serif;">Password</label>
+                    <InputText @bind-Value="FormInput.Password" type="password"
+                               class="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                               placeholder="••••••••" autocomplete="current-password" />
+                    <ValidationMessage For="() => FormInput.Password" class="mt-1 text-xs text-red-500" />
+                </div>
+                <button type="submit" class="spe-primary-btn w-full py-3">
+                    Sign In
+                </button>
+            </div>
+        </EditForm>
     </div>
 </div>
 
 @code {
     [SupplyParameterFromForm(FormName = "login")]
-    private LoginInput input { get; set; } = new();
+    private LoginInput? input { get; set; }
 
     private string? errorMessage;
+    private LoginInput FormInput => input ??= new();
 
     private async Task HandleLogin()
     {
-        var result = await SignInManager.PasswordSignInAsync(input.Email, input.Password, false, false);
+        var result = await SignInManager.PasswordSignInAsync(FormInput.Email, FormInput.Password, false, false);
         if (result.Succeeded)
             NavigationManager.NavigateTo("/", true);
         else
