@@ -1,269 +1,137 @@
 # SPE Chapter Website
 
-A full-stack member portal and administrative dashboard for a local chapter of the **Society of Petroleum Engineers (SPE)**. Built with Blazor Server, ASP.NET Core Identity, EF Core, and Tailwind CSS.
+A full-stack web portal for a local chapter of the Society of Petroleum Engineers (SPE). The site gives the public a place to discover chapter activity and gives committee members and presidents a secure workspace for managing events, members, tasks, learning material, and opportunities.
 
----
+## What the website provides
 
-## Features
+### Public website
 
-- **Account Management** — Presidents create member accounts with auto-generated temp passwords; members change passwords on first login via dedicated Change Password page
-- **Event Management** — Public upcoming/past event calendars with Instagram embeds (official `embed.js` widget), clickable Google Maps location links, member ratings, and delete functionality
-- **Member Strike System** — President-initiated strike tracking with automated email notifications
-- **Task Assignment** — Assign tasks to members with deadlines, status tracking, and email alerts
-- **Role-Based Access** — Two access tiers: `CommitteeMember` (regular user), `President` (admin)
-- **Tutorial Hub** — YouTube SOP videos filtered by each member's committee role
-- **Opportunities Feed** — Searchable opportunity links with dedicated detail pages for each opportunity
-- **Member Profiles** — Strike history, assigned tasks, and profile pictures
-- **Admin Dashboard** — President creates accounts, manages members (edit/delete), assigns tasks, tracks strikes, views task calendar
+- A home page for the SPE chapter.
+- Upcoming and past event listings, with event details, locations, images, and Instagram embeds where supplied.
+- Event ratings and comments for completed events.
+- An opportunities board with full detail pages and links to external applications or resources.
 
----
+### Committee member portal
 
-## Tech Stack
+Authenticated committee members can:
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | ASP.NET Core / Blazor Server (.NET 10) |
-| Database | SQLite + EF Core 10.0.9 |
+- View their member profile, including committee role, strike count, and assigned tasks.
+- Track and update the status of assigned tasks.
+- Access a role-filtered tutorial hub containing YouTube standard-operating-procedure videos.
+- Create and manage events and opportunities.
+- Change their password securely after signing in.
+
+### President administration
+
+Presidents have all committee-member capabilities, plus an administration area for:
+
+- Creating, editing, and removing member accounts.
+- Assigning application roles (`President` or `CommitteeMember`) and committee positions.
+- Issuing strikes and viewing each member's strike count.
+- Assigning tasks with descriptions and deadlines.
+- Reviewing task deadlines in an interactive calendar.
+- Managing tutorials for committee roles.
+
+The system sends email notifications when a member account is created, a task is assigned, or a strike is added.
+
+## Access control
+
+| Audience | Access |
+|---|---|
+| Visitors | Home, events, and opportunities |
+| `CommitteeMember` | Member profile, tasks, tutorials, and content management |
+| `President` | All member features plus member administration and task calendar |
+
+Authentication and role-based authorisation are provided by ASP.NET Core Identity.
+
+## Technology
+
+| Area | Used technology |
+|---|---|
+| Application | ASP.NET Core 10 and Blazor Server |
+| Database | PostgreSQL, EF Core, and Npgsql |
 | Authentication | ASP.NET Core Identity |
-| Email | MailKit 4.17.0 |
-| CSS | Tailwind CSS 4.0 |
-| Build Tooling | Node.js / @tailwindcss/cli |
+| Styling | Tailwind CSS 4 |
+| Email | MailKit SMTP |
+| Front-end tooling | Node.js and the Tailwind CLI |
 
----
+## Architecture
 
-## Project Structure
+The application uses a vertical-slice structure: each business capability keeps its pages, models, and services together under `Features/`.
 
-```
-SPE_website/
-├── Components/             # Blazor layouts, error pages, root App
-│   ├── App.razor
-│   ├── Layout/             # MainLayout, NavMenu
-│   └── Pages/              # Home, Error, NotFound
-├── Data/                   # EF Core DbContext + models
-│   ├── AppDbContext.cs
-│   └── Models/
-│       ├── ApplicationUser.cs   # Extended IdentityUser
-│       └── Enums.cs             # CommitteeRole enum
-├── Features/               # Vertical slice feature modules
-│   ├── Authentication/     # Login, AccessDenied pages (SSR)
-│   ├── Events/             # Event CRUD, past/upcoming pages, ratings
-│   ├── MemberProfile/      # Profile page + service
-│   ├── Opportunities/      # External opportunity links
-│   ├── PresidentAdmin/     # Member dashboard, task calendar
-│   ├── Tasks/              # Task list + service
-│   └── Tutorials/          # Role-filtered YouTube tutorials
-├── Shared/                 # Email service + settings model
-├── Styles/                 # Tailwind input.css
-├── Migrations/             # EF Core migration files
-├── wwwroot/                # Static assets (tailwind.css, favicon)
-├── Program.cs              # App startup, DI, role seeding
-├── appsettings.json        # DB connection + email config
-└── SPE_website.csproj
+```text
+Features/
+  Authentication/     Sign-in, password management, and access-denied pages
+  Events/             Event listings, ratings, and event management
+  MemberProfile/      Member dashboard and profile data
+  Opportunities/      Opportunity listings and detail pages
+  PresidentAdmin/     Member management, strikes, task assignment, calendar
+  Tasks/              Task tracking and status updates
+  Tutorials/          Role-based video tutorial hub
+Data/                 DbContext, Identity user model, and committee-role enum
+Shared/               Reusable services, including email delivery
+Components/           Application shell, layouts, navigation, and common pages
+Styles/               Tailwind source styles and SPE design tokens
 ```
 
----
+The SPE visual identity is implemented through Tailwind tokens for SPE Blue (`#003DA5`) and SPE Gold (`#F4A300`).
 
-## Routes & Access
-
-| Route | Access | Page |
-|-------|--------|------|
-| `/` | Public | Home |
-| `/login` | Public | Login |
-| `/change-password` | Authenticated | Change Password |
-| `/events/upcoming` | Public | Upcoming Events |
-| `/events/past` | Public | Past Events |
-| `/opportunities` | Public | Opportunities List |
-| `/opportunities/{id}` | Public | Opportunity Details |
-| `/profile` | Authenticated | Member Profile |
-| `/tasks` | Authenticated | My Tasks |
-| `/tutorials` | Authenticated | Tutorial Hub |
-| `/admin/members` | President only | Member Dashboard (create/edit/delete members, assign tasks, add strikes) |
-| `/admin/tasks` | President only | Task Calendar |
-
----
-
-## Event Management
-
-### Creating Events (Members & Admins)
-
-Members and admins navigate to `/events/upcoming` and click **"+ Add Event"** to create a new event by providing:
-1. **Date & Time** — When the event occurs
-2. **Google Maps Link** — Clickable location link that opens in a new tab
-3. **Instagram Post URL** — Direct link to the Instagram post (e.g., `https://www.instagram.com/p/XXXX/`) for embedding
-
-Events are auto-titled based on the date and displayed in a grid view. Instagram embeds are rendered using Instagram's official `embed.js` widget.
-
-### Viewing Events
-
-- **Upcoming Events** (`/events/upcoming`) — Shows future events with full Instagram embed and clickable location links
-- **Past Events** (`/events/past`) — Shows completed events, also with embeds and location links; members can rate events with stars and comments
-
-### Managing Events (Members & Admins)
-
-Both members and admins can:
-- **Delete events** — Delete button appears in the top-right corner of each event card (red text, hover enabled)
-- **View location** — Click the 📍 location badge to open the Google Maps link in a new tab
-- **See Instagram embed** — Full Instagram post embed displays on each event card
-
----
-
-## Opportunities Management
-
-### Viewing Opportunities
-
-Members navigate to `/opportunities` to browse a list of SPE-related opportunities. Each opportunity card shows:
-- Title and description preview (truncated to 3 lines)
-- "View Details →" link to navigate to the full opportunity page
-
-### Opportunity Details (`/opportunities/{id}`)
-
-Clicking an opportunity card navigates to its dedicated detail page showing:
-- Full title and description
-- "Visit External Link →" button (if an external URL is configured)
-- "Back to Opportunities" navigation link
-
-### Managing Opportunities (Members & Admins)
-
-Both members and admins can:
-- **Create opportunities** — Click "+ Add" on `/opportunities` to add new opportunity links
-- **Delete opportunities** — Delete button (red text) appears on each card; uses `@onclick:stopPropagation` to prevent navigation to detail page
-- **Edit opportunity details** — Full description visible on dedicated detail page
-
----
-
-## Member Account Management
-
-### Creating Member Accounts (Admin Only)
-
-Presidents navigate to `/admin/members` and click **"+ Add Member"** to:
-1. Enter member name, email, and role (`President` or `CommitteeMember`)
-2. Assign a committee position (optional)
-3. The system generates a secure temporary password
-4. **On first use**: A success modal displays the email & temp password for the admin to share
-5. Member logs in at `/login` with email + temp password
-
-**Password Generation:** Temporary passwords are 10 characters (letters + digits), guaranteed to satisfy the policy: 8+ characters, at least one digit.
-
-**Email Configuration:** If SMTP is configured in `appsettings.json`, the temp password is also sent via email. If SMTP is not configured, admins must manually share the password displayed in the success modal.
-
-### Managing Members (Admin Only)
-
-From the member table on `/admin/members`, admins can:
-
-| Action | Button | Effect |
-|--------|--------|--------|
-| **Add Strike** | `+ Strike` | Increment strike count, email member notification |
-| **Assign Task** | `Assign Task` | Create task with title, description, deadline; email member |
-| **Edit Member** | `Edit` | Update name, email, committee position, identity role; prevents self-deletion |
-| **Delete Member** | `Delete` | Permanently remove member account; hidden for current logged-in admin (self-protection) |
-
-### Password Management (All Users)
-
-Members who receive temporary passwords (or anyone logged in) can change their password by:
-1. Clicking **"Change Password"** in the navigation bar
-2. Entering current password + new password (with confirmation)
-3. Password must be 8+ characters with at least one digit
-4. On success, they're redirected to home
-
----
-
-## Data Models
-
-- **ApplicationUser** — Extends `IdentityUser` with `FullName`, `StrikeCount`, `ProfilePictureUrl`, `CommitteeRole`
-- **Event** — Title, description, date, location (Google Maps link), `InstagramEmbedUrl`, `ImageUrl`, `IsUpcoming` flag; has many `EventRating`; supports ratings with star scores and comments
-- **EventRating** — Stars (1-5) + optional comment, linked to an event
-- **TaskItem** — Title, description, deadline, `AssignmentStatus` (Processing / Completed / Failed), assigned user
-- **Opportunity** — Title, description, optional external URL; each opportunity has a dedicated detail page
-- **Tutorial** — Title, YouTube embed URL, filtered by `CommitteeRole`
-
-**CommitteeRole enum:** `None`, `President`, `VP`, `Secretary`, `Treasurer`, `EventsCoordinator`, `TechnicalDirector`, `MediaCoordinator`, `OutreachCoordinator`
-
----
-
-## Setup & Development
+## Run locally
 
 ### Prerequisites
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js](https://nodejs.org/) (for Tailwind CSS build)
+- .NET 10 SDK
+- Node.js and npm
+- A PostgreSQL database
 
-### Install & Run
+### Setup
 
 ```bash
-# Install Tailwind CLI
+# Install the Tailwind CLI dependencies
 npm install
 
-# Build CSS
+# Create the production CSS
 npm run build:css
 
-# Apply database migrations
+# Configure a PostgreSQL connection and SMTP settings, then apply migrations
 dotnet ef database update
 
 # Run the application
 dotnet run
 ```
 
-App runs at:
-- HTTP: `http://localhost:5169`
-- HTTPS: `https://localhost:7256`
-
-### CSS Watch Mode (Development)
+For CSS development, keep Tailwind running in watch mode:
 
 ```bash
 npm run watch:css
 ```
 
-### Database Migrations
+## Configuration
+
+Configure the following settings outside source control (for example, with user secrets or environment variables):
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=<host>;Port=5432;Database=<database>;Username=<username>;Password=<password>"
+  },
+  "EmailSettings": {
+    "SmtpHost": "<smtp-host>",
+    "SmtpPort": 587,
+    "Username": "<username>",
+    "Password": "<password>",
+    "From": "<sender-email>"
+  }
+}
+```
+
+Never commit real database credentials, SMTP passwords, or default administrator credentials.
+
+## Database migrations
 
 ```bash
 dotnet ef migrations add <MigrationName>
 dotnet ef database update
 ```
 
----
-
-## Configuration
-
-Edit `appsettings.json` to configure the database connection and email settings:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=spe.db"
-  },
-  "EmailSettings": {
-    "SmtpHost": "<your-smtp-host>",
-    "SmtpPort": 587,
-    "Username": "<your-username>",
-    "Password": "<your-password>",
-    "From": "noreply@spe-chapter.com"
-  }
-}
-```
-
-Email notifications are sent via **MailKit** when:
-- A strike is added to a member
-- A task is assigned to a member
-
----
-
-## Branding
-
-Custom Tailwind tokens:
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| SPE Blue | `#003DA5` | Primary color |
-| SPE Gold | `#F4A300` | Accent color |
-
----
-
-## Architecture Notes
-
-The project follows a **vertical slice architecture** — each feature (`Events`, `Tasks`, `Tutorials`, etc.) contains its own models, pages, and service, co-located under `Features/`. Shared infrastructure (email, auth) lives in `Shared/` and `Data/`.
-
-See `AGENTS.md` for full architecture documentation, RBAC matrix, and coding conventions.
-
-
-## Notes for me
-remember to change the database later to postgressql or to find other than sqlite
+On startup, the app applies pending migrations and ensures the `President` and `CommitteeMember` roles exist.
