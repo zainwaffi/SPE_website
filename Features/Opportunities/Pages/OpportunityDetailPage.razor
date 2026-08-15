@@ -1,5 +1,6 @@
 @page "/opportunities/{id:int}"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @inject OpportunityService OppSvc
 @inject NavigationManager Nav
 

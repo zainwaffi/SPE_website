@@ -1,0 +1,12 @@
+{
+  "name": "spe-website",
+  "version": "1.0.0",
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i ./Styles/input.css -o ./wwwroot/tailwind.css",
+    "watch:css": "npx @tailwindcss/cli -i ./Styles/input.css -o ./wwwroot/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.2",
+    "tailwindcss": "^4.0.0"
+  }
+}

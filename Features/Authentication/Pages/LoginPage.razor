@@ -1,5 +1,6 @@
 @page "/login"
-@inject SignInManager<ApplicationUser> SignInManager
+@using SPE_website.Features.Authentication.Services
+@inject OpenWaterAuthService OpenWaterAuthService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Login — SPE Chapter</PageTitle>
@@ -12,13 +13,20 @@
             </div>
         </div>
         <h1 class="mb-1 text-center text-2xl font-extrabold text-black" style="font-family:Montserrat, sans-serif;">Welcome Back</h1>
-        <p class="mb-8 text-center text-sm text-slate-500">Sign in to your SPE member account</p>
+        <p class="mb-8 text-center text-sm text-slate-500">Sign in with your SPE email</p>
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
             <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 @errorMessage
             </div>
+        }
+        @if (showJoinSpeOption)
+        {
+            <a href="@OpenWaterAuthService.JoinSpeUrl" target="_blank" rel="noopener noreferrer"
+               class="mb-6 block rounded-lg border border-spe-cobalt/30 bg-spe-cobalt/5 px-4 py-3 text-center text-sm font-semibold text-spe-cobalt hover:bg-spe-cobalt/10">
+                Join SPE Membership
+            </a>
         }
 
         <EditForm Model="FormInput" method="post" OnValidSubmit="HandleLogin" FormName="login">
@@ -31,13 +39,6 @@
                                placeholder="you@example.com" autocomplete="email" />
                     <ValidationMessage For="() => FormInput.Email" class="mt-1 text-xs text-red-500" />
                 </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-black" style="font-family:Montserrat, sans-serif;">Password</label>
-                    <InputText @bind-Value="FormInput.Password" type="password"
-                               class="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
-                               placeholder="••••••••" autocomplete="current-password" />
-                    <ValidationMessage For="() => FormInput.Password" class="mt-1 text-xs text-red-500" />
-                </div>
                 <button type="submit" class="spe-primary-btn w-full py-3">
                     Sign In
                 </button>
@@ -47,19 +48,45 @@
 </div>
 
 @code {
-    [SupplyParameterFromForm(FormName = "login")]
-    private LoginInput? input { get; set; }
+    [SupplyParameterFromForm(FormName = "login", Name = nameof(FormInput))]
+    private LoginInput? postedFormInput { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
 
     private string? errorMessage;
-    private LoginInput FormInput => input ??= new();
+    private bool showJoinSpeOption;
+    private LoginInput FormInput { get; set; } = new();
+
+    protected override void OnParametersSet()
+    {
+        if (postedFormInput is not null)
+            FormInput = postedFormInput;
+    }
 
     private async Task HandleLogin()
     {
-        var result = await SignInManager.PasswordSignInAsync(FormInput.Email, FormInput.Password, false, false);
+        showJoinSpeOption = false;
+        var result = await OpenWaterAuthService.LoginWithEmailAsync(FormInput.Email);
         if (result.Succeeded)
-            NavigationManager.NavigateTo("/", true);
+            NavigationManager.NavigateTo(SafeReturnUrl(), true);
         else
-            errorMessage = "Invalid email or password.";
+        {
+            errorMessage = result.Error ?? "Unable to sign in with this email.";
+            showJoinSpeOption = result.ShowJoinSpeOption;
+        }
+    }
+
+    // Only ever return to a path on this site, never to an absolute/external URL.
+    private string SafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl))
+            return "/";
+
+        if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//") || ReturnUrl.StartsWith("/\\"))
+            return "/";
+
+        return ReturnUrl;
     }
 
     private sealed class LoginInput
@@ -68,7 +95,5 @@
         [System.ComponentModel.DataAnnotations.EmailAddress]
         public string Email { get; set; } = "";
 
-        [System.ComponentModel.DataAnnotations.Required]
-        public string Password { get; set; } = "";
     }
 }

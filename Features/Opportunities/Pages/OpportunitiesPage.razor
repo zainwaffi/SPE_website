@@ -1,5 +1,6 @@
 @page "/opportunities"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @inject OpportunityService OppSvc
 @inject NavigationManager Nav
 
@@ -12,11 +13,17 @@
             <h1 class="spe-page-title">Jobs & Internships</h1>
             <p class="mt-2 text-sm text-slate-600">Curated opportunities from leading energy companies.</p>
         </div>
-        <AuthorizeView Roles="CommitteeMember,President">
+        <AuthorizeView Roles="CommitteeMember,TeamLeader">
             <Authorized>
                 <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add</button>
             </Authorized>
         </AuthorizeView>
+    </div>
+
+    <div class="mb-6">
+        <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+               placeholder="Search opportunities by title or description..."
+               @bind="searchQuery" @bind:event="oninput" />
     </div>
 
     @if (showForm)
@@ -42,17 +49,16 @@
     {
         <p class="py-20 text-center text-slate-500">Loading...</p>
     }
-    else if (opportunities.Count == 0)
+    else if (!FilteredOpportunities.Any())
     {
         <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
-            <p class="text-xl font-medium text-slate-400">No opportunities posted yet.</p>
-            <p class="mt-2 text-sm text-slate-400">Check back soon for SPE opportunities.</p>
+            <p class="text-xl font-medium text-slate-400">No opportunities match your search.</p>
         </div>
     }
     else
     {
         <div class="space-y-4">
-            @foreach (var opp in opportunities)
+            @foreach (var opp in FilteredOpportunities)
             {
                 <article class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md" @onclick="() => GoToDetail(opp.Id)">
                     <div class="flex items-start justify-between gap-4">
@@ -61,7 +67,7 @@
                             <p class="mb-3 line-clamp-3 text-slate-600">@opp.Description</p>
                             <span class="text-sm font-semibold text-spe-cobalt">View Details →</span>
                         </div>
-                        <AuthorizeView Roles="CommitteeMember,President">
+                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
                             <Authorized>
                                 <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
                                         class="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-600">
@@ -82,6 +88,14 @@
     private string newTitle = "";
     private string newDescription = "";
     private string newUrl = "";
+    private string searchQuery = "";
+
+    private IEnumerable<Opportunity> FilteredOpportunities =>
+        opportunities?.Where(opp =>
+            string.IsNullOrWhiteSpace(searchQuery) ||
+            opp.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+            opp.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+        ?? Enumerable.Empty<Opportunity>();
 
     protected override async Task OnInitializedAsync() =>
         opportunities = await OppSvc.GetAllAsync();

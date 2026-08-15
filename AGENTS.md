@@ -9,7 +9,7 @@ SPE_website/
 ├── Data/
 │   ├── AppDbContext.cs          ← EF Core DbContext (extends IdentityDbContext<ApplicationUser>)
 │   └── Models/
-│       ├── ApplicationUser.cs   ← IdentityUser + StrikeCount, CommitteeRole, ProfilePictureUrl
+│       ├── ApplicationUser.cs   ← IdentityUser + StrikeCount, CommitteeRole
 │       └── Enums.cs             ← CommitteeRole enum
 ├── Features/
 │   ├── Events/                  ← Models, Services, Pages for upcoming + past events + ratings

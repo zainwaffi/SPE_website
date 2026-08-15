@@ -1,13 +1,16 @@
 @page "/admin/calendar"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "President")]
+@attribute [Authorize(Roles = "TeamLeader")]
 @inject AdminService AdminSvc
 
 <PageTitle>Task Calendar — SPE Admin</PageTitle>
 
+<AuthorizeView Roles="TeamLeader">
+<Authorized>
+
 <div class="max-w-5xl mx-auto px-6 py-12">
-    <h1 class="text-3xl font-bold text-spe-blue mb-2">Task Calendar</h1>
-    <p class="text-slate-500 mb-10">Click a date to assign a task to a committee member.</p>
+    <h1 class="text-3xl font-bold text-spe-gold mb-2">Task Calendar</h1>
+    <p class="text-white text-lg mb-10">Click a date to assign a task to a committee member.</p>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6">
@@ -74,7 +77,7 @@
                             {
                                 @foreach (var m in members)
                                 {
-                                    <option value="@m.Id">@m.FullName (@m.CommitteeRole)</option>
+                                    <option value="@m.Id">@m.FullName (@m.CommitteeTitle)</option>
                                 }
                             }
                         </select>
@@ -86,12 +89,35 @@
                     @if (!string.IsNullOrEmpty(successMessage))
                     {
                         <p class="text-green-600 text-sm font-medium text-center">@successMessage</p>
+                        @if (notification is not null && !notification.Sent)
+                        {
+                            <p class="text-amber-700 text-xs text-center">
+                                The member was <strong>not</strong> notified by email: @notification.Error
+                            </p>
+                        }
+                        else if (notification is not null)
+                        {
+                            <p class="text-slate-500 text-xs text-center">A notification email was sent to the member.</p>
+                        }
                     }
                 </div>
             }
         </div>
     </div>
 </div>
+
+</Authorized>
+<NotAuthorized>
+    <div class="max-w-md mx-auto px-6 py-20 text-center">
+        <h1 class="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
+        <p class="text-slate-600 mb-6">You do not have permission to access the task calendar.</p>
+        <p class="text-slate-500 mb-8">Only Team Leaders can manage the task calendar.</p>
+        <a href="/" class="inline-block bg-spe-blue text-white px-6 py-2.5 rounded-lg hover:bg-blue-800 transition-colors font-semibold">
+            Return to Home
+        </a>
+    </div>
+</NotAuthorized>
+</AuthorizeView>
 
 @code {
     private DateTime currentDate = DateTime.Today;
@@ -101,6 +127,7 @@
     private string taskTitle = "";
     private string taskDescription = "";
     private string successMessage = "";
+    private EmailResult? notification;
 
     private int firstDayOffset => (int)new DateTime(currentDate.Year, currentDate.Month, 1).DayOfWeek;
     private int daysInMonth => DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
@@ -112,6 +139,7 @@
     {
         selectedDate = date;
         taskTitle = taskDescription = selectedUserId = successMessage = "";
+        notification = null;
     }
 
     private void PrevMonth() => currentDate = currentDate.AddMonths(-1);
@@ -120,7 +148,8 @@
     private async Task AssignTask()
     {
         if (string.IsNullOrWhiteSpace(taskTitle) || string.IsNullOrWhiteSpace(selectedUserId) || selectedDate is null) return;
-        await AdminSvc.AssignTaskAsync(selectedUserId, taskTitle, taskDescription, selectedDate.Value);
+        var (_, emailResult) = await AdminSvc.AssignTaskAsync(selectedUserId, taskTitle, taskDescription, selectedDate.Value);
+        notification = emailResult;
         successMessage = "Task assigned successfully!";
         taskTitle = taskDescription = selectedUserId = "";
     }

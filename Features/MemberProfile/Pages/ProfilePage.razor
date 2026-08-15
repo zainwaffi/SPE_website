@@ -1,6 +1,6 @@
 @page "/profile"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "CommitteeMember,President")]
+@attribute [Authorize(Roles = "CommitteeMember,TeamLeader")]
 @inject ProfileService ProfileSvc
 @inject AuthenticationStateProvider AuthState
 
@@ -22,24 +22,22 @@
             <aside class="md:col-span-1">
                 <section class="spe-card overflow-hidden border-slate-200">
                     <div class="p-6 text-center bg-spe-cobalt">
-                        @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
-                        {
-                            <img src="@user.ProfilePictureUrl" alt="Profile" class="mx-auto mb-3 h-16 w-16 rounded-full border-4 border-white/30 object-cover" />
-                        }
-                        else
-                        {
-                            <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/30 bg-white/20 text-xl font-bold text-white">
-                                @(user.FullName.Length > 0 ? user.FullName[0].ToString().ToUpper() : "?")
-                            </div>
-                        }
+                        <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/30 bg-white/20 text-xl font-bold text-white">
+                            @(user.FullName.Length > 0 ? user.FullName[0].ToString().ToUpper() : "?")
+                        </div>
                         <p class="text-sm font-bold text-white" style="font-family:Montserrat, sans-serif;">@user.FullName</p>
                         <p class="mt-0.5 text-xs text-white/70">@user.Email</p>
                     </div>
                     <div class="space-y-2 p-4">
-                        <span class="inline-block rounded-full bg-spe-cobalt/10 px-3 py-1 text-xs font-semibold text-spe-cobalt">@user.CommitteeRole</span>
-                        <div>
-                            <a href="/change-password" class="text-sm font-semibold text-spe-cobalt hover:underline">Change Password</a>
-                        </div>
+                        <span class="inline-block rounded-full bg-spe-cobalt/10 px-3 py-1 text-xs font-semibold text-spe-cobalt">@user.CommitteeTitle</span>
+                        @if (!string.IsNullOrWhiteSpace(user.OpenWaterMemberId))
+                        {
+                            <p class="text-xs text-slate-500">Member ID: @user.OpenWaterMemberId</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(user.OpenWaterOrganization))
+                        {
+                            <p class="text-xs text-slate-500">@user.OpenWaterOrganization</p>
+                        }
                     </div>
                 </section>
             </aside>

@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
+    @* Warms the TLS handshake to Instagram's hosts so the first lazily-loaded
+       embed doesn't pay for connection setup on top of its own download. *@
+    <link rel="preconnect" href="https://www.instagram.com" />
+    <link rel="preconnect" href="https://scontent.cdninstagram.com" crossorigin />
     <link rel="stylesheet" href="tailwind.css" />
     <link rel="stylesheet" href="@Assets["SPE_website.styles.css"]" />
     <ImportMap />
@@ -19,7 +23,7 @@
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="js/instagram-embed.js"></script>
-    <script async src="https://www.instagram.com/embed.js"></script>
+    <script src="js/animations.js"></script>
 </body>
 
 </html>

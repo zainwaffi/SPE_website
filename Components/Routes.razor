@@ -1,6 +1,29 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+@using SPE_website.Components.Shared
+
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated is not true)
+                {
+                    <RedirectToLogin />
+                }
+                else
+                {
+                    <div class="spe-page-shell md:max-w-180">
+                        <p class="spe-page-kicker">Access denied</p>
+                        <h1 class="spe-page-title">You don't have access to this page</h1>
+                        <p class="mt-2 text-sm text-slate-600">
+                            Your account is signed in, but it doesn't have the permissions needed for this page.
+                        </p>
+                        <a href="/" class="spe-primary-btn mt-6 inline-block">Back to Home</a>
+                    </div>
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <p class="py-20 text-center text-slate-500">Checking access...</p>
+            </Authorizing>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>

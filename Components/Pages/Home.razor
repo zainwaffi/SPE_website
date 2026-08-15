@@ -1,163 +1,226 @@
 @page "/"
+@rendermode InteractiveServer
+@attribute [AllowAnonymous]
+@using SPE_website.Components.Shared
 
 <PageTitle>SPE Chapter — Home</PageTitle>
 
-<section class="relative flex min-h-[600px] items-center justify-center overflow-hidden px-6 text-center">
+
+<!-- hero section -->
+
+<FadeUp Duration="700" class="relative flex min-h-150 items-center justify-center overflow-hidden px-6 text-center">
     <div class="absolute inset-0 bg-gradient-to-br from-spe-cobalt/60 via-spe-cobalt/20 to-transparent"></div>
     <div class="relative z-10 mx-auto max-w-3xl">
-        <p class="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-white/70" style="font-family:'Roboto Mono', monospace;">
+        <p class="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-white/70"
+           style="font-family:'Roboto Mono', monospace;">
             Society of Petroleum Engineers — Student Chapter
         </p>
-        <h1 class="mb-6 text-4xl font-extrabold leading-tight text-white md:text-6xl" style="font-family:Montserrat, sans-serif;">
+        <h1 class="mb-6 text-4xl font-extrabold leading-tight text-white md:text-6xl"
+            style="font-family:Montserrat, sans-serif;">
             Solutions.<br />People. Energy.
         </h1>
         <p class="mb-8 text-base leading-relaxed text-white/85 md:text-lg">
-            Members gain access to premier programs, content, events, and a dynamic global network designed to accelerate professional growth.
+            To empower students with the knowledge, skills, and connections they need to thrive in the energy industry
+            while promoting a culture of safety, responsibility, and sustainability.
         </p>
         <div class="flex flex-col justify-center gap-4 sm:flex-row">
-            <a href="/events/upcoming" class="rounded border-2 border-white px-7 py-3 text-sm font-bold text-white transition-colors hover:bg-white hover:text-spe-cobalt" style="font-family:Montserrat, sans-serif;">
-                Our Story
+            <a href="/events"
+               class="rounded border-2 border-white px-7 py-3 text-sm font-bold text-white transition-colors hover:bg-white hover:text-spe-cobalt"
+               style="font-family:Montserrat, sans-serif;">
+                Our Events
             </a>
-            <a href="https://www.spe.org/en/membership/" target="_blank" rel="noopener noreferrer" class="spe-gold-btn px-7 py-3">
-                Join / Renew
-            </a>
+
+            <AuthorizeView>
+                <NotAuthorized>
+                    <a href="https://www.spe.org/en/join/" target="_blank" rel="noopener noreferrer"
+                       class="spe-gold-btn px-7 py-3">
+                        Join SPE
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+
         </div>
     </div>
-</section>
+</FadeUp>
 
-<section class="spe-page-shell md:max-w-[1200px]">
+<!-- about us section -->
+
+<FadeUp class="spe-page-shell md:max-w-300">
     <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         <div>
-            <p class="spe-page-kicker">01 — About Us</p>
+            <h1 class="spe-page-kicker">—About Us—</h1>
             <h2 class="mb-6 text-3xl font-extrabold text-black md:text-4xl" style="font-family:Montserrat, sans-serif;">
-                Delivering Solutions and Empowering People to Drive the Energy Industry Forward
+                the world's largest community dedicated to the oil, gas, and energy industry
             </h2>
             <p class="mb-4 text-slate-700">
-                The SPE Student Chapter at the University of Aberdeen is your direct connection to the Society of Petroleum Engineers.
+                The SPE Student Chapter at the University of Aberdeen is your direct connection to the Society of
+                Petroleum Engineers. We serve as the link between students and SPE International ensuring our members
+                are aware of the many opportunities available.
             </p>
             <p class="mb-6 text-slate-700">
-                We connect students to technical lectures, networking opportunities, competitions, and professional development pathways.
+                We introduce students to the industry and guide them toward the wealth of opportunities SPE offers. From
+                technical lectures, international competitions, and networking events to publishing papers, pursuing
+                chartership, and applying for scholarships through SPE International, we make sure our members are well
+                informed and well prepared to take full advantage of what SPE has to offer.
             </p>
             <div class="flex flex-wrap gap-3">
-                <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-primary-btn">Join Now</a>
-                <a href="/events/upcoming" class="spe-gold-btn">Find Out More</a>
-            </div>
-        </div>
-        <div class="relative">
-            <div class="aspect-[4/3] overflow-hidden rounded-xl shadow-2xl">
-                <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=600&fit=crop&auto=format"
-                     alt="Petroleum engineers"
-                     class="h-full w-full object-cover" />
-            </div>
-            <div class="absolute -bottom-6 -left-6 rounded-xl bg-spe-cobalt p-5 shadow-xl">
-                <p class="text-3xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">500+</p>
-                <p class="mt-1 text-xs text-white/80">Student and professional connections</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-[1200px]">
-    <div class="px-6 lg:px-8">
-        <div class="mb-10 text-center">
-            <p class="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-white/70" style="font-family:'Roboto Mono', monospace;">02 — Why Join Us</p>
-            <h2 class="mb-3 text-3xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">Our Members Work At</h2>
-        </div>
-        <div class="mb-12 flex flex-wrap justify-center gap-3">
-            @foreach (var company in Companies)
-            {
-                <span class="rounded-lg bg-white/15 px-5 py-2.5 text-sm font-bold text-white/90" style="font-family:Montserrat, sans-serif;">@company</span>
-            }
-        </div>
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <article class="rounded-xl bg-white/10 p-6">
-                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i class="fa fa-trophy"></i></div>
-                <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Technical Excellence</h3>
-                <p class="text-sm text-white/75">Access to technical resources, journals, publications, and practical chapter activities.</p>
-            </article>
-            <article class="rounded-xl bg-white/10 p-6">
-                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i class="fa fa-users"></i></div>
-                <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Professional Network</h3>
-                <p class="text-sm text-white/75">Connect with peers and industry experts across local, regional, and global SPE communities.</p>
-            </article>
-            <article class="rounded-xl bg-white/10 p-6">
-                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i class="fa fa-book"></i></div>
-                <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Career Development</h3>
-                <p class="text-sm text-white/75">Gain visibility into internships, graduate roles, mentorship, and speaker-led learning pathways.</p>
-            </article>
-        </div>
-    </div>
-</section>
-
-<section class="spe-page-shell md:max-w-[1200px]">
-    <div class="mb-12 text-center">
-        <p class="spe-page-kicker">03 — Our Team</p>
-        <h2 class="text-3xl font-extrabold text-black" style="font-family:Montserrat, sans-serif;">Meet the Committee</h2>
-    </div>
-    <div class="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
-        @foreach (var member in TeamMembers)
-        {
-            <article class="text-center">
-                <div class="mb-3 aspect-square overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-                    <img src="@member.ImageUrl" alt="@member.Name" class="h-full w-full object-cover" />
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-primary-btn">Join
+                            Now</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+                    <a href="/events" class="spe-gold-btn">Find Out More</a>
                 </div>
-                <h3 class="text-sm font-bold text-black" style="font-family:Montserrat, sans-serif;">@member.Name</h3>
-                <p class="mt-1 text-xs text-spe-endeavor">@member.Role</p>
-            </article>
-        }
-    </div>
-</section>
-
-<section class="mx-4 mb-0 mt-6 rounded-2xl bg-slate-50/95 py-16 backdrop-blur md:mx-auto md:max-w-[1200px]">
-    <div class="px-6 lg:px-8">
-        <div class="mb-10 flex items-end justify-between gap-4">
-            <div>
-                <p class="spe-page-kicker">04 — Latest</p>
-                <h2 class="text-2xl font-extrabold text-black" style="font-family:Montserrat, sans-serif;">JPT Spotlight: Insights That Matter</h2>
             </div>
-            <a href="https://www.spe-aberdeen.org/news" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-spe-cobalt hover:opacity-80">View all →</a>
+            <div class="relative">
+                <div class="aspect-4/3 overflow-hidden rounded-xl shadow-2xl">
+                    <img src="/images/student-chapter.jpeg" alt="Petroleum engineers" class="h-full w-full object-cover" />
+                </div>
+                <div class="absolute -bottom-6 -left-6 rounded-xl bg-spe-cobalt p-5 shadow-xl">
+                    <p class="text-3xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">360+</p>
+                    <p class="mt-1 text-xs text-white/80">Student Chapter Around the World</p>
+                </div>
+            </div>
         </div>
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-            @foreach (var item in NewsItems)
-            {
-                <article class="spe-card overflow-hidden border-slate-200">
-                    <div class="h-36 overflow-hidden">
-                        <img src="@item.ImageUrl" alt="@item.Category" class="h-full w-full object-cover" />
-                    </div>
-                    <div class="p-5">
-                        <p class="mb-2 text-xs font-bold uppercase tracking-wider text-spe-gold" style="font-family:'Roboto Mono', monospace;">@item.Category</p>
-                        <h3 class="mb-3 text-sm font-bold leading-snug text-spe-cobalt" style="font-family:Montserrat, sans-serif;">@item.Title</h3>
-                        <p class="text-xs text-slate-500">@item.Date</p>
-                    </div>
-                </article>
-            }
-        </div>
-    </div>
-</section>
+    </FadeUp>
+
+
+    <!-- why join us section -->
+    <FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-[1200px]">
+        <div class="px-6 lg:px-8">
+            <div class="mb-10 text-center">
+                <h1 class="spe-page-kicker text-spe-gold">—Why Join Us—</h1>
+                <h2 class="mb-3 text-3xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">Our
+                    contributors and patrons
+                </h2>
+            </div>
+            <div class="mb-12 flex flex-wrap justify-center gap-3 ">
+                @foreach (var company in Companies)
+                {
+                    <span
+                    class="rounded-lg bg-white/15 px-5 py-2.5 text-sm font-bold text-white/90 transition-colors hover:bg-amber-500 hover:text-spe-ink"
+                    style="font-family:Montserrat, sans-serif;">@company</span>
+                }
+            </div>
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <article class="rounded-xl bg-white/10 p-6">
+                    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
+                        class="fa fa-gear fa-lg"></i></div>
+                        <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Technical
+                            Excellence</h3>
+                            <p class="text-sm text-white/75">Access to technical resources, journals, publications, and practical
+                                chapter activities.</p>
+                            </article>
+                            <article class="rounded-xl bg-white/10 p-6">
+                                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
+                                    class="fa fa-users fa-lg"></i></div>
+                                    <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Professional
+                                        Network</h3>
+                                        <p class="text-sm text-white/75">Connect with peers and industry experts across local, regional, and
+                                            global SPE communities.</p>
+                                        </article>
+                                        <article class="rounded-xl bg-white/10 p-6">
+                                            <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
+                                                class="fa fa-book fa-lg"></i></div>
+                                                <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Career
+                                                    Development</h3>
+                                                    <p class="text-sm text-white/75">Gain visibility into internships, graduate roles, mentorship, and
+                                                        speaker-led learning pathways.</p>
+                                                    </article>
+                                                </div>
+                                            </div>
+                                        </FadeUp>
+
+                                        <!-- our team section -->
+                                        <FadeUp class="spe-page-shell md:max-w-300">
+                                            <div class="mb-12 text-center">
+                                                <h1 class="spe-page-kicker">—Our Team—</h1>
+                                                <h2 class="text-3xl font-extrabold text-black" style="font-family:Montserrat, sans-serif;">Meet the Committee
+                                                </h2>
+                                            </div>
+                                            <div class="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-4">
+                                                @foreach (var member in TeamMembers)
+                                                {
+                                                    <article class="w-56 flex-none snap-start text-center md:w-[calc((100%-3rem)/3)]">
+                                                        <div class="mb-3 aspect-square overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                                                            <img src="@member.ImageUrl" alt="@member.Name" class="h-full w-full object-cover" />
+                                                        </div>
+                                                        <h3 class="text-sm font-bold text-black" style="font-family:Montserrat, sans-serif;">@member.Name</h3>
+                                                        <p class="mt-1 text-xs text-spe-endeavor">@member.Role</p>
+                                                    </article>
+                                                }
+                                            </div>
+                                        </FadeUp>
+
+                                        <!-- Chapter Achievements section -->
+                                        <FadeUp class="mx-4 mb-0 mt-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-[1200px]">
+                                            <div class="px-6 lg:px-8">
+                                                <div class="mb-10 flex items-end justify-between gap-4">
+                                                    <div>
+                                                        <h1 class="spe-page-kicker text-spe-gold">—Chapter Achievements—</h1>
+                                                        <h2 class="text-2xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">
+                                                            Awards And Recognitions</h2>
+                                                        </div>
+
+                                                    </div>
+                                                    <article class="rounded-xl bg-white/10 p-6">
+                                                        <!-- Achievement 1 -->
+                                                        @foreach (var achievement in Achievements)
+                                                        {
+                                                            <div class="flex flex-row gap-2 items-center mb-4">
+                                                                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
+                                                                    class="fa fa-trophy"></i>
+                                                                </div>
+                                                                <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">@achievement
+                                                                </h3>
+                                                            </div>
+                                                        }
+
+                                                    </article>
+                                                    <div class="mt-6 text-center">
+                                                        <p class="mb-3 text-sm text-white/80">Learn more about SPE chapters' achievements and awards.</p>
+                                                        <a href="https://www.spe.org/en/awards/nominator-and-recipient-stories/" target="_blank"
+                                                           rel="noopener noreferrer" class="spe-primary-btn">Find Out More</a>
+                                                
+                                                    </div>
+                                                </div>
+                                                </FadeUp>
 
 @code {
     private static readonly string[] Companies =
     [
-        "Saudi Aramco", "ExxonMobil", "Shell", "Chevron", "BP", "TotalEnergies", "Halliburton", "SLB"
+        "BP", "Equinor", "SLB", "Halliburton", "Hydrasun"
     ];
 
+
+    // #ToChange: Team members pictures and info
     private static readonly TeamMember[] TeamMembers =
     [
-        new("Dr. Sarah Al-Rashidi", "Chapter President", "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&auto=format"),
-        new("James Okafor", "Vice President", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&auto=format"),
-        new("Priya Nambiar", "Events Director", "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&auto=format"),
-        new("Carlos Mendez", "Technical Lead", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&auto=format"),
-        new("Aisha Ibrahim", "Secretary", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=400&fit=crop&auto=format"),
-        new("Wei Zhang", "Treasurer", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&auto=format")
+        new("Dr. Sarah Al-Rashidi", "Chapter President",
+"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&auto=format"),
+        new("James Okafor", "Vice President",
+"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&auto=format"),
+        new("Priya Nambiar", "Events Director",
+"https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&auto=format"),
+        new("Carlos Mendez", "Technical Lead",
+"https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&auto=format"),
+        new("Aisha Ibrahim", "Secretary",
+"https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=400&fit=crop&auto=format"),
+        new("Wei Zhang", "Treasurer",
+"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&auto=format")
     ];
 
-    private static readonly NewsCard[] NewsItems =
+
+    public static string[] Achievements =
     [
-        new("Industry", "Project InnerSpace and SPE launch a geothermal growth initiative.", "01 Aug 2026", "https://images.unsplash.com/photo-1513828583688-c76f73893173?w=600&h=200&fit=crop&auto=format"),
-        new("Awards", "Congratulations to the 2026 SPE International Award recipients.", "28 Jul 2026", "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=200&fit=crop&auto=format"),
-        new("Technology", "The rise of robotics in oil and gas operations.", "08 Jul 2026", "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&h=200&fit=crop&auto=format")
+        "Gold Standard Chapter 2018",
+        "Gold Standard Chapter 2014",
+        "Gold Standard Chapter 2013",
+        "Outstanding Student Chapter 2013",
+        "Gold Standard Chapter 2012",
+        "Outstanding Student Chapter 2012"
     ];
-
     private sealed record TeamMember(string Name, string Role, string ImageUrl);
-    private sealed record NewsCard(string Category, string Title, string Date, string ImageUrl);
+
 }

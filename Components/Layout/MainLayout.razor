@@ -1,9 +1,7 @@
 @inherits LayoutComponentBase
 
 <div class="fixed inset-0 -z-10">
-    <img src="/images/banner.jpg"
-         alt="Offshore oil platform background"
-         class="h-full w-full object-cover" />
+    <img src="/images/banner.jpg" alt="Offshore oil platform background" class="h-full w-full object-cover" />
     <div class="absolute inset-0 bg-[rgba(0,20,60,0.72)]"></div>
 </div>
 
@@ -14,64 +12,70 @@
         @Body
     </main>
 
-    <footer class="mt-20 bg-black text-white">
-        <div class="mx-auto max-w-[1440px] px-6 py-16 lg:px-20">
-            <div class="grid grid-cols-1 gap-12 md:grid-cols-3">
-                <div>
-                    <div class="mb-4 flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-spe-cobalt">
-                            <i class="fa fa-globe text-lg"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-bold" style="font-family:Montserrat, sans-serif;">SPE Student Chapter</p>
-                            <p class="text-xs text-white/60">Society of Petroleum Engineers</p>
-                        </div>
-                    </div>
-                    <p class="text-sm leading-relaxed text-white/70">
-                        Connecting petroleum engineering students and professionals to advance technical knowledge, careers, and leadership.
-                    </p>
-                </div>
+    <!-- footer section -->
 
-                <div>
-                    <h4 class="mb-5 text-sm font-bold uppercase tracking-[0.2em] text-spe-gold" style="font-family:Montserrat, sans-serif;">Quick Links</h4>
+    <footer class="mt-20 bg-black text-white">
+        <div class="mx-auto max-w-360 px-6 py-16 lg:px-20">
+            <div class="grid grid-cols-1  md:grid-cols-2 gap-4 ">
+                <div class="flex flex-col items-center">
+                    <h4 class="mb-5 text-sm font-bold uppercase tracking-[0.2em] text-spe-gold border-b border-spe-gold pb-2"
+                        style="font-family:Montserrat, sans-serif;">Quick Links</h4>
                     <ul class="space-y-3 text-sm text-white/70">
                         <li><a class="transition-colors hover:text-white" href="/">About Us</a></li>
-                        <li><a class="transition-colors hover:text-white" href="/events/upcoming">Events</a></li>
-                        <li><a class="transition-colors hover:text-white" href="/opportunities">Opportunities</a></li>
-                        <li><a class="transition-colors hover:text-white" href="/tutorials">Tutorials</a></li>
-                        <li><a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news" target="_blank" rel="noopener noreferrer">News</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="mb-5 text-sm font-bold uppercase tracking-[0.2em] text-spe-gold" style="font-family:Montserrat, sans-serif;">Contact Us</h4>
-                    <div class="space-y-3 text-sm text-white/70">
-                        <p>University of Aberdeen<br />Department of Engineering</p>
-                        <p><a href="mailto:spe@ausa.org.uk" class="hover:text-white">spe@ausa.org.uk</a></p>
-                        <p><a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="hover:text-white" target="_blank" rel="noopener noreferrer">Instagram</a></p>
-                        <p><a href="https://www.linkedin.com/in/spe-aberdeen-university-student-chapter-838896333" class="hover:text-white" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>
-                        <p><a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" class="hover:text-white" target="_blank" rel="noopener noreferrer">WhatsApp</a></p>
+                        <li><a class="transition-colors hover:text-white" href="/events">Events</a></li>
+                        <AuthorizeView>
+                            <Authorized Context="memberLinks">
+                                <li><a class="transition-colors hover:text-white" href="/opportunities">Opportunities</a></li>
+                                <li><a class="transition-colors hover:text-white" href="/courses">Courses</a></li>
+                            </Authorized>
+                        </AuthorizeView>
+                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                            <Authorized Context="staffLinks">
+                                <li><a class="transition-colors hover:text-white" href="/tutorials">Tutorials</a></li>
+                            </Authorized>
+                        </AuthorizeView>
+                        <li><a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news"
+                                   target="_blank" rel="noopener noreferrer">News</a></li>
+                        </ul>
                     </div>
-                    <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-gold-btn mt-6 inline-block">
-                        Join the Chapter
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="border-t border-white/10">
-            <div class="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-3 px-6 py-5 text-xs text-white/40 sm:flex-row lg:px-20">
-                <p>© @DateTime.UtcNow.Year SPE Student Chapter. All rights reserved.</p>
-                <div class="flex gap-6">
-                    <a class="transition-colors hover:text-white/70" href="/">Privacy Policy</a>
-                    <a class="transition-colors hover:text-white/70" href="/">Terms of Service</a>
-                    <a class="transition-colors hover:text-white/70" href="/">Code of Conduct</a>
-                </div>
-            </div>
-        </div>
-    </footer>
-</div>
+                    <!-- Contact Us section -->
+                    <div class="flex flex-col items-center">
+                        <h4 class="mb-5 text-xl font-bold uppercase tracking-[0.2em] text-spe-gold border-b border-spe-gold pb-2"
+                            style="font-family:Montserrat, sans-serif;">Contact Us</h4>
+                        <div class="flex flex-row gap-4">
+                            <a href="mailto:spe@ausa.org.uk">
+                                <i class="fa fa-envelope fa-2x"></i></a>
+                                <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                                   target="_blank" rel="noopener noreferrer">
+                                    <i class="fa fa-instagram fa-2x"></i></a>
+                                    <a href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true"
+                                       target="_blank" rel="noopener noreferrer"><i class="fa fa-linkedin fa-2x"></i></a>
+                                    <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" target="_blank"
+                                       rel="noopener noreferrer">
+                                        <i class="fa fa-whatsapp fa-2x"></i></a>
+                                    <AuthorizeView Roles="TeamLeader">
+                                        <Authorized Context="staffLinks">
+                                            <a href="https://github.com/zainwaffi/SPE_website" target="_blank" rel="noopener noreferrer">
+                                                <i class="fa fa-github fa-2x"></i></a>
+                                        </Authorized>
+                                    </AuthorizeView>
+                                    </div>
+                                    <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer"
+                                       class="spe-primary-btn mt-6 inline-block">
+                                        Join the Our Society
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
 
-<div id="blazor-error-ui" class="hidden fixed bottom-4 right-4 bg-red-50 border border-red-300 text-red-800 p-4 rounded-lg shadow-lg z-50" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="underline ml-2">Reload</a>
-</div>
+                    </footer>
+                </div>
+
+                <!--Footer section end-->
+
+                <div id="blazor-error-ui"
+                     class="hidden fixed bottom-4 right-4 bg-red-50 border border-red-300 text-red-800 p-4 rounded-lg shadow-lg z-50"
+                     data-nosnippet>
+                    An unhandled error has occurred.
+                    <a href="." class="underline ml-2">Reload</a>
+                </div>

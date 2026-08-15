@@ -1,6 +1,6 @@
 @page "/tasks"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "CommitteeMember,President")]
+@attribute [Authorize(Roles = "CommitteeMember,TeamLeader")]
 @inject TaskItemService TaskSvc
 @inject AuthenticationStateProvider AuthState
 

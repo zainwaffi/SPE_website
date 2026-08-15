@@ -4,6 +4,7 @@ using SPE_website.Features.Opportunities.Models;
 
 namespace SPE_website.Features.Opportunities.Services;
 
+/// <summary>CRUD operations for job/internship <see cref="Opportunity"/> postings.</summary>
 public class OpportunityService(AppDbContext db)
 {
     public Task<List<Opportunity>> GetAllAsync() =>

@@ -1,0 +1,40 @@
+@inject IJSRuntime JS
+
+<div @ref="_element"
+     class="fade-up opacity-0 translate-y-8 transition-all duration-700 ease-out @Class">
+    @ChildContent
+</div>
+
+@code {
+    private ElementReference _element;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string Class { get; set; } = "";
+   
+    [Parameter]
+    public int Duration { get; set; } = 700;
+
+    [Parameter]
+    public int Delay { get; set; } = 0;
+
+    [Parameter]
+    public int Distance { get; set; } = 8;
+
+    [Parameter]
+    public double Threshold { get; set; } = 0.2;
+
+    [Parameter]
+    public bool Once { get; set; } = true;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("fadeUpElement", _element);
+        }
+    }
+}

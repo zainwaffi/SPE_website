@@ -49,4 +49,31 @@
   .spe-card {
     @apply rounded-xl border border-slate-200 bg-white shadow-sm;
   }
+
+  /* Reserves room for an Instagram post before its iframe arrives, so lazily
+     loaded embeds don't shove the rest of the card around as they pop in.
+     Kept well under a real post's height so it never adds trailing space. */
+  .ig-embed-slot {
+    min-height: 400px;
+  }
+
+  /* A blockquote still waiting to be turned into an embed (see instagram-embed.js). */
+  .ig-lazy {
+    @apply block w-full;
+    min-height: 400px;
+    background: linear-gradient(100deg, #f1f5f9 30%, #e2e8f0 50%, #f1f5f9 70%);
+    background-size: 200% 100%;
+    animation: ig-lazy-shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes ig-lazy-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ig-lazy {
+      animation: none;
+    }
+  }
 }

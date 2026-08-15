@@ -8,6 +8,7 @@ public class Event
     public DateTime Date { get; set; }
     public string Location { get; set; } = string.Empty;
     public bool IsUpcoming { get; set; }
+    public EventCategory Category { get; set; } = EventCategory.Other;
     public string? InstagramEmbedUrl { get; set; }
     public string? ImageUrl { get; set; }
     public string? GoogleCalendarEventId { get; set; }

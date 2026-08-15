@@ -1,6 +1,6 @@
 @page "/tutorials"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "CommitteeMember,President")]
+@attribute [Authorize(Roles = "CommitteeMember,TeamLeader")]
 @inject TutorialService TutorialSvc
 
 <PageTitle>Tutorials — SPE Chapter</PageTitle>
@@ -12,7 +12,7 @@
             <h1 class="spe-page-title">Technical Learning Library</h1>
             <p class="mt-2 text-sm text-slate-600">Role-based SOP and learning content for committee members.</p>
         </div>
-        <AuthorizeView Roles="President">
+        <AuthorizeView Roles="TeamLeader">
             <Authorized>
                 <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add Tutorial</button>
             </Authorized>
@@ -27,10 +27,9 @@
                 <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
                        placeholder="Title" @bind="newTitle" />
                 <select class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt" @bind="newRole">
-                    @foreach (var role in Enum.GetValues<CommitteeRole>())
-                    {
-                        <option value="@role">@role</option>
-                    }
+                    <option value="Member">Member</option>
+                    <option value="CommitteeMember">Committee Member</option>
+                    <option value="TeamLeader">Team Leader</option>
                 </select>
                 <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt sm:col-span-2"
                        placeholder="YouTube Embed URL (https://www.youtube.com/embed/...)" @bind="newYoutubeUrl" />
@@ -77,7 +76,7 @@
                             <div class="p-5">
                                 <h3 class="mb-1 text-base font-bold text-black" style="font-family:Montserrat, sans-serif;">@t.Title</h3>
                                 <p class="text-sm text-slate-600">@t.Description</p>
-                                <AuthorizeView Roles="President">
+                                <AuthorizeView Roles="TeamLeader">
                                     <Authorized>
                                         <button @onclick="() => DeleteTutorial(t.Id)"
                                                 class="mt-3 text-xs font-medium text-red-400 transition-colors hover:text-red-600">
@@ -95,12 +94,12 @@
 </div>
 
 @code {
-    private Dictionary<CommitteeRole, List<Tutorial>>? grouped;
+    private Dictionary<string, List<Tutorial>>? grouped;
     private bool showForm;
     private string newTitle = "";
     private string newDescription = "";
     private string newYoutubeUrl = "";
-    private CommitteeRole newRole = CommitteeRole.Member;
+    private string newRole = "Member";
 
     protected override async Task OnInitializedAsync() => await LoadTutorials();
 
