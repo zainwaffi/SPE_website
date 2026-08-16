@@ -2,7 +2,6 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "CommitteeMember,TeamLeader")]
 @inject ProfileService ProfileSvc
-@inject AuthenticationStateProvider AuthState
 
 <PageTitle>My Profile — SPE Chapter</PageTitle>
 
@@ -25,7 +24,7 @@
                         <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/30 bg-white/20 text-xl font-bold text-white">
                             @(user.FullName.Length > 0 ? user.FullName[0].ToString().ToUpper() : "?")
                         </div>
-                        <p class="text-sm font-bold text-white" style="font-family:Montserrat, sans-serif;">@user.FullName</p>
+                        <p class="text-sm font-bold text-white font-heading">@user.FullName</p>
                         <p class="mt-0.5 text-xs text-white/70">@user.Email</p>
                     </div>
                     <div class="space-y-2 p-4">
@@ -44,26 +43,26 @@
 
             <div class="space-y-6 md:col-span-3">
                 <section class="spe-card border-slate-200 p-6">
-                    <h1 class="mb-1 text-2xl font-extrabold text-black" style="font-family:Montserrat, sans-serif;">Welcome back, @user.FullName.Split(" ").FirstOrDefault()</h1>
+                    <h1 class="mb-1 text-2xl font-extrabold text-black font-heading">Welcome back, @user.FullName.Split(" ").FirstOrDefault()</h1>
                     <p class="mb-6 text-sm text-slate-500">Member dashboard overview</p>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div class="rounded-lg bg-slate-100 p-4 text-center">
-                            <p class="text-2xl font-extrabold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">@active</p>
+                            <p class="text-2xl font-extrabold text-spe-cobalt font-heading">@active</p>
                             <p class="mt-1 text-xs text-slate-500">Active Tasks</p>
                         </div>
                         <div class="rounded-lg bg-slate-100 p-4 text-center">
-                            <p class="text-2xl font-extrabold text-green-600" style="font-family:Montserrat, sans-serif;">@done</p>
+                            <p class="text-2xl font-extrabold text-green-600 font-heading">@done</p>
                             <p class="mt-1 text-xs text-slate-500">Completed</p>
                         </div>
                         <div class="rounded-lg bg-slate-100 p-4 text-center">
-                            <p class="text-2xl font-extrabold text-red-500" style="font-family:Montserrat, sans-serif;">@failed</p>
+                            <p class="text-2xl font-extrabold text-red-500 font-heading">@failed</p>
                             <p class="mt-1 text-xs text-slate-500">Failed</p>
                         </div>
                     </div>
                 </section>
 
                 <section class="spe-card border-slate-200 p-6">
-                    <h2 class="mb-3 text-lg font-bold text-black" style="font-family:Montserrat, sans-serif;">Strike Status</h2>
+                    <h2 class="mb-3 text-lg font-bold text-black font-heading">Strike Status</h2>
                     <div class="flex items-center justify-between rounded-lg bg-slate-50 p-4">
                         <div>
                             <p class="text-xs uppercase tracking-wider text-slate-500">Current count</p>
@@ -80,7 +79,7 @@
 
                 <section class="spe-card border-slate-200 p-6">
                     <div class="mb-5 flex items-center justify-between">
-                        <h2 class="text-lg font-bold text-black" style="font-family:Montserrat, sans-serif;">My Tasks</h2>
+                        <h2 class="text-lg font-bold text-black font-heading">My Tasks</h2>
                         <a href="/tasks" class="text-sm font-semibold text-spe-cobalt hover:underline">View all →</a>
                     </div>
 
@@ -93,7 +92,7 @@
                         <div class="divide-y divide-slate-100">
                             @foreach (var task in user.AssignedTasks.OrderBy(t => t.Deadline).Take(5))
                             {
-                                <div class="flex items-center justify-between py-4">
+                                <div @key="task.Id" class="flex items-center justify-between py-4">
                                     <div>
                                         <p class="font-semibold text-slate-800">@task.Title</p>
                                         <p class="mt-0.5 text-xs text-slate-400">Due @task.Deadline.ToString("MMM d, yyyy")</p>
@@ -112,12 +111,14 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
     private ApplicationUser? user;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthState.GetAuthenticationStateAsync();
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = await AuthStateTask.GetUserIdAsync();
         if (userId is not null)
             user = await ProfileSvc.GetByIdAsync(userId);
     }

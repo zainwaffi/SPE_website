@@ -19,12 +19,10 @@
 
         <article class="spe-card border-slate-200 p-8">
             <p class="spe-page-kicker">Opportunity</p>
-            <h1 class="mb-4 text-4xl font-bold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">@opportunity.Title</h1>
+            <h1 class="mb-4 text-4xl font-bold text-spe-cobalt font-heading">@opportunity.Title</h1>
             <p class="mb-6 text-sm text-slate-500">Posted on @opportunity.CreatedAt.ToString("MMMM d, yyyy")</p>
 
-            <div class="prose prose-sm mb-8 max-w-none text-slate-700">
-                @((MarkupString)RenderMarkdown(opportunity.Description))
-            </div>
+            <Markdown Content="@opportunity.Description" Class="mb-8" />
 
             @if (!string.IsNullOrEmpty(opportunity.ExternalUrl))
             {
@@ -46,7 +44,4 @@
         opportunity = await OppSvc.GetByIdAsync(Id);
 
     private void GoBack() => Nav.NavigateTo("/opportunities");
-
-    private static string RenderMarkdown(string? markdown) =>
-        string.IsNullOrEmpty(markdown) ? "" : Markdig.Markdown.ToHtml(markdown);
 }

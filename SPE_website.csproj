@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Markdig" Version="1.3.2" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
@@ -18,7 +19,9 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
   </ItemGroup>
 
-  <Target Name="BuildTailwind" BeforeTargets="Build" Condition="Exists('$(ProjectDir)node_modules')">
+  <!-- Inputs/Outputs make this incremental: previously it re-shelled to npx on every single
+       build, even when no markup or CSS had changed. -->
+  <Target Name="BuildTailwind" BeforeTargets="Build" Condition="Exists('$(ProjectDir)node_modules')" Inputs="$(ProjectDir)Styles\input.css;@(RazorComponent)" Outputs="$(ProjectDir)wwwroot\tailwind.css">
     <Exec Command="npm run build:css" WorkingDirectory="$(ProjectDir)" ConsoleToMsBuild="true" />
   </Target>
 

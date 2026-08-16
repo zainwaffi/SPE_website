@@ -4,30 +4,39 @@ using SPE_website.Features.Opportunities.Models;
 
 namespace SPE_website.Features.Opportunities.Services;
 
-/// <summary>CRUD operations for job/internship <see cref="Opportunity"/> postings.</summary>
-public class OpportunityService(AppDbContext db)
+/// <summary>
+/// CRUD operations for job/internship <see cref="Opportunity"/> postings.
+/// Takes a context factory rather than a scoped context: a Blazor Server circuit outlives
+/// any single operation, and sharing one context across overlapping renders throws.
+/// </summary>
+public class OpportunityService(IDbContextFactory<AppDbContext> dbFactory)
 {
-    public Task<List<Opportunity>> GetAllAsync() =>
-        db.Opportunities.OrderByDescending(o => o.CreatedAt).ToListAsync();
+    public async Task<List<Opportunity>> GetAllAsync()
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Opportunities.AsNoTracking()
+                       .OrderByDescending(o => o.CreatedAt)
+                       .ToListAsync();
+    }
 
-    public Task<Opportunity?> GetByIdAsync(int id) =>
-        db.Opportunities.FirstOrDefaultAsync(o => o.Id == id);
+    public async Task<Opportunity?> GetByIdAsync(int id)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Opportunities.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
+    }
 
     public async Task<Opportunity> CreateAsync(Opportunity opp)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         db.Opportunities.Add(opp);
         await db.SaveChangesAsync();
         return opp;
     }
 
-    public async Task UpdateAsync(Opportunity opp)
-    {
-        db.Opportunities.Update(opp);
-        await db.SaveChangesAsync();
-    }
-
+    /// <summary>No-ops silently if the posting no longer exists (idempotent delete).</summary>
     public async Task DeleteAsync(int id)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var opp = await db.Opportunities.FindAsync(id);
         if (opp is not null)
         {

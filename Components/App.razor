@@ -6,15 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    @* Warms the TLS handshake to Instagram's hosts so the first lazily-loaded
-       embed doesn't pay for connection setup on top of its own download. *@
-    <link rel="preconnect" href="https://www.instagram.com" />
-    <link rel="preconnect" href="https://scontent.cdninstagram.com" crossorigin />
-    <link rel="stylesheet" href="tailwind.css" />
+
+    @* Marks the document script-capable before first paint. Styles/input.css gates the
+       .fade-up hidden state on this class, so without JS the content renders visible
+       instead of being stuck at opacity 0. Inline and first so there is no flash. *@
+    <script>document.documentElement.classList.add('js')</script>
+
+    @* Fonts must be a <link>, not an @@import inside input.css: Tailwind emits @@import at
+       the end of the generated stylesheet, which is spec-invalid and silently dropped. *@
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&family=Roboto+Mono:wght@600;700&display=swap" />
+
+    <link rel="stylesheet" href="@Assets["tailwind.css"]" />
     <link rel="stylesheet" href="@Assets["SPE_website.styles.css"]" />
     <ImportMap />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/png" href="@Assets["favicon.png"]" />
+    <link rel="apple-touch-icon" href="@Assets["apple-touch-icon.png"]" />
     <HeadOutlet />
 </head>
 
@@ -22,8 +31,7 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="js/instagram-embed.js"></script>
-    <script src="js/animations.js"></script>
+    <script src="@Assets["js/ui.js"]" defer></script>
 </body>
 
 </html>

@@ -20,7 +20,7 @@
     </div>
 
     <div class="mb-6">
-        <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+        <input class="w-full spe-input"
                placeholder="Search courses by title or description..."
                @bind="searchQuery" @bind:event="oninput" />
     </div>
@@ -28,13 +28,13 @@
     @if (showForm)
     {
         <section class="spe-card mb-8 border-slate-200 p-6">
-            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">New Course Video</h2>
+            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Course Video</h2>
             <div class="grid grid-cols-1 gap-4">
-                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                <input class="spe-input"
                        placeholder="Video title" @bind="newTitle" />
-                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                <input class="spe-input"
                        placeholder="YouTube URL (watch, short, or embed URL)" @bind="newYoutubeUrl" />
-                <textarea class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                <textarea class="spe-input"
                           rows="3" placeholder="Course description" @bind="newDescription"></textarea>
             </div>
             @if (!string.IsNullOrEmpty(formError))
@@ -63,7 +63,7 @@
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
             @foreach (var course in FilteredCourses)
             {
-                <article class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
+                <article @key="course.Id" class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
                     <div class="aspect-video">
                         <iframe src="@course.YoutubeEmbedUrl"
                                 class="h-full w-full"
@@ -72,7 +72,7 @@
                                 allowfullscreen></iframe>
                     </div>
                     <div class="p-5">
-                        <h3 class="mb-1 text-lg font-bold text-black" style="font-family:Montserrat, sans-serif;">@course.Title</h3>
+                        <h3 class="mb-1 text-lg font-bold text-black font-heading">@course.Title</h3>
                         <p class="text-sm text-slate-600">@course.Description</p>
                         <AuthorizeView Roles="CommitteeMember,TeamLeader">
                             <Authorized>

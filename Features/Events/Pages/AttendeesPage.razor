@@ -1,0 +1,172 @@
+@page "/events/{Id:int}/attendees"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "CommitteeMember,TeamLeader")]
+@inject EventService EventSvc
+
+@* Deliberately NOT wrapped in <DesktopOnly>: unlike the admin dashboard, this is the one
+   admin-ish screen you genuinely want on a phone — ticking people off at the door. *@
+
+<PageTitle>Attendees — @(chapterEvent?.Title ?? "Event")</PageTitle>
+
+<div class="spe-page-shell md:max-w-4xl">
+    <a href="/events" class="mb-6 inline-block text-sm font-semibold text-spe-cobalt hover:underline">
+        Back to Events
+    </a>
+
+    @if (loading)
+    {
+        <p class="py-20 text-center text-slate-500">Loading attendees...</p>
+    }
+    else if (chapterEvent is null)
+    {
+        <div class="py-20 text-center">
+            <h1 class="spe-page-title">Event not found</h1>
+            <p class="mt-2 text-sm text-slate-600">This event may have been deleted.</p>
+        </div>
+    }
+    else
+    {
+        <p class="spe-page-kicker">Attendees</p>
+        <h1 class="spe-page-title">@chapterEvent.Title</h1>
+        <p class="mt-2 text-sm text-slate-600">
+            @chapterEvent.Date.ToString("dddd, d MMMM yyyy · h:mm tt")
+        </p>
+
+        @if (attendees.Count == 0)
+        {
+            <div class="mt-10 rounded-xl border border-slate-200 bg-white py-16 text-center">
+                <p class="text-xl text-slate-400">Nobody has signed up yet.</p>
+                <p class="mt-2 text-sm text-slate-500">
+                    Members sign up from the events page; they'll appear here as they do.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="mt-8 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <p class="text-2xl font-extrabold text-spe-cobalt font-heading">
+                        @checkedInCount / @attendees.Count
+                    </p>
+                    <p class="text-xs uppercase tracking-wider text-slate-500">Checked in</p>
+                </div>
+                <div class="flex gap-2">
+                    <button @onclick="() => SetAll(true)" class="spe-primary-btn px-4 py-2">Mark all present</button>
+                    <button @onclick="() => SetAll(false)"
+                            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
+                        Clear all
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                <div class="h-full rounded-full bg-spe-cobalt transition-all duration-300"
+                     style="width:@(ProgressPercent)%"></div>
+            </div>
+
+            <div class="mt-6">
+                <input class="spe-input w-full" placeholder="Search attendees by name or university..."
+                       @bind="searchQuery" @bind:event="oninput" />
+            </div>
+
+            @if (!Filtered.Any())
+            {
+                <p class="py-12 text-center text-slate-400">No attendees match your search.</p>
+            }
+            else
+            {
+                <ul class="mt-6 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    @foreach (var attendee in Filtered)
+                    {
+                        <li @key="attendee.RegistrationId"
+                            class="flex items-center gap-4 px-4 py-3 transition-colors @(attendee.Attended ? "bg-green-50/60" : "hover:bg-slate-50")">
+                            @* The whole row is the label, so it's a large tap target on a phone. *@
+                            <label class="flex flex-1 cursor-pointer items-center gap-4">
+                                <input type="checkbox" checked="@attendee.Attended"
+                                       @onchange="e => Toggle(attendee, e)"
+                                       class="h-5 w-5 shrink-0 cursor-pointer accent-spe-cobalt" />
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate font-semibold text-slate-800">@attendee.FullName</span>
+                                    <span class="block truncate text-xs text-slate-500">
+                                        @attendee.University
+                                        @if (!string.IsNullOrWhiteSpace(attendee.Email))
+                                        {
+                                            <span class="text-slate-400"> · @attendee.Email</span>
+                                        }
+                                    </span>
+                                </span>
+                            </label>
+
+                            @if (attendee.Attended)
+                            {
+                                <span class="shrink-0 text-xs font-semibold text-green-700">
+                                    @(attendee.CheckedInAt?.ToLocalTime().ToString("HH:mm") ?? "Present")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="shrink-0 text-xs text-slate-400">
+                                    Signed up @attendee.RegisteredAt.ToLocalTime().ToString("d MMM")
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Event? chapterEvent;
+    private List<Attendee> attendees = [];
+    private string searchQuery = "";
+    private bool loading = true;
+
+    private int checkedInCount => attendees.Count(a => a.Attended);
+
+    private int ProgressPercent =>
+        attendees.Count == 0 ? 0 : (int)Math.Round(checkedInCount * 100.0 / attendees.Count);
+
+    private IEnumerable<Attendee> Filtered =>
+        string.IsNullOrWhiteSpace(searchQuery)
+            ? attendees
+            : attendees.Where(a =>
+                a.FullName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                a.University.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        chapterEvent = await EventSvc.GetByIdAsync(Id);
+        if (chapterEvent is not null)
+        {
+            attendees = await EventSvc.GetAttendeesAsync(Id);
+        }
+        loading = false;
+    }
+
+    /// <summary>
+    /// Updates the row in place rather than re-reading the list, so ticking through a queue of
+    /// people at the door stays responsive and doesn't reorder under the committee member's finger.
+    /// </summary>
+    private async Task Toggle(Attendee attendee, ChangeEventArgs e)
+    {
+        var attended = e.Value is bool value && value;
+        var checkedInAt = await EventSvc.SetAttendanceAsync(attendee.RegistrationId, attended);
+
+        var index = attendees.IndexOf(attendee);
+        if (index >= 0)
+        {
+            attendees[index] = attendee with { Attended = attended, CheckedInAt = checkedInAt };
+        }
+    }
+
+    private async Task SetAll(bool attended)
+    {
+        var checkedInAt = await EventSvc.SetAllAttendanceAsync(Id, attended);
+        attendees = [.. attendees.Select(a => a with { Attended = attended, CheckedInAt = checkedInAt })];
+    }
+}

@@ -1,0 +1,15 @@
+@* Renders committee-authored markdown for tutorials and opportunities.
+   The pipeline (and the reasoning behind which extensions are enabled) lives in
+   Shared/MarkdownRenderer.cs; styling for the output is .spe-prose in Styles/input.css. *@
+
+<div class="spe-prose @Class">
+    @((MarkupString)MarkdownRenderer.ToHtml(Content))
+</div>
+
+@code {
+    [Parameter]
+    public string? Content { get; set; }
+
+    [Parameter]
+    public string Class { get; set; } = "";
+}

@@ -2,7 +2,6 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "CommitteeMember,TeamLeader")]
 @inject TaskItemService TaskSvc
-@inject AuthenticationStateProvider AuthState
 
 <PageTitle>My Tasks — SPE Chapter</PageTitle>
 
@@ -27,13 +26,13 @@
         <div class="flex flex-col gap-4">
             @foreach (var task in tasks)
             {
-                <article class="spe-card border-slate-200 p-6 transition-shadow hover:shadow-sm">
+                <article @key="task.Id" class="spe-card border-slate-200 p-6 transition-shadow hover:shadow-sm">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1">
-                            <h3 class="mb-1 text-lg font-bold text-black" style="font-family:Montserrat, sans-serif;">@task.Title</h3>
+                            <h3 class="mb-1 text-lg font-bold text-black font-heading">@task.Title</h3>
                             <p class="mb-3 text-sm text-slate-600">@task.Description</p>
                             <p class="text-xs text-slate-400">
-                                Due <span class="font-semibold @(task.Deadline < DateTime.UtcNow && task.Status == AssignmentStatus.Processing ? "text-red-500" : "text-slate-600")">
+                                Due <span class="font-semibold @(task.Deadline < UkTime.Now && task.Status == AssignmentStatus.Processing ? "text-red-500" : "text-slate-600")">
                                     @task.Deadline.ToString("MMMM d, yyyy")
                                 </span>
                             </p>
@@ -62,21 +61,26 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
     private List<TaskItem>? tasks;
+    private string? userId;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthState.GetAuthenticationStateAsync();
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (userId is not null)
-            tasks = await TaskSvc.GetForUserAsync(userId);
+        userId = await AuthStateTask.GetUserIdAsync();
+        await ReloadTasksAsync();
     }
 
     private async Task UpdateStatus(int taskId, AssignmentStatus status)
     {
         await TaskSvc.UpdateStatusAsync(taskId, status);
-        var authState = await AuthState.GetAuthenticationStateAsync();
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await ReloadTasksAsync();
+    }
+
+    private async Task ReloadTasksAsync()
+    {
         if (userId is not null)
             tasks = await TaskSvc.GetForUserAsync(userId);
     }

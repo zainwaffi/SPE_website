@@ -1,0 +1,37 @@
+@* Gates content behind a desktop-width viewport.
+
+   The admin screens are wide data tables and a month calendar — they are unusable on a phone,
+   and a mis-tap there can add a strike or delete a member. This is a usability gate, not a
+   security boundary: access control is the [Authorize] attribute on the page.
+
+   Deliberately a CSS breakpoint rather than User-Agent sniffing, so it also catches a
+   half-width laptop window, where the table is just as unusable. No JS, so pages using it
+   can still be static SSR. *@
+
+<div class="lg:hidden">
+    <div class="spe-page-shell md:max-w-180 text-center">
+        <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-spe-cobalt/10 text-spe-cobalt">
+            <Icon Name="desktop" Class="h-7 w-7" />
+        </div>
+        <p class="spe-page-kicker">Desktop only</p>
+        <h1 class="spe-page-title">@Title</h1>
+        <p class="mx-auto mt-3 max-w-md text-sm text-slate-600">
+            This screen needs a wider window than your device has. Open it on a laptop or desktop —
+            or widen this window if you're already on one.
+        </p>
+        <a href="/" class="spe-primary-btn mt-6 inline-block">Back to Home</a>
+    </div>
+</div>
+
+<div class="hidden lg:block">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Name of the gated screen, shown in the narrow-viewport notice.</summary>
+    [Parameter]
+    public string Title { get; set; } = "Admin";
+}

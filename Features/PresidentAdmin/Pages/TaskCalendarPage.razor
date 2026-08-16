@@ -5,9 +5,7 @@
 
 <PageTitle>Task Calendar — SPE Admin</PageTitle>
 
-<AuthorizeView Roles="TeamLeader">
-<Authorized>
-
+<DesktopOnly Title="Task Calendar">
 <div class="max-w-5xl mx-auto px-6 py-12">
     <h1 class="text-3xl font-bold text-spe-gold mb-2">Task Calendar</h1>
     <p class="text-white text-lg mb-10">Click a date to assign a task to a committee member.</p>
@@ -21,7 +19,7 @@
             </div>
 
             <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400 mb-2">
-                @foreach (var day in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+                @foreach (var day in WeekDayNames)
                 {
                     <div class="py-1">@day</div>
                 }
@@ -36,7 +34,7 @@
                 {
                     int day = d;
                     var date = new DateTime(currentDate.Year, currentDate.Month, day);
-                    bool isToday = date.Date == DateTime.Today;
+                    bool isToday = date.Date == UkTime.Today;
                     bool isSelected = selectedDate?.Date == date.Date;
                     <button @onclick="() => SelectDate(date)"
                             class="aspect-square rounded-lg text-sm font-medium transition-colors
@@ -60,24 +58,24 @@
                 <div class="flex flex-col gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Task Title</label>
-                        <input class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                        <input class="spe-input w-full px-3 text-sm"
                                placeholder="Task title" @bind="taskTitle" />
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Description</label>
-                        <textarea class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                        <textarea class="spe-input w-full px-3 text-sm"
                                   rows="3" placeholder="Details..." @bind="taskDescription"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Assign To</label>
-                        <select class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-blue"
+                        <select class="spe-input w-full px-3 text-sm"
                                 @bind="selectedUserId">
                             <option value="">— Select member —</option>
                             @if (members is not null)
                             {
                                 @foreach (var m in members)
                                 {
-                                    <option value="@m.Id">@m.FullName (@m.CommitteeTitle)</option>
+                                    <option @key="m.Id" value="@m.Id">@m.FullName (@m.CommitteeTitle)</option>
                                 }
                             }
                         </select>
@@ -106,21 +104,12 @@
     </div>
 </div>
 
-</Authorized>
-<NotAuthorized>
-    <div class="max-w-md mx-auto px-6 py-20 text-center">
-        <h1 class="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
-        <p class="text-slate-600 mb-6">You do not have permission to access the task calendar.</p>
-        <p class="text-slate-500 mb-8">Only Team Leaders can manage the task calendar.</p>
-        <a href="/" class="inline-block bg-spe-blue text-white px-6 py-2.5 rounded-lg hover:bg-blue-800 transition-colors font-semibold">
-            Return to Home
-        </a>
-    </div>
-</NotAuthorized>
-</AuthorizeView>
+</DesktopOnly>
 
 @code {
-    private DateTime currentDate = DateTime.Today;
+    private static readonly string[] WeekDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    private DateTime currentDate = UkTime.Today;
     private DateTime? selectedDate;
     private List<ApplicationUser>? members;
     private string selectedUserId = "";

@@ -14,28 +14,47 @@ namespace SPE_website.Features.PresidentAdmin.Services;
 /// strikes, task assignment, and role changes. Sends email notifications for
 /// strikes and task assignments via <see cref="EmailService"/>.
 /// </summary>
+/// <remarks>
+/// Uses a context factory rather than a scoped context: a Blazor Server circuit outlives any
+/// single operation, and sharing one context across overlapping renders throws. Identity's
+/// <see cref="UserManager{TUser}"/> keeps its own scoped context, which is fine — the two
+/// never need to share a change tracker here.
+/// </remarks>
 public class AdminService(
-    AppDbContext db,
+    IDbContextFactory<AppDbContext> dbFactory,
     UserManager<ApplicationUser> userManager,
     EmailService emailService,
     ILogger<AdminService> logger)
 {
-    public Task<List<ApplicationUser>> GetAllMembersAsync() =>
-        db.Users.Include(u => u.AssignedTasks).OrderBy(u => u.FullName).ToListAsync();
+    /// <summary>
+    /// Every member plus their assigned tasks, for the admin table. Read-only projection —
+    /// the dashboard updates its copy in place rather than re-querying after each action.
+    /// </summary>
+    public async Task<List<ApplicationUser>> GetAllMembersAsync()
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Users.AsNoTracking()
+                       .Include(u => u.AssignedTasks)
+                       .OrderBy(u => u.FullName)
+                       .ToListAsync();
+    }
 
     /// <summary>
     /// Increments a member's strike count and emails them a notice. The strike is always saved;
     /// the returned <see cref="EmailResult"/> reports whether the notification actually went out.
+    /// <c>StrikeCount</c> is the member's new total, or <c>null</c> if nothing was changed —
+    /// callers use it to refresh their own copy without re-reading the whole member list.
     /// </summary>
-    public async Task<EmailResult> AddStrikeAsync(string userId)
+    public async Task<(int? StrikeCount, EmailResult Notification)> AddStrikeAsync(string userId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(userId);
-        if (user is null) return EmailResult.Failure("Member not found.");
+        if (user is null) return (null, EmailResult.Failure("Member not found."));
 
         user.StrikeCount++;
         await db.SaveChangesAsync();
 
-        return await SendNotificationAsync(
+        var notification = await SendNotificationAsync(
             user,
             "Strike Notice — SPE Chapter",
             $"""
@@ -44,22 +63,25 @@ public class AdminService(
              <p>Please contact the President if you have any questions.</p>
              <p>— SPE University of Aberdeen Chapter</p>
              """);
+
+        return (user.StrikeCount, notification);
     }
 
     /// <summary>
     /// Removes one strike from a member's record (never going below zero) and emails them the update.
-    /// Returns a failed <see cref="EmailResult"/> if the member already had no strikes.
+    /// Returns a null count and a failed <see cref="EmailResult"/> if the member already had no strikes.
     /// </summary>
-    public async Task<EmailResult> RemoveStrikeAsync(string userId)
+    public async Task<(int? StrikeCount, EmailResult Notification)> RemoveStrikeAsync(string userId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(userId);
-        if (user is null) return EmailResult.Failure("Member not found.");
-        if (user.StrikeCount <= 0) return EmailResult.Failure("This member has no strikes to remove.");
+        if (user is null) return (null, EmailResult.Failure("Member not found."));
+        if (user.StrikeCount <= 0) return (null, EmailResult.Failure("This member has no strikes to remove."));
 
         user.StrikeCount--;
         await db.SaveChangesAsync();
 
-        return await SendNotificationAsync(
+        var notification = await SendNotificationAsync(
             user,
             "Strike Removed — SPE Chapter",
             $"""
@@ -67,6 +89,8 @@ public class AdminService(
              <p>A strike has been removed from your record. Your current strike count is now <strong>{user.StrikeCount}</strong>.</p>
              <p>— SPE University of Aberdeen Chapter</p>
              """);
+
+        return (user.StrikeCount, notification);
     }
 
     /// <summary>
@@ -75,6 +99,7 @@ public class AdminService(
     /// </summary>
     public async Task<(TaskItem Task, EmailResult Notification)> AssignTaskAsync(string userId, string title, string description, DateTime deadline)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(userId);
 
         var task = new TaskItem
@@ -107,33 +132,6 @@ public class AdminService(
         return (task, notification);
     }
 
-    public async Task UpdateMemberTitleAsync(string userId, string? title)
-    {
-        var user = await db.Users.FindAsync(userId);
-        if (user is null) return;
-        user.CommitteeTitle = title;
-        await db.SaveChangesAsync();
-    }
-
-    public async Task<IdentityResult> CreateMemberAsync(string fullName, string email, string identityRole, string? committeeTitle)
-    {
-        var user = new ApplicationUser
-        {
-            UserName = email,
-            Email = email,
-            FullName = fullName,
-            CommitteeTitle = committeeTitle,
-            IsStudentChapterOfficer = identityRole != "Member"
-        };
-
-        var result = await userManager.CreateAsync(user);
-        if (!result.Succeeded) return result;
-
-        await userManager.AddToRoleAsync(user, identityRole);
-
-        return result;
-    }
-
     /// <summary>Highest-priority Identity role for display purposes: TeamLeader > CommitteeMember > Member (default).</summary>
     public async Task<string> GetPrimaryRoleAsync(string userId)
     {
@@ -147,8 +145,16 @@ public class AdminService(
         return "Member";
     }
 
-    /// <summary>Updates a member's profile and role, guarded by <see cref="CanManageRolesAsync"/> (TeamLeader-only).</summary>
-    public async Task<IdentityResult> UpdateMemberDetailsAsync(string actingUserId, string userId, string fullName, string email, string identityRole, string? committeeTitle)
+    /// <summary>
+    /// Updates a member's role and committee title, guarded by <see cref="CanManageRolesAsync"/>
+    /// (TeamLeader-only).
+    ///
+    /// Name and email are deliberately NOT editable here. Both are owned by the external
+    /// OpenWater membership record and re-synced on every login, so editing them in the admin
+    /// panel would silently be undone at the member's next sign-in — and because the email is
+    /// also the Identity username, changing it would move the account the member signs in with.
+    /// </summary>
+    public async Task<IdentityResult> UpdateMemberDetailsAsync(string actingUserId, string userId, string identityRole, string? committeeTitle)
     {
         var canManageRoles = await CanManageRolesAsync(actingUserId);
         if (!canManageRoles)
@@ -157,18 +163,8 @@ public class AdminService(
         var user = await userManager.FindByIdAsync(userId);
         if (user is null) return IdentityResult.Failed(new IdentityError { Description = "Member not found." });
 
-        user.FullName = fullName;
         user.CommitteeTitle = committeeTitle;
         user.IsStudentChapterOfficer = identityRole != "Member";
-
-        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
-        {
-            var setEmailResult = await userManager.SetEmailAsync(user, email);
-            if (!setEmailResult.Succeeded) return setEmailResult;
-
-            var setUserNameResult = await userManager.SetUserNameAsync(user, email);
-            if (!setUserNameResult.Succeeded) return setUserNameResult;
-        }
 
         var currentRoles = await userManager.GetRolesAsync(user);
         if (!currentRoles.Contains(identityRole))

@@ -2,335 +2,274 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "TeamLeader")]
 @inject AdminService AdminSvc
-@inject TaskItemService TaskSvc
-@inject AuthenticationStateProvider AuthState
-@inject NavigationManager NavigationManager
+
+@* Access control is the [Authorize] attribute above. Routes.razor renders the shared
+   access-denied panel (or redirects to login) for anyone who fails it, so this page does
+   not repeat the check in markup or at runtime. *@
 
 <PageTitle>Member Dashboard — SPE Admin</PageTitle>
 
-<AuthorizeView Roles="TeamLeader">
-    <Authorized>
+<DesktopOnly Title="Member Dashboard">
+<div class="max-w-6xl mx-auto px-6 py-12">
+    <div class="flex items-start justify-between gap-4 mb-10">
+        <div>
+            <h1 class="text-3xl font-bold text-spe-gold mb-2">Member Dashboard</h1>
+            <p class="text-white text-lg">Oversee all committee members, their tasks, and strike records.</p>
+        </div>
+        <div class="flex shrink-0 items-center gap-3">
+            @* A plain link, not a button: the browser downloads it directly instead of
+               streaming the workbook back over the SignalR circuit. *@
+            <a href="/admin/export/attendance.xlsx"
+               class="inline-flex items-center gap-2 rounded-lg border border-white/30 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                <Icon Name="download" Class="h-4 w-4" />
+                Export Attendance
+            </a>
+            <a href="/admin/calendar"
+               class="inline-flex items-center gap-2 bg-spe-blue text-white px-5 py-2.5 rounded-lg hover:bg-blue-800 transition-colors font-semibold text-sm">
+                Task Calendar
+            </a>
+        </div>
+    </div>
 
-        @if (!isAuthorized)
-        {
-            <div class="max-w-md mx-auto px-6 py-20 text-center">
-                <h1 class="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
-                <p class="text-slate-600 mb-6">You do not have permission to access the member dashboard.</p>
-                <p class="text-slate-500 mb-8">Only Team Leaders can manage members, tasks, and strikes.</p>
-                <a href="/"
-                   class="inline-block bg-spe-blue text-white px-6 py-2.5 rounded-lg hover:bg-blue-800 transition-colors font-semibold">
-                    Return to Home
-                </a>
-            </div>
-        }
-        else
-        {
-            <div class="max-w-6xl mx-auto px-6 py-12">
-                <div class="flex items-start justify-between gap-4 mb-10">
-                    <div>
-                        <h1 class="text-3xl font-bold text-spe-gold mb-2">Member Dashboard</h1>
-                        <p class="text-white text-lg">Oversee all committee members, their tasks, and strike records.</p>
-                    </div>
-                    <a href="/admin/calendar"
-                       class="shrink-0 inline-flex items-center gap-2 bg-spe-blue text-white px-5 py-2.5 rounded-lg hover:bg-blue-800 transition-colors font-semibold text-sm">
-                        Task Calendar
-                        
-                    </a>
-                </div>
+    @if (notification is not null)
+    {
+        <div class="mb-6 rounded-lg border px-4 py-3 text-sm @(notification.Sent ? "bg-green-50 border-green-200 text-green-800" : "bg-amber-50 border-amber-200 text-amber-800")">
+            <p class="font-semibold">@notificationAction</p>
+            @if (notification.Sent)
+            {
+                <p>A notification email was sent to the member.</p>
+            }
+            else
+            {
+                <p>The member was <strong>not</strong> notified by email: @notification.Error</p>
+            }
+        </div>
+    }
 
-                @if (notification is not null)
-                {
-                    <div
-                        class="mb-6 rounded-lg border px-4 py-3 text-sm @(notification.Sent ? "bg-green-50 border-green-200 text-green-800" : "bg-amber-50 border-amber-200 text-amber-800")">
-                        <p class="font-semibold">@notificationAction</p>
-                        @if (notification.Sent)
-                        {
-                            <p>A notification email was sent to the member.</p>
-                        }
-                        else
-                        {
-                            <p>The member was <strong>not</strong> notified by email: @notification.Error</p>
-                        }
-                    </div>
-                }
-
-                @if (members is null)
-                {
-                    <p class="text-slate-500 text-center py-20">Loading members...</p>
-                }
-                else if (members.Count == 0)
-                {
-                    <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
-                        <p class="text-slate-400 text-xl">No committee members found.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <table class="w-full text-sm">
-                            <thead class="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
-                                <tr>
-                                    <th class="px-6 py-4 text-left font-semibold">Member</th>
-                                    <th class="px-6 py-4 text-left font-semibold">Role</th>
-                                    <th class="px-6 py-4 text-center font-semibold">Tasks</th>
-                                    <th class="px-6 py-4 text-center font-semibold">Strikes</th>
-                                    <th class="px-6 py-4 text-center font-semibold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @foreach (var member in members)
-                                {
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center gap-3">
-                                                <div
-                                                    class="w-9 h-9 rounded-full bg-spe-blue flex items-center justify-center text-white font-bold text-sm shrink-0">
-                                                    @(member.FullName.Length > 0 ? member.FullName[0].ToString().ToUpper() : "?")
-                                                </div>
-                                                <div>
-                                                    <p class="font-semibold text-slate-800">@member.FullName</p>
-                                                    <p class="text-slate-400 text-xs">@member.Email</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @if (string.IsNullOrWhiteSpace(member.CommitteeTitle))
-                                            {
-                                                <span class="text-slate-400 text-xs">&mdash;</span>
-                                            }
-                                            else
-                                            {
-                                                <span
-                                                    class="inline-block whitespace-nowrap bg-spe-blue/10 text-spe-blue text-xs font-semibold px-2.5 py-1 rounded-full">
-                                                    @member.CommitteeTitle
-                                                </span>
-                                            }
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            <div class="flex justify-center gap-3 text-xs">
-                                                <span class="text-amber-600 font-semibold">@member.AssignedTasks.Count(t => t.Status
-                                                                                            == AssignmentStatus.Processing) active</span>
-                                                    <span class="text-green-600 font-semibold">@member.AssignedTasks.Count(t => t.Status
-                                                                                                == AssignmentStatus.Completed) done</span>
-                                                        <span class="text-red-500 font-semibold">@member.AssignedTasks.Count(t => t.Status
-                                                                                                    == AssignmentStatus.Failed) failed</span>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4 text-center">
-                                                        <span
-                                                            class="text-xl font-extrabold @(member.StrikeCount >= 3 ? "text-red-500" : member.StrikeCount >= 1 ? "text-amber-500" : "text-green-500")">
-                                                            @member.StrikeCount
-                                                        </span>
-                                                    </td>
-                                                    <td class="px-6 py-4 text-center">
-                                                        <div class="flex justify-center gap-2">
-                                                            <button @onclick="() => AddStrike(member.Id)"
-                                                                    class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                                                + Strike
-                                                            </button>
-                                                            <button @onclick="() => RemoveStrike(member.Id)"
-                                                                    disabled="@(member.StrikeCount == 0)"
-                                                                    title="@(member.StrikeCount == 0 ? "This member has no strikes to remove" : "Remove one strike")"
-                                                                    class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-100">
-                                                                &minus; Strike
-                                                            </button>
-                                                            <button @onclick="() => OpenAssignTask(member.Id)"
-                                                                    class="text-xs bg-spe-blue text-white hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                                                Assign Task
-                                                            </button>
-                                                            @if (canManageRoles)
-                                                            {
-                                                                <button @onclick="() => OpenEditMember(member)"
-                                                                        class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                                                    Edit
-                                                                </button>
-                                                            }
-                                                            @if (member.Id != currentUserId)
-                                                            {
-                                                                <button @onclick="() => OpenDeleteMember(member)"
-                                                                        class="text-xs bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                                                    Delete
-                                                                </button>
-                                                            }
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                        </div>
-                    }
-
-                    @if (assignTaskUserId is not null)
+    @if (members is null)
+    {
+        <p class="text-slate-500 text-center py-20">Loading members...</p>
+    }
+    else if (members.Count == 0)
+    {
+        <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
+            <p class="text-slate-400 text-xl">No committee members found.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
+                    <tr>
+                        <th class="px-6 py-4 text-left font-semibold">Member</th>
+                        <th class="px-6 py-4 text-left font-semibold">Role</th>
+                        <th class="px-6 py-4 text-center font-semibold">Tasks</th>
+                        <th class="px-6 py-4 text-center font-semibold">Strikes</th>
+                        <th class="px-6 py-4 text-center font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var member in members)
                     {
-                        <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-                                <h2 class="text-xl font-bold text-spe-blue mb-6">Assign Task</h2>
-                                <div class="flex flex-col gap-4">
-                                    <input
-                                    class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                                    placeholder="Task title" @bind="taskTitle" />
-                                    <textarea
-                                    class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                                    rows="3" placeholder="Description" @bind="taskDescription"></textarea>
+                        var tasks = CountTasks(member);
+                        <tr @key="member.Id" class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-spe-blue flex items-center justify-center text-white font-bold text-sm shrink-0">
+                                        @(member.FullName.Length > 0 ? char.ToUpperInvariant(member.FullName[0]).ToString() : "?")
+                                    </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-600 mb-1">Deadline</label>
-                                        <input type="text"
-                                               class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                                               placeholder="DD/MM/YYYY" value="@taskDeadlineString" @oninput="HandleDeadlineInput"
-                                               maxlength="10" />
-                                        @if (deadlineParseError)
-                                        {
-                                            <p class="text-red-500 text-xs mt-1">Invalid date. Use DD/MM/YYYY (e.g. 25/07/2025)</p>
-                                        }
+                                        <p class="font-semibold text-slate-800">@member.FullName</p>
+                                        <p class="text-slate-400 text-xs">@member.Email</p>
                                     </div>
                                 </div>
-                                <div class="flex gap-3 mt-6">
-                                    <button @onclick="ConfirmAssignTask"
-                                            class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
-                                        Assign
-                                    </button>
-                                    <button @onclick="() => assignTaskUserId = null"
-                                            class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
-                                        Cancel
-                                    </button>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (string.IsNullOrWhiteSpace(member.CommitteeTitle))
+                                {
+                                    <span class="text-slate-400 text-xs">&mdash;</span>
+                                }
+                                else
+                                {
+                                    <span class="inline-block whitespace-nowrap bg-spe-blue/10 text-spe-blue text-xs font-semibold px-2.5 py-1 rounded-full">
+                                        @member.CommitteeTitle
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex justify-center gap-3 text-xs">
+                                    <span class="text-amber-600 font-semibold">@tasks.Active active</span>
+                                    <span class="text-green-600 font-semibold">@tasks.Completed done</span>
+                                    <span class="text-red-500 font-semibold">@tasks.Failed failed</span>
                                 </div>
-                            </div>
-                        </div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="text-xl font-extrabold @(member.StrikeCount >= 3 ? "text-red-500" : member.StrikeCount >= 1 ? "text-amber-500" : "text-green-500")">
+                                    @member.StrikeCount
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex justify-center gap-2">
+                                    <button @onclick="() => AddStrike(member)"
+                                            class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                        + Strike
+                                    </button>
+                                    <button @onclick="() => RemoveStrike(member)"
+                                            disabled="@(member.StrikeCount == 0)"
+                                            title="@(member.StrikeCount == 0 ? "This member has no strikes to remove" : "Remove one strike")"
+                                            class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-100">
+                                        &minus; Strike
+                                    </button>
+                                    <button @onclick="() => OpenAssignTask(member)"
+                                            class="text-xs bg-spe-blue text-white hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                        Assign Task
+                                    </button>
+                                    <button @onclick="() => OpenEditMember(member)"
+                                            class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                        Edit
+                                    </button>
+                                    @if (member.Id != currentUserId)
+                                    {
+                                        <button @onclick="() => deleteTarget = member"
+                                                class="text-xs bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                            Delete
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
                     }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (assignTaskMember is not null)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-spe-blue mb-6">Assign Task</h2>
+            <div class="flex flex-col gap-4">
+                <input class="spe-input" placeholder="Task title" @bind="taskTitle" />
+                <textarea class="spe-input" rows="3" placeholder="Description" @bind="taskDescription"></textarea>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Deadline</label>
+                    <input type="text" class="spe-input w-full" placeholder="DD/MM/YYYY"
+                           value="@taskDeadlineString" @oninput="HandleDeadlineInput" maxlength="10" />
+                    @if (deadlineParseError)
+                    {
+                        <p class="text-red-500 text-xs mt-1">Invalid date. Use DD/MM/YYYY (e.g. 25/07/2025)</p>
                     }
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button @onclick="ConfirmAssignTask"
+                        class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
+                    Assign
+                </button>
+                <button @onclick="() => assignTaskMember = null"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
-                </Authorized>
-                <NotAuthorized>
-                    <div class="max-w-md mx-auto px-6 py-20 text-center">
-                        <h1 class="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
-                        <p class="text-slate-600 mb-6">You are not authenticated.</p>
-                        <p class="text-slate-500 mb-8">Please sign in to access the admin dashboard.</p>
-                        <a href="/"
-                           class="inline-block bg-spe-blue text-white px-6 py-2.5 rounded-lg hover:bg-blue-800 transition-colors font-semibold">
-                            Return to Home
-                        </a>
-                    </div>
-                </NotAuthorized>
-            </AuthorizeView>
+@if (editMember is not null)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-spe-blue mb-6">Edit Member</h2>
 
-
-
-            @if (editUserId is not null)
+            @if (!string.IsNullOrEmpty(editError))
             {
-                <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-                    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-                        <h2 class="text-xl font-bold text-spe-blue mb-6">Edit Member</h2>
-
-                        @if (!string.IsNullOrEmpty(editError))
-                        {
-                            <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
-                                @editError
-                            </div>
-                        }
-
-                        <div class="flex flex-col gap-4">
-                            <input
-                            class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                            placeholder="Full name" @bind="editName" />
-                            <input type="email"
-                                   class="border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                                   placeholder="Email" @bind="editEmail" />
-                            <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">Identity Role</label>
-                                <select
-                                    class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                                    @bind="editIdentityRole">
-                                    <option value="Member">Member</option>
-                                    <option value="CommitteeMember">Committee Member</option>
-                                    <option value="TeamLeader">Team Leader</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">Committee Title</label>
-                                <input
-                                class="border border-slate-300 rounded-lg px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-spe-blue"
-                                placeholder="e.g. Vice President, Secretary..." @bind="editCommitteeTitle" />
-                            </div>
-                        </div>
-                        <div class="flex gap-3 mt-6">
-                            <button @onclick="ConfirmEditMember"
-                                    class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
-                                Save
-                            </button>
-                            <button @onclick="() => editUserId = null"
-                                    class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
+                <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+                    @editError
                 </div>
             }
 
-            @if (deleteTarget is not null)
-            {
-                <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-                    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-                        <h2 class="text-xl font-bold text-red-600 mb-4">Remove Member</h2>
-                        <p class="text-slate-600 mb-6">
-                            Are you sure you want to permanently remove <strong>@deleteTarget.FullName</strong> (@deleteTarget.Email)?
-                            This cannot be undone.
-                        </p>
-                        <div class="flex gap-3">
-                            <button @onclick="ConfirmDeleteMember"
-                                    class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-lg hover:bg-red-700 transition-colors">
-                                Remove
-                            </button>
-                            <button @onclick="() => deleteTarget = null"
-                                    class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
+            @* Name and email are read-only: both come from the member's OpenWater record and
+               are re-synced on every login, so editing them here would just be overwritten. *@
+            <div class="mb-4 rounded-lg bg-slate-50 px-4 py-3">
+                <p class="font-semibold text-slate-800">@editMember.FullName</p>
+                <p class="text-xs text-slate-500">@editMember.Email</p>
+                <p class="mt-2 text-xs text-slate-400">Name and email are synced from SPE membership records.</p>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Identity Role</label>
+                    <select class="spe-input w-full" @bind="editIdentityRole">
+                        <option value="Member">Member</option>
+                        <option value="CommitteeMember">Committee Member</option>
+                        <option value="TeamLeader">Team Leader</option>
+                    </select>
                 </div>
-            }
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Committee Title</label>
+                    <input class="spe-input w-full" placeholder="e.g. Vice President, Secretary..."
+                           @bind="editCommitteeTitle" />
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button @onclick="ConfirmEditMember"
+                        class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
+                    Save
+                </button>
+                <button @onclick="() => editMember = null"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (deleteTarget is not null)
+{
+    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold text-red-600 mb-4">Remove Member</h2>
+            <p class="text-slate-600 mb-6">
+                Are you sure you want to permanently remove <strong>@deleteTarget.FullName</strong> (@deleteTarget.Email)?
+                This cannot be undone.
+            </p>
+            <div class="flex gap-3">
+                <button @onclick="ConfirmDeleteMember"
+                        class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-lg hover:bg-red-700 transition-colors">
+                    Remove
+                </button>
+                <button @onclick="() => deleteTarget = null"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+</DesktopOnly>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
     private List<ApplicationUser>? members;
-    private string? assignTaskUserId;
-    private string taskTitle = "";
-    private string taskDescription = "";
-    private DateTime taskDeadline = DateTime.Now.AddDays(7);
-    private string taskDeadlineString = DateTime.Now.AddDays(7).ToString("dd/MM/yyyy");
-    private bool deadlineParseError;
-    private bool isAuthorized;
+    private string? currentUserId;
 
     // Result of the last strike/task action, so the admin can see whether the member was actually emailed.
     private EmailResult? notification;
     private string notificationAction = "";
 
-    private void HandleDeadlineInput(ChangeEventArgs e)
-    {
-        var raw = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
-        if (raw.Length > 8) raw = raw[..8];
-        var sb = new System.Text.StringBuilder();
-        for (int i = 0; i < raw.Length; i++)
-        {
-            if (i == 2 || i == 4) sb.Append('/');
-            sb.Append(raw[i]);
-        }
-        taskDeadlineString = sb.ToString();
-    }
-    private string? currentUserId;
-    private bool canManageRoles;
+    private ApplicationUser? assignTaskMember;
+    private string taskTitle = "";
+    private string taskDescription = "";
+    private string taskDeadlineString = "";
+    private bool deadlineParseError;
 
-    private bool showAddMember;
-    private string newName = "";
-    private string newEmail = "";
-    private string newIdentityRole = "CommitteeMember";
-    private string? newCommitteeTitle;
-    private string? createError;
-
-    private string? editUserId;
-    private string editName = "";
-    private string editEmail = "";
+    private ApplicationUser? editMember;
     private string editIdentityRole = "CommitteeMember";
     private string? editCommitteeTitle;
     private string? editError;
@@ -339,46 +278,64 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthState.GetAuthenticationStateAsync();
-        currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(currentUserId))
-        {
-            isAuthorized = false;
-            return;
-        }
-
-        canManageRoles = await AdminSvc.CanManageRolesAsync(currentUserId);
-        isAuthorized = canManageRoles;
-        if (!canManageRoles)
-        {
-            return;
-        }
-
+        currentUserId = await AuthStateTask.GetUserIdAsync();
         members = await AdminSvc.GetAllMembersAsync();
     }
 
-    private async Task AddStrike(string userId)
+    /// <summary>One pass over a member's tasks instead of three separate LINQ Count() calls per render.</summary>
+    private static (int Active, int Completed, int Failed) CountTasks(ApplicationUser member)
+    {
+        int active = 0, completed = 0, failed = 0;
+        foreach (var task in member.AssignedTasks)
+        {
+            switch (task.Status)
+            {
+                case AssignmentStatus.Processing: active++; break;
+                case AssignmentStatus.Completed: completed++; break;
+                case AssignmentStatus.Failed: failed++; break;
+            }
+        }
+        return (active, completed, failed);
+    }
+
+    private async Task AddStrike(ApplicationUser member)
     {
         notificationAction = "Strike added.";
-        notification = await AdminSvc.AddStrikeAsync(userId);
-        members = await AdminSvc.GetAllMembersAsync();
+        var (strikeCount, result) = await AdminSvc.AddStrikeAsync(member.Id);
+        notification = result;
+        if (strikeCount is int count) member.StrikeCount = count;
     }
 
-    private async Task RemoveStrike(string userId)
+    private async Task RemoveStrike(ApplicationUser member)
     {
         notificationAction = "Strike removed.";
-        notification = await AdminSvc.RemoveStrikeAsync(userId);
-        members = await AdminSvc.GetAllMembersAsync();
+        var (strikeCount, result) = await AdminSvc.RemoveStrikeAsync(member.Id);
+        notification = result;
+        if (strikeCount is int count) member.StrikeCount = count;
     }
 
-    private void OpenAssignTask(string userId)
+    private void OpenAssignTask(ApplicationUser member)
     {
         notification = null;
-        assignTaskUserId = userId;
+        assignTaskMember = member;
         taskTitle = taskDescription = "";
-        taskDeadline = DateTime.Now.AddDays(7);
-        taskDeadlineString = taskDeadline.ToString("dd/MM/yyyy");
+        taskDeadlineString = UkTime.Now.AddDays(7).ToString("dd/MM/yyyy");
         deadlineParseError = false;
+    }
+
+    /// <summary>Reformats free typing into DD/MM/YYYY as the admin types.</summary>
+    private void HandleDeadlineInput(ChangeEventArgs e)
+    {
+        var digits = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 8) digits = digits[..8];
+
+        var formatted = new System.Text.StringBuilder(10);
+        for (var i = 0; i < digits.Length; i++)
+        {
+            if (i == 2 || i == 4) formatted.Append('/');
+            formatted.Append(digits[i]);
+        }
+        taskDeadlineString = formatted.ToString();
     }
 
     private async Task ConfirmAssignTask()
@@ -386,28 +343,28 @@
         deadlineParseError = false;
         if (!DateTime.TryParseExact(taskDeadlineString, "dd/MM/yyyy",
                 System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out taskDeadline))
+                System.Globalization.DateTimeStyles.None, out var deadline))
         {
             deadlineParseError = true;
             return;
         }
-        if (string.IsNullOrWhiteSpace(taskTitle) || assignTaskUserId is null) return;
-        var (_, emailResult) = await AdminSvc.AssignTaskAsync(assignTaskUserId, taskTitle, taskDescription, taskDeadline);
+
+        if (string.IsNullOrWhiteSpace(taskTitle) || assignTaskMember is null) return;
+
+        var member = assignTaskMember;
+        var (task, emailResult) = await AdminSvc.AssignTaskAsync(member.Id, taskTitle, taskDescription, deadline);
+
+        // Keep the table's task counts current without re-reading every member.
+        member.AssignedTasks.Add(task);
+
         notificationAction = $"Task \"{taskTitle}\" assigned.";
         notification = emailResult;
-        assignTaskUserId = null;
-        members = await AdminSvc.GetAllMembersAsync();
+        assignTaskMember = null;
     }
-
-  
-
-   
 
     private async Task OpenEditMember(ApplicationUser member)
     {
-        editUserId = member.Id;
-        editName = member.FullName;
-        editEmail = member.Email ?? "";
+        editMember = member;
         editCommitteeTitle = member.CommitteeTitle;
         editIdentityRole = await AdminSvc.GetPrimaryRoleAsync(member.Id);
         editError = null;
@@ -415,17 +372,7 @@
 
     private async Task ConfirmEditMember()
     {
-        if (string.IsNullOrWhiteSpace(editName) || string.IsNullOrWhiteSpace(editEmail) || editUserId is null)
-        {
-            editError = "Full name and email are required.";
-            return;
-        }
-
-        if (!editEmail.Contains("@") || !editEmail.Contains("."))
-        {
-            editError = "Please enter a valid email address.";
-            return;
-        }
+        if (editMember is null) return;
 
         if (string.IsNullOrEmpty(currentUserId))
         {
@@ -433,25 +380,29 @@
             return;
         }
 
-        var result = await AdminSvc.UpdateMemberDetailsAsync(currentUserId, editUserId, editName, editEmail, editIdentityRole,
-editCommitteeTitle);
+        var member = editMember;
+        var result = await AdminSvc.UpdateMemberDetailsAsync(
+            currentUserId, member.Id, editIdentityRole, editCommitteeTitle);
+
         if (!result.Succeeded)
         {
             editError = string.Join(" ", result.Errors.Select(e => e.Description));
             return;
         }
 
-        editUserId = null;
-        members = await AdminSvc.GetAllMembersAsync();
-    }
+        // Only the title is editable now, so the alphabetical-by-name ordering can't change.
+        member.CommitteeTitle = editCommitteeTitle;
 
-    private void OpenDeleteMember(ApplicationUser member) => deleteTarget = member;
+        editMember = null;
+    }
 
     private async Task ConfirmDeleteMember()
     {
         if (deleteTarget is null) return;
-        await AdminSvc.DeleteMemberAsync(deleteTarget.Id);
+
+        var result = await AdminSvc.DeleteMemberAsync(deleteTarget.Id);
+        if (result.Succeeded) members?.Remove(deleteTarget);
+
         deleteTarget = null;
-        members = await AdminSvc.GetAllMembersAsync();
     }
 }

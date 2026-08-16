@@ -21,7 +21,7 @@
     </div>
 
     <div class="mb-6">
-        <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+        <input class="w-full spe-input"
                placeholder="Search opportunities by title or description..."
                @bind="searchQuery" @bind:event="oninput" />
     </div>
@@ -29,14 +29,23 @@
     @if (showForm)
     {
         <section class="spe-card mb-8 p-6">
-            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">New Opportunity</h2>
+            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Opportunity</h2>
+            @* Blog-style authoring, matching tutorial articles: the body is markdown and is
+               rendered with headings, bullets and links on the detail page. *@
             <div class="flex flex-col gap-3">
-                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
-                       placeholder="Title" @bind="newTitle" />
-                <textarea class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
-                          rows="3" placeholder="Description" @bind="newDescription"></textarea>
-                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
-                       placeholder="External URL (optional)" @bind="newUrl" />
+                <input class="spe-input" placeholder="Title" @bind="newTitle" />
+                <div>
+                    <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="opportunity-body">
+                        Details
+                    </label>
+                    <textarea id="opportunity-body" class="spe-input w-full font-mono text-sm" rows="12"
+                              placeholder="@MarkdownPlaceholder" @bind="newDescription"></textarea>
+                    <p class="mt-1.5 text-xs text-slate-500">
+                        Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
+                        <code>[link](https://example.com)</code>, <code>**bold**</code>.
+                    </p>
+                </div>
+                <input class="spe-input" placeholder="External URL (optional)" @bind="newUrl" />
             </div>
             <div class="mt-4 flex gap-3">
                 <button @onclick="SaveOpp" class="spe-primary-btn">Save</button>
@@ -60,11 +69,11 @@
         <div class="space-y-4">
             @foreach (var opp in FilteredOpportunities)
             {
-                <article class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md" @onclick="() => GoToDetail(opp.Id)">
+                <article @key="opp.Id" class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md" @onclick="() => GoToDetail(opp.Id)">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1">
-                            <h3 class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor" style="font-family:Montserrat, sans-serif;">@opp.Title</h3>
-                            <p class="mb-3 line-clamp-3 text-slate-600">@opp.Description</p>
+                            <h3 class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor font-heading">@opp.Title</h3>
+                            <p class="mb-3 line-clamp-3 text-slate-600">@Excerpt(opp.Description)</p>
                             <span class="text-sm font-semibold text-spe-cobalt">View Details →</span>
                         </div>
                         <AuthorizeView Roles="CommitteeMember,TeamLeader">
@@ -83,6 +92,38 @@
 </div>
 
 @code {
+    private const string MarkdownPlaceholder = """
+        ## About the role
+
+        A short intro paragraph.
+
+        - Requirement one
+        - Requirement two
+
+        Apply via the [company site](https://example.com).
+        """;
+
+    /// <summary>
+    /// Plain-text preview for the list card. The body is markdown now, so showing it raw
+    /// would leak "##" and "- " into the summary. This strips only the common inline and
+    /// block markers — it is a preview, not a renderer.
+    /// </summary>
+    private static string Excerpt(string? markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown)) return "";
+
+        var text = System.Text.RegularExpressions.Regex.Replace(markdown, @"^#{1,6}\s*", "",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*[-*+]\s+", "",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*>\s?", "",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\[([^\]]*)\]\([^)]*\)", "$1");
+        text = text.Replace("**", "").Replace("__", "").Replace("`", "");
+
+        return string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+    }
+
     private List<Opportunity>? opportunities;
     private bool showForm;
     private string newTitle = "";

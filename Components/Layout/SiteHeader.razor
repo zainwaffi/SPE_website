@@ -1,130 +1,84 @@
-@using SPE_website.Components.Shared
-@rendermode InteractiveServer
-@implements IDisposable
-@inject NavigationManager NavigationManager
+@* Static SSR on purpose: this header sits in MainLayout, so giving it an interactive render
+   mode opened a SignalR circuit on *every* page, including /login and /not-found, purely to
+   toggle two menus. The disclosures are now driven by [data-toggle] in wwwroot/js/ui.js and
+   the logout form is a plain POST, so no circuit is needed. *@
 
-@if (_navOpen || _toolsOpen)
-{
-    <div class="fixed inset-0 z-40" @onclick="CloseAll"></div>
-}
-
-
-<!-- Header -->
 <header class="sticky top-0 z-50 border-b border-white/10 bg-spe-cobalt/95 shadow-lg backdrop-blur">
     <div class="flex flex-row pl-6 pr-2 mx-2 lg:pl-15 lg:pr-4">
         <div class="flex flex-2 h-24">
-            <a href="/" class="group flex items-center gap-3" @onclick="CloseAll">
-                    <img src="/images/spe-logo.png" alt="SPE Logo" class="h-24" />
+            <a href="/" class="group flex items-center gap-3">
+                <img src="/images/spe-logo.webp" alt="SPE Logo" class="h-24 w-auto" width="192" height="96"
+                     fetchpriority="high" />
                 <div class="hidden text-left sm:block">
-                    <p class="text-xl font-bold leading-tight text-white" style="font-family:Montserrat, sans-serif;">Society of Petroleum Engineers</p>
+                    <p class="font-heading text-xl font-bold leading-tight text-white">Society of Petroleum Engineers</p>
                     <p class="text-lg leading-tight text-white/70">University of Aberdeen Chapter</p>
                 </div>
             </a>
-
         </div>
-            <div class="flex flex-1 flex-row-reverse items-center gap-4 p-3 mx-8">
-                <button @onclick="ToggleNav" class="rounded-full p-3 text-white transition-colors hover:bg-white/10" aria-label="Open navigation menu">
-                    <i class="fa fa-bars text-9xl"></i>
-                </button>
-                <AuthorizeView>
-                    <Authorized>
-                        <form method="post" action="/logout">
-                            <button type="submit" class="rounded-lg border border-white/25 px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-white/10">
-                                Logout
-                            </button>
-                        </form>
-                    </Authorized>
-                </AuthorizeView>
-            </div>
+
+        <div class="flex flex-1 flex-row-reverse items-center gap-4 p-3 mx-8">
+            <button type="button" data-toggle="site-nav" aria-expanded="false" aria-controls="site-nav"
+                    aria-label="Open navigation menu"
+                    class="rounded-full p-3 text-white transition-colors hover:bg-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" aria-hidden="true" class="h-7 w-7">
+                    <path d="M3 6h18M3 12h18M3 18h18" />
+                </svg>
+            </button>
+            <AuthorizeView>
+                <Authorized>
+                    <form method="post" action="/logout">
+                        <button type="submit"
+                                class="rounded-lg border border-white/25 px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-white/10">
+                            Logout
+                        </button>
+                    </form>
+                </Authorized>
+            </AuthorizeView>
+        </div>
     </div>
 
-    @if (_navOpen)
-    {
-        <FadeUp class="border-t border-white/10 bg-spe-endeavor shadow-xl ">
-            <div class=" max-w-[1440px] px-6 py-2 lg:px-20">
-                <a href="/" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Home</a>
-                <a href="/events" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Events</a>
-                <AuthorizeView>
-                    <Authorized Context="memberLinks">
-                        <a href="/opportunities" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Opportunities</a>
-                        <a href="/courses" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Courses</a>
-                    </Authorized>
-                </AuthorizeView>
-                <a href="https://www.spe-aberdeen.org/news" target="_blank" rel="noopener noreferrer" @onclick="CloseAll" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">News</a>
+    <div id="site-nav" hidden class="border-t border-white/10 bg-spe-endeavor shadow-xl">
+        <div class="max-w-360 px-6 py-2 lg:px-20">
+            <a href="/" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Home</a>
+            <a href="/events" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Events</a>
+            <AuthorizeView>
+                <Authorized Context="memberLinks">
+                    <a href="/opportunities" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Opportunities</a>
+                    <a href="/courses" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Courses</a>
+                </Authorized>
+            </AuthorizeView>
+            <a href="https://www.spe-aberdeen.org/news" target="_blank" rel="noopener noreferrer"
+               class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">News</a>
 
-                <AuthorizeView>
-                    <Authorized>
-                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                            <Authorized Context="toolsContext">
-                                <button @onclick="ToggleTools" class="mt-2 w-full rounded border border-white/20 px-2 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-white/10">
-                                    Tools
-                                </button>
-                                @if (_toolsOpen)
-                                {
-                                    <div class="mt-2 space-y-1 rounded-lg bg-white/10 p-2 text-sm">
-                                        <a href="/profile" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Profile</a>
-                                        <a href="/tasks" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Tasks</a>
-                                        <a href="/tutorials" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Tutorials</a>
-                                        <AuthorizeView Roles="TeamLeader">
-                                            <Authorized Context="adminContext">
-                                                <a href="/admin/members" @onclick="CloseAll" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Admin Panel</a>
-                                            </Authorized>
-                                        </AuthorizeView>
-                                        <form method="post" action="/logout" class="pt-1">
-                                            <button type="submit" class="w-full rounded px-2 py-2 text-left text-white/80 transition-colors hover:bg-white/10 hover:text-white">Logout</button>
-                                        </form>
-                                    </div>
-                                }
-                            </Authorized>
-                        </AuthorizeView>
-                    </Authorized>
-                    <NotAuthorized>
-                        <a href="/login" @onclick="CloseAll" class="mt-2 block rounded border border-white/20 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Login</a>
-                    </NotAuthorized>
-                </AuthorizeView>
-            </div>
-        </FadeUp>
-    }
+            <AuthorizeView>
+                <Authorized>
+                    <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                        <Authorized Context="toolsContext">
+                            <button type="button" data-toggle="site-tools" aria-expanded="false" aria-controls="site-tools"
+                                    class="mt-2 w-full rounded border border-white/20 px-2 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                                Tools
+                            </button>
+                            <div id="site-tools" hidden class="mt-2 space-y-1 rounded-lg bg-white/10 p-2 text-sm">
+                                <a href="/profile" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Profile</a>
+                                <a href="/tasks" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Tasks</a>
+                                <a href="/tutorials" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Tutorials</a>
+                                <AuthorizeView Roles="TeamLeader">
+                                    <Authorized Context="adminContext">
+                                        <a href="/admin/members" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Admin Panel</a>
+                                    </Authorized>
+                                </AuthorizeView>
+                                <form method="post" action="/logout" class="pt-1">
+                                    <button type="submit" class="w-full rounded px-2 py-2 text-left text-white/80 transition-colors hover:bg-white/10 hover:text-white">Logout</button>
+                                </form>
+                            </div>
+                        </Authorized>
+                    </AuthorizeView>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/login" class="mt-2 block rounded border border-white/20 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
 </header>
-
-@code {
-    private bool _navOpen;
-    private bool _toolsOpen;
-
-    protected override void OnInitialized()
-    {
-        NavigationManager.LocationChanged += OnLocationChanged;
-    }
-
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-    {
-        _navOpen = false;
-        _toolsOpen = false;
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        NavigationManager.LocationChanged -= OnLocationChanged;
-    }
-
-    private void ToggleNav()
-    {
-        _navOpen = !_navOpen;
-        if (!_navOpen)
-        {
-            _toolsOpen = false;
-        }
-    }
-
-    private void ToggleTools()
-    {
-        _toolsOpen = !_toolsOpen;
-    }
-
-    private void CloseAll()
-    {
-        _navOpen = false;
-        _toolsOpen = false;
-    }
-}

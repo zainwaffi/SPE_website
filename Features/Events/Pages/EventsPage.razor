@@ -3,10 +3,19 @@
 @page "/events/past"
 @rendermode InteractiveServer
 @attribute [AllowAnonymous]
+@implements IAsyncDisposable
 @inject EventService EventSvc
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <PageTitle>Events — SPE Chapter</PageTitle>
+
+@* Instagram is only embedded here, so the connection warm-up belongs on this page rather
+   than in App.razor where every route paid for it. *@
+<HeadContent>
+    <link rel="preconnect" href="https://www.instagram.com" />
+    <link rel="preconnect" href="https://scontent.cdninstagram.com" crossorigin />
+</HeadContent>
 
 <div class="spe-page-shell  bg-white/10 backdrop-blur-none md:max-w-300">
     <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
@@ -22,16 +31,57 @@
         </AuthorizeView>
     </div>
 
+    <div class="mb-6 flex flex-wrap items-center gap-3">
+        <button type="button" @onclick="() => showCalendarOptions = true"
+                class="inline-flex items-center gap-2 rounded-lg border border-white/40 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/25">
+            <Icon Name="calendar" Class="h-4 w-4" />
+            Add SPE Event Calendar
+        </button>
+
+        @* #Updates: point this at the SPE Aberdeen Section events page when the URL is confirmed. *@
+        <a href="" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2 rounded-lg border border-white/30 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+            <Icon Name="globe" Class="h-4 w-4" />
+            Find more events from Aberdeen Section
+            <span aria-hidden="true">→</span>
+        </a>
+    </div>
+
+    @* Search bar across the full width, category chips on the row beneath it. Chips toggle
+       independently and can be combined; with none selected every category shows, so there is
+       no separate "All" chip to keep in sync. *@
     <div class="mb-6">
-        <input class="w-full  bg-white rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+        <input class="w-full  bg-white spe-input"
                placeholder="Search events by title, location, category, or description..."
                @bind="searchQuery" @bind:event="oninput" />
+
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+            @foreach (var category in AllCategories)
+            {
+                var isActive = selectedCategories.Contains(category);
+                <button type="button" @key="category" @onclick="() => ToggleCategory(category)"
+                        aria-pressed="@isActive"
+                        class="rounded-md px-5 py-2 text-sm font-semibold transition-colors @(isActive
+                                ? "bg-spe-gold text-spe-ink"
+                                : "bg-spe-blue text-white hover:bg-spe-endeavor")">
+                    @GetCategoryLabel(category)
+                </button>
+            }
+
+            @if (selectedCategories.Count > 0)
+            {
+                <button type="button" @onclick="() => selectedCategories.Clear()"
+                        class="text-sm font-semibold text-white/70 underline-offset-2 transition-colors hover:text-white hover:underline">
+                    Clear filters
+                </button>
+            }
+        </div>
     </div>
 
     @if (showForm)
     {
         <section class="spe-card mb-8 border-slate-200/70 bg-white p-6">
-            <h2 class="mb-4 text-xl font-bold text-white" style="font-family:Montserrat, sans-serif;">New Event</h2>
+            <h2 class="mb-4 text-xl font-bold text-white font-heading">New Event</h2>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600">Date</p>
@@ -91,7 +141,7 @@
                             {
                                 var currentDay = new DateTime(calendarMonth.Year, calendarMonth.Month, day);
                                 var isSelected = currentDay.Date == selectedEventDate.Date;
-                                var isToday = currentDay.Date == DateTime.Today;
+                                var isToday = currentDay.Date == UkTime.Today;
 
                                 <button type="button"
                                         @onclick="() => SelectEventDate(currentDay)"
@@ -117,23 +167,23 @@
                     <div>
                         <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600">Time</p>
                         <input type="time"
-                               class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                               class="w-full spe-input"
                                value="@newTimeString"
                                @onchange="HandleTimeChanged" />
                     </div>
                 </div>
-                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                <input class="w-full spe-input"
                        placeholder="Event Title" @bind="newTitle" />
-                <select class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                <select class="w-full spe-input"
                         @bind="selectedCategory">
                     <option value="@EventCategory.Talk">Talk</option>
                     <option value="@EventCategory.SiteVisit">Site Visit</option>
                     <option value="@EventCategory.Workshop">Workshop</option>
                     <option value="@EventCategory.Other">Other</option>
                 </select>
-                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                <input class="w-full spe-input"
                        placeholder="Google Maps link" @bind="newLocation" />
-                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                <input class="w-full spe-input"
                        placeholder="Instagram post URL" @bind="newInstagramEmbedUrl" />
             </div>
             <div class="mt-4 flex gap-3">
@@ -150,7 +200,7 @@
     else
     {
         <section>
-            <h2 class="mb-4 text-2xl font-bold text-white" style="font-family:Montserrat, sans-serif;">Upcoming Events</h2>
+            <h2 class="mb-4 text-2xl font-bold text-white font-heading">Upcoming Events</h2>
             @if (!FilteredUpcomingEvents.Any())
             {
                 <div class="rounded-xl border border-slate-200/70 bg-white py-12 text-center">
@@ -162,7 +212,9 @@
                 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach (var evt in FilteredUpcomingEvents)
                     {
-                        <article class="spe-card overflow-hidden border-slate-200/70 bg-white transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        @* @key matters most here: each card holds a JS-hydrated Instagram
+                           blockquote, which mis-keyed diffing would destroy and rebuild. *@
+                        <article @key="evt.Id" class="spe-card overflow-hidden border-slate-200/70 bg-white transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
                             @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
                             {
                                 <div class="ig-embed-slot flex justify-center overflow-hidden bg-slate-50">
@@ -181,28 +233,111 @@
                                 </div>
                             }
                             <div class="p-5">
-                                <div class="mb-2 flex items-start justify-between">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-spe-gold" style="font-family:'Roboto Mono', monospace;">
-                                        @evt.Date.ToString("MMM d, yyyy · h:mm tt")
-                                    </p>
-                                    <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                                        <Authorized>
-                                            <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
-                                                    class="text-sm font-medium text-red-400 transition-colors hover:text-red-600">
-                                                Delete
-                                            </button>
-                                        </Authorized>
-                                    </AuthorizeView>
-                                </div>
-                                <h3 class="mb-1 text-lg font-bold text-spe-endeavor" style="font-family:Montserrat, sans-serif;">@evt.Title</h3>
-                                <span class="mb-2 inline-block rounded-full bg-spe-cobalt/10 px-3 py-1 text-xs font-semibold text-spe-cobalt">
+                                <h3 class="mb-1 text-lg font-bold text-spe-endeavor font-heading">@evt.Title</h3>
+                                <span class="mb-3 inline-block rounded-full bg-spe-cobalt/10 px-3 py-1 text-xs font-semibold text-spe-cobalt">
                                     @GetCategoryLabel(evt.Category)
                                 </span>
-                                @if (!string.IsNullOrEmpty(evt.Location))
-                                {
-                                    <a href="@evt.Location" target="_blank" rel="noopener noreferrer" class="mb-3 block text-sm text-spe-cobalt hover:underline">📍 View Location</a>
-                                }
+                                <div class="mb-3 space-y-2">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="text-xs font-bold uppercase tracking-wider text-spe-gold font-kicker">
+                                            @evt.Date.ToString("MMM d, yyyy · h:mm tt")
+                                        </p>
+                                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                            <Authorized>
+                                                <a href="/events/@evt.Id/attendees" @onclick:stopPropagation="true"
+                                                   class="shrink-0 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200">
+                                                    Attendees@(registrationCounts.TryGetValue(evt.Id, out var signedUp) && signedUp > 0 ? $" ({signedUp})" : "")
+                                                </a>
+                                            </Authorized>
+                                        </AuthorizeView>
+                                    </div>
+
+                                    <div class="flex items-center justify-between gap-3">
+                                        @if (!string.IsNullOrEmpty(evt.Location))
+                                        {
+                                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer"
+                                               @onclick:stopPropagation="true"
+                                               class="min-w-0 truncate text-sm text-spe-cobalt hover:underline">📍 View Location</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-sm text-slate-300">No location</span>
+                                        }
+                                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                            <Authorized>
+                                                <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
+                                                        class="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700">
+                                                    Delete
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
+                                    </div>
+                                </div>
                                 <p class="text-sm text-slate-600 line-clamp-3">@evt.Description</p>
+
+                                @* Attendance sign-up. Only signed-in members see it, because a
+                                   registration has to be attributable to a person. *@
+                                <AuthorizeView>
+                                    <Authorized Context="signUp">
+                                        <div class="mt-4 border-t border-slate-200 pt-4">
+                                            @if (registrationCounts.TryGetValue(evt.Id, out var attending) && attending > 0)
+                                            {
+                                                <p class="mb-2 text-xs text-slate-500">
+                                                    @attending @(attending == 1 ? "member is" : "members are") attending
+                                                </p>
+                                            }
+
+                                            @if (registeredEventIds.Contains(evt.Id))
+                                            {
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-green-700">
+                                                        <Icon Name="check" Class="h-4 w-4" /> You're signed up
+                                                    </span>
+                                                    <button @onclick="() => CancelSignUp(evt.Id)"
+                                                            class="text-xs font-medium text-slate-700 transition-colors hover:text-red-600 bg-red-100 rounded-lg px-3 py-1.5">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            }
+                                            else if (signUpEventId == evt.Id)
+                                            {
+                                                <p class="mb-2 text-sm font-semibold text-slate-700">Sign up to attend</p>
+                                                <div class="flex flex-col gap-2">
+                                                    <input class="spe-input px-3 py-1.5 text-sm" placeholder="Your full name"
+                                                           @bind="signUpName" />
+                                                    <input class="spe-input px-3 py-1.5 text-sm" placeholder="Your university"
+                                                           @bind="signUpUniversity" />
+                                                    @if (signUpError is not null)
+                                                    {
+                                                        <p class="text-xs text-red-500">@signUpError</p>
+                                                    }
+                                                    <div class="flex gap-2">
+                                                        <button @onclick="() => ConfirmSignUp(evt.Id)" class="spe-primary-btn px-4 py-1.5">
+                                                            Confirm
+                                                        </button>
+                                                        <button @onclick="() => signUpEventId = null"
+                                                                class="rounded-lg border border-slate-300 px-4 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <button @onclick="() => OpenSignUp(evt.Id)" class="spe-primary-btn inline-block w-full">
+                                                    Sign Up to Attend 
+                                                </button>
+                                            }
+                                        </div>
+                                    </Authorized>
+                                    <NotAuthorized Context="signUpAnon">
+                                        <div class="mt-4 border-t border-slate-200 pt-4">
+                                            <a href="/login?returnUrl=/events" class="text-sm font-semibold text-spe-cobalt hover:underline">
+                                                Sign in to attend this event →
+                                            </a>
+                                        </div>
+                                    </NotAuthorized>
+                                </AuthorizeView>
                             </div>
                         </article>
                     }
@@ -214,7 +349,7 @@
 
 <!-- Past Events Section -->
         <section>
-            <h2 class="mb-4 text-2xl font-bold text-white" style="font-family:Montserrat, sans-serif;">Past Events</h2>
+            <h2 class="mb-4 text-2xl font-bold text-white font-heading">Past Events</h2>
             @if (!FilteredPastEvents.Any())
             {
                 <div class="rounded-xl border border-slate-200/70 bg-white py-12 text-center">
@@ -226,7 +361,9 @@
                 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach (var evt in FilteredPastEvents)
                     {
-                        <article class="spe-card overflow-hidden border-slate-200/70 bg-white transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        @* @key matters most here: each card holds a JS-hydrated Instagram
+                           blockquote, which mis-keyed diffing would destroy and rebuild. *@
+                        <article @key="evt.Id" class="spe-card overflow-hidden border-slate-200/70 bg-white transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
                             @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
                             {
                                 <div class="ig-embed-slot flex justify-center overflow-hidden bg-slate-50">
@@ -241,25 +378,46 @@
                             }
 
                             <div class="p-5">
-                                <div class="mb-2 flex items-start justify-between">
-                                    <p class="text-xs text-slate-400">@evt.Date.ToString("MMMM d, yyyy")</p>
-                                    <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                                        <Authorized>
-                                            <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
-                                                    class="text-sm font-medium text-red-400 transition-colors hover:text-red-600">
-                                                Delete
-                                            </button>
-                                        </Authorized>
-                                    </AuthorizeView>
-                                </div>
-                                <h3 class="mb-1 text-lg font-bold text-spe-endeavor" style="font-family:Montserrat, sans-serif;">@evt.Title</h3>
-                                <span class="mb-2 inline-block rounded-full bg-spe-cobalt/10 px-3 py-1 text-xs font-semibold text-spe-cobalt">
+                                <h3 class="mb-1 text-lg font-bold text-spe-endeavor font-heading">@evt.Title</h3>
+                                <span class="mb-3 inline-block rounded-full bg-spe-cobalt/10 px-3 py-1 text-xs font-semibold text-spe-cobalt">
                                     @GetCategoryLabel(evt.Category)
                                 </span>
-                                @if (!string.IsNullOrEmpty(evt.Location))
-                                {
-                                    <a href="@evt.Location" target="_blank" rel="noopener noreferrer" class="mb-2 block text-sm text-spe-cobalt hover:underline">📍 View Location</a>
-                                }
+                                <div class="mb-3 space-y-2">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="text-xs text-slate-400">
+                                            @evt.Date.ToString("MMMM d, yyyy")
+                                        </p>
+                                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                            <Authorized>
+                                                <a href="/events/@evt.Id/attendees" @onclick:stopPropagation="true"
+                                                   class="shrink-0 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200">
+                                                    Attendees@(registrationCounts.TryGetValue(evt.Id, out var signedUp) && signedUp > 0 ? $" ({signedUp})" : "")
+                                                </a>
+                                            </Authorized>
+                                        </AuthorizeView>
+                                    </div>
+
+                                    <div class="flex items-center justify-between gap-3">
+                                        @if (!string.IsNullOrEmpty(evt.Location))
+                                        {
+                                            <a href="@evt.Location" target="_blank" rel="noopener noreferrer"
+                                               @onclick:stopPropagation="true"
+                                               class="min-w-0 truncate text-sm text-spe-cobalt hover:underline">View Location</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-sm text-slate-300">No location</span>
+                                        }
+                                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                            <Authorized>
+                                                <button @onclick:stopPropagation="true" @onclick="() => DeleteEvent(evt.Id)"
+                                                        class="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700">
+                                                    Delete
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
+                                    </div>
+                                </div>
                                 <p class="mb-4 text-sm text-slate-600">@evt.Description</p>
 
                                 @{
@@ -293,7 +451,7 @@
                                                 </button>
                                             }
                                         </div>
-                                        <textarea class="mb-3 w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
+                                        <textarea class="spe-input mb-3 w-full px-3 text-sm"
                                                   rows="2" placeholder="Optional feedback..." @bind="pendingComment"></textarea>
                                         <div class="flex gap-2">
                                             <button @onclick="() => SubmitRating(evt.Id)" class="spe-primary-btn px-4 py-1.5">Submit</button>
@@ -303,9 +461,20 @@
                                 }
                                 else
                                 {
-                                    <button @onclick="() => OpenRating(evt.Id)" class="text-sm font-semibold text-spe-cobalt hover:underline">
-                                        Leave a review
-                                    </button>
+                                    @* Reviews are attributed to the member now (for the committee's
+                                       export), so they require sign-in. Names are never shown here. *@
+                                    <AuthorizeView>
+                                        <Authorized Context="review">
+                                            <button @onclick="() => OpenRating(evt.Id)" class="text-sm font-semibold text-spe-cobalt hover:underline">
+                                                Leave a review
+                                            </button>
+                                        </Authorized>
+                                        <NotAuthorized Context="reviewAnon">
+                                            <a href="/login?returnUrl=/events" class="text-sm font-semibold text-spe-cobalt hover:underline">
+                                                Sign in to leave a review
+                                            </a>
+                                        </NotAuthorized>
+                                    </AuthorizeView>
                                 }
                             </div>
                         </article>
@@ -314,6 +483,112 @@
             }
         </section>
     }
+
+    @* Calendar subscription chooser.
+
+       A modal rather than three buttons in the header or a dropdown: subscribing is a
+       once-ever action that needs a platform choice, a line explaining it's an ongoing
+       subscription rather than a one-off import, and a raw-URL fallback for desktop Outlook
+       and anything else. None of that fits comfortably in a header row or a popover. *@
+    @if (showCalendarOptions)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+             @onclick="() => showCalendarOptions = false">
+            @* Stop clicks inside the card from closing it via the backdrop handler above. *@
+            <div class="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl" @onclick:stopPropagation="true">
+                <h2 class="font-heading text-xl font-bold text-spe-cobalt">Add the SPE event calendar</h2>
+                <p class="mt-2 text-sm text-slate-600">
+                    Subscribe once and new chapter events show up in your calendar automatically —
+                    you don't need to come back here for each one.
+                </p>
+
+                <div class="mt-6 flex flex-col gap-2">
+                    <a href="@AppleCalendarUrl"
+                       class="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 transition-colors hover:border-spe-cobalt hover:bg-slate-50">
+                        <Icon Name="apple" Class="h-6 w-6 text-slate-800" />
+                        <span class="flex-1">
+                            <span class="block text-sm font-semibold text-slate-800">iPhone &amp; Mac</span>
+                            <span class="block text-xs text-slate-500">Opens Apple Calendar</span>
+                        </span>
+                        <span class="text-slate-300" aria-hidden="true">→</span>
+                    </a>
+
+                    <a href="@GoogleCalendarUrl" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 transition-colors hover:border-spe-cobalt hover:bg-slate-50">
+                        <Icon Name="android" Class="h-6 w-6 text-slate-800" />
+                        <span class="flex-1">
+                            <span class="block text-sm font-semibold text-slate-800">Android</span>
+                            <span class="block text-xs text-slate-500">Adds it to Google Calendar</span>
+                        </span>
+                        <span class="text-slate-300" aria-hidden="true">→</span>
+                    </a>
+
+                    <a href="@OutlookCalendarUrl" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 transition-colors hover:border-spe-cobalt hover:bg-slate-50">
+                        <Icon Name="outlook" Class="h-6 w-6 text-slate-800" />
+                        <span class="flex-1">
+                            <span class="block text-sm font-semibold text-slate-800">Outlook</span>
+                            <span class="block text-xs text-slate-500">Adds it to Outlook on the web</span>
+                        </span>
+                        <span class="text-slate-300" aria-hidden="true">→</span>
+                    </a>
+                </div>
+
+                @* Fallback for the desktop Outlook app, university calendars, and anything else
+                   that wants the raw feed. onfocus/select is plain HTML — no JS interop needed. *@
+                <div class="mt-6 border-t border-slate-200 pt-5">
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500" for="calendar-feed-url">
+                        Or use the calendar link
+                    </label>
+                    <input id="calendar-feed-url" class="spe-input w-full text-xs text-slate-600" readonly
+                           value="@CalendarFeedUrl" onfocus="this.select()" onclick="this.select()" />
+                    <p class="mt-1.5 text-xs text-slate-400">
+                        Paste this into any calendar app that supports subscribing by URL.
+                    </p>
+                </div>
+
+                <button type="button" @onclick="() => showCalendarOptions = false"
+                        class="mt-6 w-full rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
+                    Close
+                </button>
+            </div>
+        </div>
+    }
+
+    @* "Collab with us" — same column treatment as the Quick Links block in the site footer.
+       #Updates: hrefs are intentionally blank until the collaboration links are decided. *@
+    <section class="mt-16 border-t border-white/20 pt-10">
+        <div class="flex flex-col items-center">
+            <h4 class="mb-5 border-b border-spe-gold pb-2 font-heading text-sm font-bold uppercase tracking-[0.2em] text-spe-gold">
+                Collab With Us
+            </h4>
+            <p class="mb-6 max-w-md text-center text-sm text-white/70">
+                Partnering on an event, sponsoring the chapter, or speaking to our members? Get in touch.
+            </p>
+            <ul class="flex flex-col items-center gap-3 text-sm text-white/70">
+                <li>
+                    <a class="inline-flex items-center gap-2 transition-colors hover:text-white" href="mailto:spe@ausa.org.uk">
+                        <Icon Name="envelope" Class="h-4 w-4" />
+                        spe@@ausa.org.uk
+                    </a>
+                </li>
+                <li>
+                    <a class="inline-flex items-center gap-2 transition-colors hover:text-white"
+                       href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true"
+                       target="_blank" rel="noopener noreferrer">
+                        <Icon Name="linkedin" Class="h-4 w-4" />
+                        LinkedIn
+                    </a>
+                </li>
+                <li>
+                    <a class="inline-flex items-center gap-2 transition-colors hover:text-white" href="">
+                        <Icon Name="globe" Class="h-4 w-4" />
+                        Collaboration enquiries
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </section>
 </div>
 
 @code {
@@ -325,11 +600,11 @@
     private string newInstagramEmbedUrl = "";
     private EventCategory selectedCategory = EventCategory.Other;
     private string searchQuery = "";
-    private DateTime selectedEventDate = DateTime.Today.AddDays(7);
-    private DateTime calendarMonth = new(DateTime.Today.AddDays(7).Year, DateTime.Today.AddDays(7).Month, 1);
+    private DateTime selectedEventDate = UkTime.Today.AddDays(7);
+    private DateTime calendarMonth = new(UkTime.Today.AddDays(7).Year, UkTime.Today.AddDays(7).Month, 1);
     private string newTimeString = "18:00";
     private bool isYearPickerOpen;
-    private int yearPickerStart = DateTime.Today.Year - 6;
+    private int yearPickerStart = UkTime.Today.Year - 6;
     private bool dateParseError;
     private bool shouldProcessInstagramEmbeds;
     private static readonly string[] weekDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -340,15 +615,71 @@
     private int pendingStars = 5;
     private string pendingComment = "";
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private bool showCalendarOptions;
+
+    private static readonly EventCategory[] AllCategories = Enum.GetValues<EventCategory>();
+
+    // Empty means "no category filter", i.e. show everything.
+    private readonly HashSet<EventCategory> selectedCategories = [];
+
+    private void ToggleCategory(EventCategory category)
+    {
+        if (!selectedCategories.Add(category)) selectedCategories.Remove(category);
+    }
+
+    /// <summary>The public iCalendar feed, as an absolute URL — subscribers are off-site.</summary>
+    private string CalendarFeedUrl => $"{Nav.BaseUri.TrimEnd('/')}/events/calendar.ics";
+
+    /// <summary>
+    /// webcal:// is what makes Apple Calendar (and several others) offer to *subscribe* rather
+    /// than import a one-off snapshot. It is the same URL, only the scheme differs.
+    /// </summary>
+    private string WebcalFeedUrl =>
+        CalendarFeedUrl.Replace("https://", "webcal://").Replace("http://", "webcal://");
+
+    private string AppleCalendarUrl => WebcalFeedUrl;
+
+    private string GoogleCalendarUrl =>
+        $"https://calendar.google.com/calendar/r?cid={Uri.EscapeDataString(WebcalFeedUrl)}";
+
+    private string OutlookCalendarUrl =>
+        "https://outlook.live.com/calendar/0/addfromweb" +
+        $"?url={Uri.EscapeDataString(CalendarFeedUrl)}" +
+        $"&name={Uri.EscapeDataString(EventCalendarService.CalendarName)}";
+
+    // Attendance sign-up state. currentUserId is null for anonymous visitors, who see a
+    // "sign in to attend" link instead of the form.
+    private string? currentUserId;
+    private HashSet<int> registeredEventIds = [];
+    private Dictionary<int, int> registrationCounts = [];
+    private int? signUpEventId;
+    private string signUpName = "";
+    private string signUpUniversity = "";
+    private string? signUpError;
+
     private IEnumerable<Event> FilteredUpcomingEvents =>
-        upcomingEvents?.Where(evt => MatchesSearch(evt))
-        ?? Enumerable.Empty<Event>();
+        upcomingEvents?.Where(Matches) ?? Enumerable.Empty<Event>();
 
     private IEnumerable<Event> FilteredPastEvents =>
-        pastEvents?.Where(evt => MatchesSearch(evt))
-        ?? Enumerable.Empty<Event>();
+        pastEvents?.Where(Matches) ?? Enumerable.Empty<Event>();
 
-    protected override async Task OnInitializedAsync() => await LoadEventsAsync();
+    /// <summary>Search text and category chips narrow the list together, not separately.</summary>
+    private bool Matches(Event evt) => MatchesCategory(evt) && MatchesSearch(evt);
+
+    private bool MatchesCategory(Event evt) =>
+        selectedCategories.Count == 0 || selectedCategories.Contains(evt.Category);
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUserId = await AuthStateTask.GetUserIdAsync();
+        await LoadEventsAsync();
+    }
+
+    // Imported on demand rather than loaded globally, so pages without embeds never fetch it.
+    private IJSObjectReference? instagramModule;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -358,13 +689,38 @@
         }
 
         shouldProcessInstagramEmbeds = false;
-        await JS.InvokeVoidAsync("speSite.processInstagramEmbeds");
+        instagramModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/instagram-embed.js");
+        await instagramModule.InvokeVoidAsync("processInstagramEmbeds");
+    }
+
+    /// <summary>
+    /// Disconnects the module's IntersectionObserver on navigation away, so it doesn't
+    /// outlive the page. JSDisconnectedException is expected when the circuit is already gone.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (instagramModule is null) return;
+
+        try
+        {
+            await instagramModule.InvokeVoidAsync("dispose");
+            await instagramModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     private async Task LoadEventsAsync()
     {
-        upcomingEvents = await EventSvc.GetUpcomingAsync();
-        pastEvents = await EventSvc.GetPastAsync();
+        (upcomingEvents, pastEvents) = await EventSvc.GetUpcomingAndPastAsync();
+        registrationCounts = await EventSvc.GetRegistrationCountsAsync();
+
+        if (currentUserId is not null)
+        {
+            registeredEventIds = await EventSvc.GetRegisteredEventIdsAsync(currentUserId);
+        }
+
         shouldProcessInstagramEmbeds = true;
     }
 
@@ -421,6 +777,7 @@
         });
 
         showForm = false;
+        newTitle = "";
         newInstagramEmbedUrl = "";
         newLocation = "";
         selectedCategory = EventCategory.Other;
@@ -436,8 +793,48 @@
 
     private async Task SubmitRating(int eventId)
     {
-        await EventSvc.AddRatingAsync(eventId, pendingStars, pendingComment);
+        if (currentUserId is null) return;
+
+        await EventSvc.AddRatingAsync(eventId, currentUserId, pendingStars, pendingComment);
         ratingPanelEventId = null;
+        await LoadEventsAsync();
+    }
+
+    /// <summary>Opens the sign-up form, prefilled from the member's profile so most sign-ups are one click plus confirm.</summary>
+    private async Task OpenSignUp(int eventId)
+    {
+        if (currentUserId is null) return;
+
+        signUpError = null;
+        signUpEventId = eventId;
+        (signUpName, signUpUniversity) = await EventSvc.GetMemberDetailsAsync(currentUserId);
+    }
+
+    private async Task ConfirmSignUp(int eventId)
+    {
+        if (currentUserId is null) return;
+
+        if (string.IsNullOrWhiteSpace(signUpName) || string.IsNullOrWhiteSpace(signUpUniversity))
+        {
+            signUpError = "Please give both your name and your university.";
+            return;
+        }
+
+        var registered = await EventSvc.RegisterAsync(eventId, currentUserId, signUpName, signUpUniversity);
+        if (!registered)
+        {
+            signUpError = "That sign-up could not be saved — you may already be signed up.";
+        }
+
+        signUpEventId = null;
+        await LoadEventsAsync();
+    }
+
+    private async Task CancelSignUp(int eventId)
+    {
+        if (currentUserId is null) return;
+
+        await EventSvc.CancelRegistrationAsync(eventId, currentUserId);
         await LoadEventsAsync();
     }
 

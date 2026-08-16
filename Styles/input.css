@@ -1,5 +1,8 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&family=Roboto+Mono:wght@600;700&display=swap");
+
+/* NOTE: Google Fonts are loaded via <link> in Components/App.razor, NOT via @import here.
+   Tailwind emits @import at the *end* of the generated stylesheet, after ~2200 style rules,
+   which makes it spec-invalid — browsers silently drop it and the fonts never load. */
 
 @source "../Components/**/*.razor";
 @source "../Features/**/*.razor";
@@ -12,12 +15,18 @@
   --color-spe-cobalt: #0046AD;
   --color-spe-endeavor: #0067B1;
   --color-spe-ink: #000000;
+
+  /* Generates font-heading / font-body / font-kicker utilities, replacing the 38
+     hand-written style="font-family:Montserrat, sans-serif;" attributes. */
+  --font-heading: "Montserrat", sans-serif;
+  --font-body: "Open Sans", sans-serif;
+  --font-kicker: "Roboto Mono", monospace;
 }
 
 @layer base {
   html,
   body {
-    font-family: "Open Sans", sans-serif;
+    font-family: var(--font-body);
   }
 }
 
@@ -27,27 +36,87 @@
   }
 
   .spe-page-kicker {
-    @apply mb-2 text-xs font-bold uppercase tracking-[0.22em] text-spe-cobalt;
-    font-family: "Roboto Mono", monospace;
+    @apply mb-2 font-kicker text-xs font-bold uppercase tracking-[0.22em] text-spe-cobalt;
   }
 
   .spe-page-title {
-    @apply text-3xl font-extrabold text-black;
-    font-family: "Montserrat", sans-serif;
+    @apply font-heading text-3xl font-extrabold text-black;
   }
 
   .spe-primary-btn {
-    @apply rounded-lg bg-spe-cobalt px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90;
-    font-family: "Montserrat", sans-serif;
+    @apply rounded-lg bg-spe-cobalt px-5 py-2.5 font-heading text-sm font-bold text-white transition-opacity hover:opacity-90;
   }
 
   .spe-gold-btn {
-    @apply rounded-lg bg-spe-gold px-5 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90;
-    font-family: "Montserrat", sans-serif;
+    @apply rounded-lg bg-spe-gold px-5 py-2.5 font-heading text-sm font-bold text-black transition-opacity hover:opacity-90;
   }
 
   .spe-card {
     @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  /* The text/select input treatment, previously repeated as a 28-occurrence class string
+     in two variants (cobalt and blue focus rings). Unified on cobalt. Because this sits in
+     the components layer, a utility like `py-2.5` in the class list still overrides it. */
+  .spe-input {
+    @apply rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt;
+  }
+
+  /* Article styling for committee-authored markdown (tutorials, opportunities).
+     Hand-written rather than pulling in @plugin "@tailwindcss/typography" for two pages —
+     and necessary either way, because Tailwind's Preflight strips heading sizes and list
+     markers, so rendered markdown is unreadable without something putting them back. */
+  .spe-prose {
+    @apply text-slate-700;
+  }
+
+  .spe-prose > :first-child { @apply mt-0; }
+
+  .spe-prose h1 { @apply mb-3 mt-8 font-heading text-2xl font-extrabold text-black; }
+  .spe-prose h2 { @apply mb-3 mt-8 font-heading text-xl font-bold text-black; }
+  .spe-prose h3 { @apply mb-2 mt-6 font-heading text-lg font-bold text-slate-800; }
+  .spe-prose h4 { @apply mb-2 mt-5 font-heading text-base font-bold text-slate-800; }
+
+  .spe-prose p { @apply my-4 leading-relaxed; }
+
+  .spe-prose ul { @apply my-4 list-disc space-y-1 pl-6; }
+  .spe-prose ol { @apply my-4 list-decimal space-y-1 pl-6; }
+  .spe-prose li { @apply leading-relaxed; }
+  .spe-prose li > ul, .spe-prose li > ol { @apply my-1; }
+
+  .spe-prose a { @apply font-semibold text-spe-cobalt underline underline-offset-2 hover:text-spe-endeavor; }
+
+  .spe-prose strong { @apply font-bold text-slate-900; }
+  .spe-prose em { @apply italic; }
+
+  .spe-prose blockquote { @apply my-4 border-l-4 border-spe-gold pl-4 italic text-slate-600; }
+
+  .spe-prose code { @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-800; }
+  .spe-prose pre { @apply my-4 overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-slate-100; }
+  .spe-prose pre code { @apply bg-transparent p-0 text-inherit; }
+
+  .spe-prose hr { @apply my-8 border-slate-200; }
+
+  .spe-prose table { @apply my-4 w-full border-collapse text-sm; }
+  .spe-prose th { @apply border border-slate-200 bg-slate-50 px-3 py-2 text-left font-semibold; }
+  .spe-prose td { @apply border border-slate-200 px-3 py-2; }
+
+  .spe-prose img { @apply my-4 max-w-full rounded-lg; }
+
+  /* Scroll-reveal, driven entirely by wwwroot/js/ui.js — no Blazor JS interop.
+     Gated on .js (set by an inline script in App.razor) so that with JavaScript
+     unavailable the content renders visible rather than staying stuck at opacity 0. */
+  .js .fade-up {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: opacity 700ms ease-out, transform 700ms ease-out;
+    will-change: opacity, transform;
+  }
+
+  .js .fade-up.is-visible {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
   }
 
   /* Reserves room for an Instagram post before its iframe arrives, so lazily
@@ -74,6 +143,12 @@
   @media (prefers-reduced-motion: reduce) {
     .ig-lazy {
       animation: none;
+    }
+
+    .js .fade-up {
+      opacity: 1;
+      transform: none;
+      transition: none;
     }
   }
 }

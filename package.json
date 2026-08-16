@@ -2,11 +2,13 @@
   "name": "spe-website",
   "version": "1.0.0",
   "scripts": {
-    "build:css": "npx @tailwindcss/cli -i ./Styles/input.css -o ./wwwroot/tailwind.css",
-    "watch:css": "npx @tailwindcss/cli -i ./Styles/input.css -o ./wwwroot/tailwind.css --watch"
+    "build:css": "npx @tailwindcss/cli -i ./Styles/input.css -o ./wwwroot/tailwind.css --minify",
+    "watch:css": "npx @tailwindcss/cli -i ./Styles/input.css -o ./wwwroot/tailwind.css --watch",
+    "build:images": "node scripts/optimize-images.mjs"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.2",
+    "sharp": "^0.34.4",
     "tailwindcss": "^4.0.0"
   }
 }

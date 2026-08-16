@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 {
     public DbSet<Event> Events => Set<Event>();
     public DbSet<EventRating> EventRatings => Set<EventRating>();
+    public DbSet<EventRegistration> EventRegistrations => Set<EventRegistration>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<Tutorial> Tutorials => Set<Tutorial>();
@@ -40,5 +41,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .WithMany(u => u.AssignedTasks)
             .HasForeignKey(t => t.AssignedToUserId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Reviews outlive their author for the same reason attendance does: the export is a
+        // historical record. Clearing the link leaves the review in place, exporting as anonymous.
+        builder.Entity<EventRating>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<EventRegistration>(registration =>
+        {
+            registration.HasOne(r => r.Event)
+                        .WithMany(e => e.Registrations)
+                        .HasForeignKey(r => r.EventId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+            registration.HasOne(r => r.User)
+                        .WithMany()
+                        .HasForeignKey(r => r.UserId)
+                        .OnDelete(DeleteBehavior.SetNull);
+
+            // One sign-up per member per event. Enforced in the database rather than only in
+            // the service, so a double-submitted button can't create a duplicate attendee.
+            registration.HasIndex(r => new { r.EventId, r.UserId }).IsUnique();
+        });
     }
 }

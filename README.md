@@ -133,6 +133,62 @@ not reference each other — they share only `Data/` and `Shared/`.
 
 ---
 
+## Writing content with Markdown
+
+Two things are written in Markdown by the committee:
+
+- **Tutorial articles** — when a tutorial's format is *Written article* rather than *YouTube video*
+- **Opportunity postings** — the body of a job or internship listing
+
+Both are rendered by `Shared/MarkdownRenderer.cs`. New to Markdown? The
+[Markdown cheat sheet](https://www.markdownguide.org/cheat-sheet/) is the quickest reference.
+
+### Supported syntax
+
+| What you write | What you get |
+|---|---|
+| `# Heading` … `#### Heading` | Headings, four levels |
+| `**bold**` · `*italic*` · `***both***` | **bold** · *italic* · ***both*** |
+| `- item` or `* item` | Bullet list (indent two spaces to nest) |
+| `1. item` | Numbered list |
+| `a. item` · `i. item` | Lettered and roman-numeral lists |
+| `[text](https://example.com)` | Link |
+| `https://example.com` on its own | Turned into a link automatically |
+| `[text](mailto:someone@example.com)` | Email link |
+| `[text](/tutorials)` | Link to another page on this site |
+| `![description](https://example.com/photo.png)` | Image |
+| `> quoted text` | Block quote |
+| `` `code` `` | Inline code |
+| ` ```csharp ` … ` ``` ` | Fenced code block, optionally with a language |
+| `\| a \| b \|` with a `\|---\|---\|` row under it | Table |
+| `---` on its own line | Horizontal rule |
+| `~~struck through~~` | ~~struck through~~ |
+| `==highlighted==` | Highlighted text |
+| `H~2~O` · `x^2^` | Subscript and superscript |
+| `++inserted++` | Underlined/inserted text |
+| Two spaces at the end of a line | Line break within a paragraph |
+
+A blank line starts a new paragraph. A single newline does not — put two spaces at the end of
+a line if you want a break without a new paragraph.
+
+### Not supported
+
+Task lists (`- [ ] item`), footnotes, definition lists, LaTeX maths, and Mermaid diagrams are
+**not** enabled. They will show as plain text rather than rendering.
+
+**Raw HTML is deliberately disabled.** Typing `<b>bold</b>` prints the tags rather than
+applying them, and `javascript:` links are stripped. This is a security measure, not an
+oversight: article authors are trusted committee members, but without it a committee member
+could plant a script in an article and hijack a Team Leader's session the next time they
+opened it. Use the Markdown syntax above instead.
+
+To change what is supported, edit the pipeline in `Shared/MarkdownRenderer.cs` — and update
+the tables above to match. Note that Markdig's `UseAdvancedExtensions()` must **not** be used:
+it enables generic attributes, which would let an author attach an `onclick` handler to any
+element and reopen the hole described above.
+
+---
+
 ## Running locally
 
 ### Prerequisites

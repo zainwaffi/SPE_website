@@ -14,4 +14,5 @@ public class Event
     public string? GoogleCalendarEventId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<EventRating> Ratings { get; set; } = [];
+    public ICollection<EventRegistration> Registrations { get; set; } = [];
 }

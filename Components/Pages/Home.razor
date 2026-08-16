@@ -1,22 +1,21 @@
 @page "/"
-@rendermode InteractiveServer
 @attribute [AllowAnonymous]
 @using SPE_website.Components.Shared
 
-<PageTitle>SPE Chapter — Home</PageTitle>
+@* Static SSR: this page has no event handlers and no mutable state, so it needs no circuit.
+   The scroll reveals come from wwwroot/js/ui.js, not JS interop. *@
 
+<PageTitle>SPE Chapter — Home</PageTitle>
 
 <!-- hero section -->
 
-<FadeUp Duration="700" class="relative flex min-h-150 items-center justify-center overflow-hidden px-6 text-center">
+<FadeUp class="relative flex min-h-150 items-center justify-center overflow-hidden px-6 text-center">
     <div class="absolute inset-0 bg-gradient-to-br from-spe-cobalt/60 via-spe-cobalt/20 to-transparent"></div>
     <div class="relative z-10 mx-auto max-w-3xl">
-        <p class="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-white/70"
-           style="font-family:'Roboto Mono', monospace;">
+        <p class="mb-4 font-kicker text-xs font-bold uppercase tracking-[0.3em] text-white/70">
             Society of Petroleum Engineers — Student Chapter
         </p>
-        <h1 class="mb-6 text-4xl font-extrabold leading-tight text-white md:text-6xl"
-            style="font-family:Montserrat, sans-serif;">
+        <h1 class="mb-6 font-heading text-4xl font-extrabold leading-tight text-white md:text-6xl">
             Solutions.<br />People. Energy.
         </h1>
         <p class="mb-8 text-base leading-relaxed text-white/85 md:text-lg">
@@ -25,8 +24,7 @@
         </p>
         <div class="flex flex-col justify-center gap-4 sm:flex-row">
             <a href="/events"
-               class="rounded border-2 border-white px-7 py-3 text-sm font-bold text-white transition-colors hover:bg-white hover:text-spe-cobalt"
-               style="font-family:Montserrat, sans-serif;">
+               class="rounded border-2 border-white px-7 py-3 font-heading text-sm font-bold text-white transition-colors hover:bg-white hover:text-spe-cobalt">
                 Our Events
             </a>
 
@@ -38,7 +36,6 @@
                     </a>
                 </NotAuthorized>
             </AuthorizeView>
-
         </div>
     </div>
 </FadeUp>
@@ -49,7 +46,7 @@
     <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         <div>
             <h1 class="spe-page-kicker">—About Us—</h1>
-            <h2 class="mb-6 text-3xl font-extrabold text-black md:text-4xl" style="font-family:Montserrat, sans-serif;">
+            <h2 class="mb-6 font-heading text-3xl font-extrabold text-black md:text-4xl">
                 the world's largest community dedicated to the oil, gas, and energy industry
             </h2>
             <p class="mb-4 text-slate-700">
@@ -66,153 +63,149 @@
             <div class="flex flex-wrap gap-3">
                 <AuthorizeView>
                     <NotAuthorized>
-                        <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-primary-btn">Join
-                            Now</a>
+                        <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-primary-btn">Join Now</a>
                     </NotAuthorized>
                 </AuthorizeView>
-                    <a href="/events" class="spe-gold-btn">Find Out More</a>
-                </div>
-            </div>
-            <div class="relative">
-                <div class="aspect-4/3 overflow-hidden rounded-xl shadow-2xl">
-                    <img src="/images/student-chapter.jpeg" alt="Petroleum engineers" class="h-full w-full object-cover" />
-                </div>
-                <div class="absolute -bottom-6 -left-6 rounded-xl bg-spe-cobalt p-5 shadow-xl">
-                    <p class="text-3xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">360+</p>
-                    <p class="mt-1 text-xs text-white/80">Student Chapter Around the World</p>
-                </div>
+                <a href="/events" class="spe-gold-btn">Find Out More</a>
             </div>
         </div>
-    </FadeUp>
-
-
-    <!-- why join us section -->
-    <FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-[1200px]">
-        <div class="px-6 lg:px-8">
-            <div class="mb-10 text-center">
-                <h1 class="spe-page-kicker text-spe-gold">—Why Join Us—</h1>
-                <h2 class="mb-3 text-3xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">Our
-                    contributors and patrons
-                </h2>
+        <div class="relative">
+            <div class="aspect-4/3 overflow-hidden rounded-xl shadow-2xl">
+                <img src="/images/student-chapter.webp" alt="Petroleum engineers" class="h-full w-full object-cover"
+                     width="800" height="600" loading="lazy" decoding="async" />
             </div>
-            <div class="mb-12 flex flex-wrap justify-center gap-3 ">
-                @foreach (var company in Companies)
-                {
-                    <span
-                    class="rounded-lg bg-white/15 px-5 py-2.5 text-sm font-bold text-white/90 transition-colors hover:bg-amber-500 hover:text-spe-ink"
-                    style="font-family:Montserrat, sans-serif;">@company</span>
-                }
+            <div class="absolute -bottom-6 -left-6 rounded-xl bg-spe-cobalt p-5 shadow-xl">
+                <p class="font-heading text-3xl font-extrabold text-white">360+</p>
+                <p class="mt-1 text-xs text-white/80">Student Chapter Around the World</p>
             </div>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <article class="rounded-xl bg-white/10 p-6">
-                    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
-                        class="fa fa-gear fa-lg"></i></div>
-                        <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Technical
-                            Excellence</h3>
-                            <p class="text-sm text-white/75">Access to technical resources, journals, publications, and practical
-                                chapter activities.</p>
-                            </article>
-                            <article class="rounded-xl bg-white/10 p-6">
-                                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
-                                    class="fa fa-users fa-lg"></i></div>
-                                    <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Professional
-                                        Network</h3>
-                                        <p class="text-sm text-white/75">Connect with peers and industry experts across local, regional, and
-                                            global SPE communities.</p>
-                                        </article>
-                                        <article class="rounded-xl bg-white/10 p-6">
-                                            <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
-                                                class="fa fa-book fa-lg"></i></div>
-                                                <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">Career
-                                                    Development</h3>
-                                                    <p class="text-sm text-white/75">Gain visibility into internships, graduate roles, mentorship, and
-                                                        speaker-led learning pathways.</p>
-                                                    </article>
-                                                </div>
-                                            </div>
-                                        </FadeUp>
+        </div>
+    </div>
+</FadeUp>
 
-                                        <!-- our team section -->
-                                        <FadeUp class="spe-page-shell md:max-w-300">
-                                            <div class="mb-12 text-center">
-                                                <h1 class="spe-page-kicker">—Our Team—</h1>
-                                                <h2 class="text-3xl font-extrabold text-black" style="font-family:Montserrat, sans-serif;">Meet the Committee
-                                                </h2>
-                                            </div>
-                                            <div class="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-4">
-                                                @foreach (var member in TeamMembers)
-                                                {
-                                                    <article class="w-56 flex-none snap-start text-center md:w-[calc((100%-3rem)/3)]">
-                                                        <div class="mb-3 aspect-square overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-                                                            <img src="@member.ImageUrl" alt="@member.Name" class="h-full w-full object-cover" />
-                                                        </div>
-                                                        <h3 class="text-sm font-bold text-black" style="font-family:Montserrat, sans-serif;">@member.Name</h3>
-                                                        <p class="mt-1 text-xs text-spe-endeavor">@member.Role</p>
-                                                    </article>
-                                                }
-                                            </div>
-                                        </FadeUp>
+<!-- why join us section -->
 
-                                        <!-- Chapter Achievements section -->
-                                        <FadeUp class="mx-4 mb-0 mt-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-[1200px]">
-                                            <div class="px-6 lg:px-8">
-                                                <div class="mb-10 flex items-end justify-between gap-4">
-                                                    <div>
-                                                        <h1 class="spe-page-kicker text-spe-gold">—Chapter Achievements—</h1>
-                                                        <h2 class="text-2xl font-extrabold text-white" style="font-family:Montserrat, sans-serif;">
-                                                            Awards And Recognitions</h2>
-                                                        </div>
+<FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
+    <div class="px-6 lg:px-8">
+        <div class="mb-10 text-center">
+            <h1 class="spe-page-kicker text-spe-gold">—Why Join Us—</h1>
+            <h2 class="mb-3 font-heading text-3xl font-extrabold text-white">Our contributors and patrons</h2>
+        </div>
+        <div class="mb-12 flex flex-wrap justify-center gap-3">
+            @foreach (var company in Companies)
+            {
+                <span @key="company"
+                      class="rounded-lg bg-white/15 px-5 py-2.5 font-heading text-sm font-bold text-white/90 transition-colors hover:bg-amber-500 hover:text-spe-ink">@company</span>
+            }
+        </div>
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+            @foreach (var benefit in Benefits)
+            {
+                <article @key="benefit.Title" class="rounded-xl bg-white/10 p-6">
+                    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="@benefit.Icon" Class="h-6 w-6" />
+                    </div>
+                    <h3 class="mb-2 font-heading text-lg font-bold text-white">@benefit.Title</h3>
+                    <p class="text-sm text-white/75">@benefit.Description</p>
+                </article>
+            }
+        </div>
+    </div>
+</FadeUp>
 
-                                                    </div>
-                                                    <article class="rounded-xl bg-white/10 p-6">
-                                                        <!-- Achievement 1 -->
-                                                        @foreach (var achievement in Achievements)
-                                                        {
-                                                            <div class="flex flex-row gap-2 items-center mb-4">
-                                                                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black"><i
-                                                                    class="fa fa-trophy"></i>
-                                                                </div>
-                                                                <h3 class="mb-2 text-lg font-bold text-white" style="font-family:Montserrat, sans-serif;">@achievement
-                                                                </h3>
-                                                            </div>
-                                                        }
+<!-- our team section -->
 
-                                                    </article>
-                                                    <div class="mt-6 text-center">
-                                                        <p class="mb-3 text-sm text-white/80">Learn more about SPE chapters' achievements and awards.</p>
-                                                        <a href="https://www.spe.org/en/awards/nominator-and-recipient-stories/" target="_blank"
-                                                           rel="noopener noreferrer" class="spe-primary-btn">Find Out More</a>
-                                                
-                                                    </div>
-                                                </div>
-                                                </FadeUp>
+<FadeUp class="spe-page-shell md:max-w-300">
+    <div class="mb-12 text-center">
+        <h1 class="spe-page-kicker">—Our Team—</h1>
+        <h2 class="font-heading text-3xl font-extrabold text-black">Meet the Committee</h2>
+    </div>
+    <div class="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-4">
+        @foreach (var member in TeamMembers)
+        {
+            <article @key="member.ImageUrl" class="w-56 flex-none snap-start text-center md:w-[calc((100%-3rem)/3)]">
+                <div class="mb-3 aspect-square overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                    <img src="@member.ImageUrl" alt="@member.Name" class="h-full w-full object-cover"
+                         width="256" height="256" loading="lazy" decoding="async" />
+                </div>
+                <h3 class="font-heading text-sm font-bold text-black">@member.Name</h3>
+                <p class="mt-1 text-sm font-semibold text-spe-blue">@member.Role</p>
+                <a href="@member.LinkedInUrl" target="_blank" rel="noopener noreferrer"
+                   aria-label="@($"{member.Name} on LinkedIn")"
+                   class="mt-2 inline-flex items-center justify-center text-slate-400 transition-colors hover:text-spe-cobalt">
+                    <Icon Name="linkedin" Class="h-5 w-5" />
+                </a>
+            </article>
+        }
+    </div>
+</FadeUp>
+
+<!-- Chapter Achievements section -->
+
+<FadeUp class="mx-4 mb-0 mt-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
+    <div class="px-6 lg:px-8">
+        <div class="mb-10 flex items-end justify-between gap-4">
+            <div>
+                <h1 class="spe-page-kicker text-spe-gold">—Chapter Achievements—</h1>
+                <h2 class="font-heading text-2xl font-extrabold text-white">Awards And Recognitions</h2>
+            </div>
+        </div>
+        <article class="rounded-xl bg-white/10 p-6">
+            @foreach (var achievement in Achievements)
+            {
+                <div @key="achievement" class="mb-4 flex flex-row items-center gap-2">
+                    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="trophy" Class="h-6 w-6" />
+                    </div>
+                    <h3 class="mb-2 font-heading text-lg font-bold text-white">@achievement</h3>
+                </div>
+            }
+        </article>
+        <div class="mt-6 text-center">
+            <p class="mb-3 text-sm text-white/80">Learn more about SPE chapters' achievements and awards.</p>
+            <a href="https://www.spe.org/en/awards/nominator-and-recipient-stories/" target="_blank"
+               rel="noopener noreferrer" class="spe-primary-btn">Find Out More</a>
+        </div>
+    </div>
+</FadeUp>
 
 @code {
+
+    // #Updates: Companies and contributors
     private static readonly string[] Companies =
     [
         "BP", "Equinor", "SLB", "Halliburton", "Hydrasun"
     ];
 
-
-    // #ToChange: Team members pictures and info
-    private static readonly TeamMember[] TeamMembers =
+    // #Updates: Membership benefits shown in the "Why Join Us" cards
+    private static readonly Benefit[] Benefits =
     [
-        new("Dr. Sarah Al-Rashidi", "Chapter President",
-"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&auto=format"),
-        new("James Okafor", "Vice President",
-"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&auto=format"),
-        new("Priya Nambiar", "Events Director",
-"https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&auto=format"),
-        new("Carlos Mendez", "Technical Lead",
-"https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&auto=format"),
-        new("Aisha Ibrahim", "Secretary",
-"https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=400&fit=crop&auto=format"),
-        new("Wei Zhang", "Treasurer",
-"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&auto=format")
+        new("gear", "Technical Excellence",
+            "Access to technical resources, journals, publications, and practical chapter activities."),
+        new("users", "Professional Network",
+            "Connect with peers and industry experts across local, regional, and global SPE communities."),
+        new("book", "Career Development",
+            "Gain visibility into internships, graduate roles, mentorship, and speaker-led learning pathways.")
     ];
 
+    // #Updates: Team members pictures, info, and LinkedIn profiles.
+    // The fourth value is the member's LinkedIn URL — paste it between the quotes to make
+    // their icon live. Left empty for now, which renders the icon as a dead link.
+    // Image paths are all-lowercase on purpose — they 404 on Linux hosting otherwise.
+    private static readonly TeamMember[] TeamMembers =
+    [
+        new("Mouad Sheredi", "Chapter President", "/members/mouad.webp", ""),
+        new("Mohmmad Ali", "Vice President", "/members/mohali.webp", ""),
+        new("Zain Aljarwry", "Operations Lead", "/members/zain.webp", ""),
+        new("Dilnaz Sansyzbayeva", "Social Media Officer", "/members/dilnaz.webp", ""),
+        new("Mohammedbaqer Aldirawi", "Social Media Officer", "/members/mohbaqer.webp", ""),
+        new("Ahmed Elshaer", "Communications and Outreach Chairperson", "/members/ahmed.webp", ""),
+        new("Musab Alghazzawi", "Secretary", "/members/musab.webp", ""),
+        new("Andrii Noveniuk", "Membership Chairperson", "/members/andrii.webp", ""),
+        new("Dr. Hossein Hamidi", "Faculty Advisor", "/members/hamidi.webp", "")
+    ];
 
-    public static string[] Achievements =
+    // #Updates: Achievements and awards
+    private static readonly string[] Achievements =
     [
         "Gold Standard Chapter 2018",
         "Gold Standard Chapter 2014",
@@ -221,6 +214,8 @@
         "Gold Standard Chapter 2012",
         "Outstanding Student Chapter 2012"
     ];
-    private sealed record TeamMember(string Name, string Role, string ImageUrl);
 
+    private sealed record TeamMember(string Name, string Role, string ImageUrl, string LinkedInUrl);
+
+    private sealed record Benefit(string Icon, string Title, string Description);
 }

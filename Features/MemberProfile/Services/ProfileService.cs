@@ -4,18 +4,19 @@ using SPE_website.Data.Models;
 
 namespace SPE_website.Features.MemberProfile.Services;
 
-/// <summary>Read/update operations for a member's own profile data.</summary>
-public class ProfileService(AppDbContext db)
+/// <summary>
+/// Read operations for a member's own profile data.
+/// Takes a context factory rather than a scoped context: a Blazor Server circuit outlives
+/// any single operation, and sharing one context across overlapping renders throws.
+/// </summary>
+public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
 {
     /// <summary>Fetches a user with their assigned tasks eager-loaded, for the profile dashboard.</summary>
-    public Task<ApplicationUser?> GetByIdAsync(string userId) =>
-        db.Users.Include(u => u.AssignedTasks).FirstOrDefaultAsync(u => u.Id == userId);
-
-    public async Task UpdateProfileAsync(string userId, string fullName)
+    public async Task<ApplicationUser?> GetByIdAsync(string userId)
     {
-        var user = await db.Users.FindAsync(userId);
-        if (user is null) return;
-        user.FullName = fullName;
-        await db.SaveChangesAsync();
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Users.AsNoTracking()
+                       .Include(u => u.AssignedTasks)
+                       .FirstOrDefaultAsync(u => u.Id == userId);
     }
 }

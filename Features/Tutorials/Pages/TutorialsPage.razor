@@ -5,7 +5,7 @@
 
 <PageTitle>Tutorials — SPE Chapter</PageTitle>
 
-<div class="spe-page-shell md:max-w-[1200px]">
+<div class="spe-page-shell md:max-w-300">
     <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
             <p class="spe-page-kicker">Tutorials & Courses</p>
@@ -14,7 +14,7 @@
         </div>
         <AuthorizeView Roles="TeamLeader">
             <Authorized>
-                <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add Tutorial</button>
+                <button @onclick="OpenForm" class="spe-gold-btn">+ Add Tutorial</button>
             </Authorized>
         </AuthorizeView>
     </div>
@@ -22,23 +22,69 @@
     @if (showForm)
     {
         <section class="spe-card mb-8 p-6">
-            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt" style="font-family:Montserrat, sans-serif;">New Tutorial</h2>
+            <h2 class="mb-4 font-heading text-xl font-semibold text-spe-cobalt">New Tutorial</h2>
+
+            @* Format is chosen first, because it decides which fields below apply. *@
+            <div class="mb-5">
+                <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600">Format</p>
+                <div class="flex gap-2">
+                    @foreach (var format in Formats)
+                    {
+                        <button type="button" @key="format" @onclick="() => newFormat = format"
+                                aria-pressed="@(newFormat == format)"
+                                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors @(newFormat == format
+                                        ? "border-spe-cobalt bg-spe-cobalt text-white"
+                                        : "border-slate-300 text-slate-600 hover:bg-slate-50")">
+                            <Icon Name="@(format == TutorialFormat.Video ? "globe" : "book")" Class="h-4 w-4" />
+                            @(format == TutorialFormat.Video ? "YouTube video" : "Written article")
+                        </button>
+                    }
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt"
-                       placeholder="Title" @bind="newTitle" />
-                <select class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt" @bind="newRole">
+                <input class="spe-input" placeholder="Title" @bind="newTitle" />
+                <select class="spe-input" @bind="newRole">
                     <option value="Member">Member</option>
                     <option value="CommitteeMember">Committee Member</option>
                     <option value="TeamLeader">Team Leader</option>
                 </select>
-                <input class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt sm:col-span-2"
-                       placeholder="YouTube Embed URL (https://www.youtube.com/embed/...)" @bind="newYoutubeUrl" />
-                <textarea class="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt sm:col-span-2"
-                          rows="2" placeholder="Description" @bind="newDescription"></textarea>
+
+                <textarea class="spe-input sm:col-span-2" rows="2"
+                          placeholder="Short summary shown on the card" @bind="newDescription"></textarea>
+
+                @if (newFormat == TutorialFormat.Video)
+                {
+                    <input class="spe-input sm:col-span-2"
+                           placeholder="YouTube Embed URL (https://www.youtube.com/embed/...)" @bind="newYoutubeUrl" />
+                }
+                else
+                {
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="tutorial-body">
+                            Article body
+                        </label>
+                        <textarea id="tutorial-body" class="spe-input w-full font-mono text-sm" rows="14"
+                                  placeholder="@MarkdownPlaceholder" @bind="newArticleContent"></textarea>
+                        <p class="mt-1.5 text-xs text-slate-500">
+                            Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
+                            <code>[link](https://example.com)</code>, <code>**bold**</code>.
+                        </p>
+                    </div>
+                }
             </div>
+
+            @if (formError is not null)
+            {
+                <p class="mt-3 text-sm text-red-500">@formError</p>
+            }
+
             <div class="mt-4 flex gap-3">
                 <button @onclick="SaveTutorial" class="spe-primary-btn">Save</button>
-                <button @onclick="() => showForm = false" class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                <button @onclick="() => showForm = false"
+                        class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
+                    Cancel
+                </button>
             </div>
         </section>
     }
@@ -57,13 +103,13 @@
     {
         @foreach (var group in grouped)
         {
-            <section class="mb-10">
+            <section @key="group.Key" class="mb-10">
                 <h2 class="mb-4 border-b border-slate-200 pb-2 text-xl font-bold text-slate-700">@group.Key.ToString()</h2>
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     @foreach (var t in group.Value)
                     {
-                        <article class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
-                            @if (!string.IsNullOrEmpty(t.YoutubeEmbedUrl))
+                        <article @key="t.Id" class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
+                            @if (t.Format == TutorialFormat.Video && !string.IsNullOrEmpty(t.YoutubeEmbedUrl))
                             {
                                 <div class="aspect-video">
                                     <iframe src="@t.YoutubeEmbedUrl"
@@ -73,13 +119,39 @@
                                             allowfullscreen></iframe>
                                 </div>
                             }
+                            else if (t.Format == TutorialFormat.Article)
+                            {
+                                @* Articles have no thumbnail, so the banner doubles as the affordance
+                                   that this one opens rather than plays. *@
+                                <a href="/tutorials/@t.Id"
+                                   class="flex aspect-video items-center justify-center bg-gradient-to-br from-spe-cobalt to-spe-endeavor transition-opacity hover:opacity-90">
+                                    <span class="flex flex-col items-center gap-2 text-white">
+                                        <Icon Name="book" Class="h-8 w-8" />
+                                        <span class="text-xs font-bold uppercase tracking-widest">Read article</span>
+                                    </span>
+                                </a>
+                            }
+
                             <div class="p-5">
-                                <h3 class="mb-1 text-base font-bold text-black" style="font-family:Montserrat, sans-serif;">@t.Title</h3>
+                                <div class="mb-1 flex items-start justify-between gap-3">
+                                    <h3 class="font-heading text-base font-bold text-black">@t.Title</h3>
+                                    <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                        @(t.Format == TutorialFormat.Video ? "Video" : "Article")
+                                    </span>
+                                </div>
                                 <p class="text-sm text-slate-600">@t.Description</p>
+
+                                @if (t.Format == TutorialFormat.Article)
+                                {
+                                    <a href="/tutorials/@t.Id" class="mt-3 inline-block text-sm font-semibold text-spe-cobalt hover:underline">
+                                        Read article →
+                                    </a>
+                                }
+
                                 <AuthorizeView Roles="TeamLeader">
                                     <Authorized>
                                         <button @onclick="() => DeleteTutorial(t.Id)"
-                                                class="mt-3 text-xs font-medium text-red-400 transition-colors hover:text-red-600">
+                                                class="mt-3 block text-xs font-medium text-red-400 transition-colors hover:text-red-600">
                                             Delete
                                         </button>
                                     </Authorized>
@@ -94,12 +166,28 @@
 </div>
 
 @code {
+    private static readonly TutorialFormat[] Formats = Enum.GetValues<TutorialFormat>();
+
+    private const string MarkdownPlaceholder = """
+        ## Getting started
+
+        A short intro paragraph.
+
+        - First step
+        - Second step
+
+        See the [SPE handbook](https://www.spe.org) for more.
+        """;
+
     private Dictionary<string, List<Tutorial>>? grouped;
     private bool showForm;
     private string newTitle = "";
     private string newDescription = "";
     private string newYoutubeUrl = "";
+    private string newArticleContent = "";
     private string newRole = "Member";
+    private TutorialFormat newFormat = TutorialFormat.Video;
+    private string? formError;
 
     protected override async Task OnInitializedAsync() => await LoadTutorials();
 
@@ -110,18 +198,49 @@
                      .ToDictionary(g => g.Key, g => g.ToList());
     }
 
+    private void OpenForm()
+    {
+        showForm = true;
+        formError = null;
+    }
+
     private async Task SaveTutorial()
     {
-        if (string.IsNullOrWhiteSpace(newTitle)) return;
+        formError = null;
+
+        if (string.IsNullOrWhiteSpace(newTitle))
+        {
+            formError = "Give the tutorial a title.";
+            return;
+        }
+
+        // Each format has its own required field; without this an article could be saved with
+        // no body, leaving a card that opens onto an empty page.
+        if (newFormat == TutorialFormat.Video && string.IsNullOrWhiteSpace(newYoutubeUrl))
+        {
+            formError = "Add the YouTube embed URL, or switch to a written article.";
+            return;
+        }
+
+        if (newFormat == TutorialFormat.Article && string.IsNullOrWhiteSpace(newArticleContent))
+        {
+            formError = "Write the article body, or switch to a YouTube video.";
+            return;
+        }
+
         await TutorialSvc.CreateAsync(new Tutorial
         {
             Title = newTitle,
             Description = newDescription,
-            YoutubeEmbedUrl = newYoutubeUrl,
+            Format = newFormat,
+            YoutubeEmbedUrl = newFormat == TutorialFormat.Video ? newYoutubeUrl : "",
+            ArticleContent = newFormat == TutorialFormat.Article ? newArticleContent : "",
             CategoryRole = newRole
         });
+
         showForm = false;
-        newTitle = newDescription = newYoutubeUrl = "";
+        newTitle = newDescription = newYoutubeUrl = newArticleContent = "";
+        newFormat = TutorialFormat.Video;
         await LoadTutorials();
     }
 
