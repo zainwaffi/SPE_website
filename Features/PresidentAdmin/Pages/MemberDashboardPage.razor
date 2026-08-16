@@ -88,7 +88,7 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if (string.IsNullOrWhiteSpace(member.CommitteeTitle))
                                 {
-                                    <span class="text-slate-400 text-xs">&mdash;</span>
+                                    <span class="text-slate-400 text-xs">None</span>
                                 }
                                 else
                                 {
@@ -112,17 +112,19 @@
                             <td class="px-6 py-4 text-center">
                                 <div class="flex justify-center gap-2">
                                     <button @onclick="() => AddStrike(member)"
-                                            class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                        + Strike
+                                            title="Add strike" aria-label="Add strike"
+                                            class="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                        <Icon Name="triangle-exclamation" Class="h-4 w-4" />
                                     </button>
                                     <button @onclick="() => RemoveStrike(member)"
                                             disabled="@(member.StrikeCount == 0)"
-                                            title="@(member.StrikeCount == 0 ? "This member has no strikes to remove" : "Remove one strike")"
-                                            class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-100">
-                                        &minus; Strike
+                                            title="@(member.StrikeCount == 0 ? "This member has no strikes to remove" : "Remove strike")"
+                                            aria-label="Remove strike"
+                                            class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-100">
+                                        <Icon Name="rotate" Class="h-4 w-4" />
                                     </button>
                                     <button @onclick="() => OpenAssignTask(member)"
-                                            class="text-xs bg-spe-blue text-white hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                            class="text-xs bg-blue-100 text-spe-blue hover:bg-blue-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
                                         Assign Task
                                     </button>
                                     <button @onclick="() => OpenEditMember(member)"
@@ -132,7 +134,7 @@
                                     @if (member.Id != currentUserId)
                                     {
                                         <button @onclick="() => deleteTarget = member"
-                                                class="text-xs bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors font-semibold">
+                                                class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
                                             Delete
                                         </button>
                                     }

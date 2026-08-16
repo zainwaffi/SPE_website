@@ -13,8 +13,9 @@
     }
     else
     {
-        <button @onclick="GoBack" class="mb-6 text-sm font-semibold text-spe-cobalt hover:underline">
-            ← Back to Opportunities
+        <button @onclick="GoBack" class="spe-back-btn mb-6">
+            <Icon Name="circle-chevron-left" Class="h-4 w-4 shrink-0" />
+            Back to Opportunities
         </button>
 
         <article class="spe-card border-slate-200 p-8">
@@ -27,7 +28,7 @@
             @if (!string.IsNullOrEmpty(opportunity.ExternalUrl))
             {
                 <a href="@opportunity.ExternalUrl" target="_blank" rel="noopener noreferrer" class="spe-primary-btn inline-block">
-                    Visit External Link →
+                    Visit External Link
                 </a>
             }
         </article>

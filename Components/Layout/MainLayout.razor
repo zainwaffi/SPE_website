@@ -5,10 +5,7 @@
 <div class="fixed inset-0 -z-10">
     <img src="/images/banner-1280.webp"
          srcset="/images/banner-640.webp 640w, /images/banner-1280.webp 1280w, /images/banner-1920.webp 1920w"
-         sizes="100vw"
-         alt=""
-         width="1920" height="1080"
-         fetchpriority="high" decoding="async"
+         sizes="100vw" alt="" width="1920" height="1080" fetchpriority="high" decoding="async"
          class="h-full w-full object-cover" />
     <div class="absolute inset-0 bg-[rgba(0,20,60,0.72)]"></div>
 </div>
@@ -26,7 +23,8 @@
         <div class="mx-auto max-w-360 px-6 py-16 lg:px-20">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="flex flex-col items-center">
-                    <h4 class="mb-5 border-b border-spe-gold pb-2 font-heading text-sm font-bold uppercase tracking-[0.2em] text-spe-gold">
+                    <h4
+                        class="mb-5 border-b border-spe-gold pb-2 font-heading text-sm font-bold uppercase tracking-[0.2em] text-spe-gold">
                         Quick Links
                     </h4>
                     <ul class="space-y-3 text-sm text-white/70">
@@ -34,76 +32,101 @@
                         <li><a class="transition-colors hover:text-white" href="/events">Events</a></li>
                         <AuthorizeView>
                             <Authorized Context="memberLinks">
-                                <li><a class="transition-colors hover:text-white" href="/opportunities">Opportunities</a></li>
-                                <li><a class="transition-colors hover:text-white" href="/courses">Courses</a></li>
-                            </Authorized>
-                        </AuthorizeView>
-                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                            <Authorized Context="staffLinks">
-                                <li><a class="transition-colors hover:text-white" href="/tutorials">Tutorials</a></li>
-                            </Authorized>
-                        </AuthorizeView>
-                        <li>
-                            <a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news"
-                               target="_blank" rel="noopener noreferrer">News</a>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- Contact Us section -->
-                <div class="flex flex-col items-center">
-                    <h4 class="mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold">
-                        Contact Us
-                    </h4>
-                    <div class="flex flex-row gap-4">
-                        <a href="mailto:spe@ausa.org.uk" aria-label="Email the chapter">
-                            <Icon Name="envelope" Class="h-8 w-8" />
-                        </a>
-                        <!-- #Updates: Add social media links here -->
-                        @* instagram *@
-                        <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
-                           target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                            <Icon Name="instagram" Class="h-8 w-8" />
-                        </a>
-                        @* linkedin *@
-                        <a href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true"
-                           target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                            <Icon Name="linkedin" Class="h-8 w-8" />
-                        </a>
-                        <AuthorizeView>
-                            <Authorized Context="memberLinks">
-                        @* whatsapp *@
-                        <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh"
-                           target="_blank" rel="noopener noreferrer" aria-label="WhatsApp group">
-                            <Icon Name="whatsapp" Class="h-8 w-8" />
-                        </a>
-                            </Authorized>
-                        </AuthorizeView>
-                        @* github *@
-                        <AuthorizeView Roles="TeamLeader">
-                            <Authorized Context="repoLink">
-                                <a href="https://github.com/zainwaffi/SPE_website" target="_blank"
-                                   rel="noopener noreferrer" aria-label="Source repository">
-                                    <Icon Name="github" Class="h-8 w-8" />
-                                </a>
-                            </Authorized>
-                        </AuthorizeView>
+                                <li><a class="transition-colors hover:text-white"
+                                           href="/opportunities">Opportunities</a></li>
+                                    <li><a class="transition-colors hover:text-white" href="/courses">Courses</a></li>
+                                </Authorized>
+                            </AuthorizeView>
+                            <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                <Authorized Context="staffLinks">
+                                    <li><a class="transition-colors hover:text-white" href="/tutorials">Tutorials</a></li>
+                                </Authorized>
+                            </AuthorizeView>
+                            <li>
+                                <a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news"
+                                   target="_blank" rel="noopener noreferrer">News</a>
+                            </li>
+                        </ul>
                     </div>
-                    <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer"
-                       class="spe-primary-btn mt-6 inline-block">
-                        Join Our Society
-                    </a>
+
+                    <!-- Contact Us section -->
+                    <div class="flex flex-col items-center">
+                        <h4
+                            class="mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold">
+                            Contact Us
+                        </h4>
+                        <div class="flex flex-row gap-4">
+                            <a href="mailto:spe@ausa.org.uk" aria-label="Email the chapter">
+                                <Icon Name="envelope" Class="h-8 w-8" />
+                            </a>
+                            <!-- #Updates: Add social media links here -->
+                            @* instagram *@
+                            <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                               target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                                <Icon Name="instagram" Class="h-8 w-8" />
+                            </a>
+                            @* linkedin *@
+                            <a href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true" target="_blank"
+                               rel="noopener noreferrer" aria-label="LinkedIn">
+                                <Icon Name="linkedin" Class="h-8 w-8" />
+                            </a>
+                            <AuthorizeView>
+                                <Authorized Context="memberLinks">
+                                    @* whatsapp *@
+                                    <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" target="_blank"
+                                       rel="noopener noreferrer" aria-label="WhatsApp group">
+                                        <Icon Name="whatsapp" Class="h-8 w-8" />
+                                    </a>
+                                </Authorized>
+                            </AuthorizeView>
+                            @* github *@
+                            <AuthorizeView Roles="TeamLeader">
+                                <Authorized Context="repoLink">
+                                    <a href="https://github.com/zainwaffi/SPE_website" target="_blank"
+                                       rel="noopener noreferrer" aria-label="Source repository">
+                                        <Icon Name="github" Class="h-8 w-8" />
+                                    </a>
+                                </Authorized>
+                            </AuthorizeView>
+                        </div>
+                        <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer"
+                           class="spe-primary-btn mt-6 inline-block">
+                            Join Our Society
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </footer>
-</div>
 
-<!--Footer section end-->
+            <!-- copyright bar -->
 
-<div id="blazor-error-ui"
-     class="hidden fixed bottom-4 right-4 bg-red-50 border border-red-300 text-red-800 p-4 rounded-lg shadow-lg z-50"
-     data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="underline ml-2">Reload</a>
-</div>
+            <div class="mx-auto max-w-360 px-6 py-6 lg:px-20">
+                <p class="text-xs text-white/60">
+                    Copyright @CopyrightYears, SPE University of Aberdeen Student Chapter. All rights reserved.
+                </p>
+                <p class="text-xs text-white/40">
+                    Trademarks and materials belonging to the Society of Petroleum Engineers and other third parties
+                    remain the property of their respective owners and are used with permission.
+                </p>
+            </div>
+
+        </footer>
+    </div>
+
+    <!--Footer section end-->
+
+    <div id="blazor-error-ui"
+         class="hidden fixed bottom-4 right-4 bg-red-50 border border-red-300 text-red-800 p-4 rounded-lg shadow-lg z-50"
+         data-nosnippet>
+        An unhandled error has occurred.
+        <a href="." class="underline ml-2">Reload</a>
+    </div>
+
+@code {
+    // Date range reflects that website content was written across different years.
+
+    // Updates: Update the founding year to the year the website was launched.
+    private const int FoundingYear = 2026;
+
+    private static string CopyrightYears =>
+        DateTime.Now.Year > FoundingYear ? $"{FoundingYear}-{DateTime.Now.Year}" : FoundingYear.ToString();
+}
