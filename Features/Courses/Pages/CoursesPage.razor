@@ -1,15 +1,117 @@
 @page "/courses"
 @rendermode InteractiveServer
-@attribute [Authorize]
+@attribute [AllowAnonymous]
 @inject CourseService CourseSvc
 
-<PageTitle>Courses — SPE Chapter</PageTitle>
+<PageTitle>Technical &amp; Academic Development — SPE Chapter</PageTitle>
 
-<div class="spe-page-shell md:max-w-[1200px]">
+@* Copy beside a photo. Two columns from lg up; below that the grid collapses to one column and
+   the text centres under the image — hence text-center / lg:text-left on the column and the
+   matching justify switch on the discipline chips. *@
+<FadeUp class="spe-page-shell md:max-w-300">
+    <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+        <div class="text-center lg:text-left">
+            <p class="spe-page-kicker">—Member Benefits—</p>
+            <h1 class="spe-page-title mb-5">Technical &amp; Academic Development</h1>
+
+            <p class="mb-4 leading-relaxed text-slate-700">
+                SPE provides the essential technical foundation and global network required to
+                excel in your academic studies and research pursuits. Through complimentary
+                digital access to the <em>Journal of Petroleum Technology</em> (JPT), students can
+                track cutting-edge innovations, field case studies, and emerging energy trends. To
+                further support your coursework, student membership includes substantial discounts
+                on specialised textbooks, peer-reviewed technical papers, and industry reference
+                publications.
+            </p>
+
+            <p class="mb-4 leading-relaxed text-slate-700">
+                Academic learning spans across eight core technical disciplines:
+            </p>
+
+            @* Pulled out of the sentence as chips: eight comma-separated names read as a wall of
+               text mid-paragraph, and several contain their own commas. *@
+            <div class="mb-4 flex flex-wrap justify-center gap-2 lg:justify-start">
+                @foreach (var discipline in Disciplines)
+                {
+                    <span @key="discipline" class="rounded-md bg-spe-endeavor px-3 py-1.5 text-xs font-semibold text-white">
+                        @discipline
+                    </span>
+                }
+            </div>
+
+            <p class="leading-relaxed text-slate-700">
+                To help navigate these specialised fields, the global eMentoring program pairs you
+                directly with experienced international professionals who provide one-on-one
+                academic guidance, technical coaching, and early career advice.
+            </p>
+        </div>
+
+        @* A CSS background rather than an <img>: it is decorative, so it needs no alt text, and
+           a missing file degrades to a plain tile instead of a broken-image icon. *@
+        <div aria-hidden="true" class="spe-academic-photo aspect-4/3 w-full overflow-hidden rounded-xl shadow-lg"></div>
+    </div>
+</FadeUp>
+
+@* Same treatment as the "Collab With Us" block on the events page: a centred column with a
+   gold rule under a letterspaced uppercase heading. Sized up from that block's text-sm to
+   text-lg, since this is body copy rather than a contact list. *@
+<FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/60 px-6 py-14 backdrop-blur md:mx-auto md:max-w-300 lg:px-10">
+    <div class="flex flex-col items-center">
+        <h2 class="mb-6 border-b border-spe-gold pb-2 text-center font-heading text-lg font-bold uppercase tracking-[0.2em] text-spe-gold">
+            Industry Engagement &amp; Community
+        </h2>
+        <p class="max-w-3xl text-center text-lg leading-relaxed text-white/85">
+            Classroom theory is complemented by direct engagement with active industry
+            practitioners. Through the Ambassador Lecturer Program, visiting young professionals
+            and technical experts deliver guest lectures and real-world case studies directly on
+            campus.
+        </p>
+        <p class="mt-4 max-w-3xl text-center text-lg leading-relaxed text-white/85">
+            Backing these campus activities is the SPE Connect digital community, giving you an
+            open forum to discuss research, ask technical questions, and collaborate with over
+            127,000 professional members and 50,000+ student peers worldwide.
+        </p>
+    </div>
+</FadeUp>
+@* Photo-backed band. The cards sit in a left-hand column over the image on desktop and stack
+   centred once there is no room beside it — hence items-center / md:items-start rather than a
+   grid, so the column collapses without the cards changing width. *@
+<FadeUp class="relative mx-4 my-6 overflow-hidden rounded-2xl bg-spe-cobalt/90 backdrop-blur md:mx-auto md:max-w-300">
+    <div aria-hidden="true" class="spe-competition-wash pointer-events-none absolute inset-0"></div>
+
+    <div class="relative px-6 py-14 lg:px-10">
+        <h2 class="mb-10 text-center font-heading text-3xl font-extrabold text-spe-gold bg-spe-blue px-10 py-4 rounded-xl  ">
+            Competitions &amp; Academic Recognition
+        </h2>
+
+        <div class="flex flex-col items-center gap-6 md:items-start">
+            @foreach (var contest in Competitions)
+            {
+                @* backdrop-blur keeps the body copy legible wherever the photo happens to be
+                   busy, without dropping the panel's transparency. *@
+                <article @key="contest.Title"
+                         class="w-full max-w-sm rounded-lg border border-white/25 bg-white/15 p-6 shadow-lg backdrop-blur-sm">
+                    <h3 class="mb-3 font-heading text-xl font-bold text-white">@contest.Title</h3>
+                    <p class="mb-5 text-sm leading-relaxed text-white/85">@contest.Description</p>
+                    <a href="@contest.Url" target="_blank" rel="noopener noreferrer"
+                       class="block rounded-md bg-spe-endeavor px-5 py-2.5 text-center font-heading text-sm font-bold text-white transition-colors hover:bg-spe-gold hover:text-spe-ink">
+                        Find out more
+                    </a>
+                </article>
+            }
+        </div>
+    </div>
+</FadeUp>
+
+@* The SPE benefits panel above is public; the chapter's own video library is not. Guests get
+   a sign-in prompt in its place rather than an empty search box over nothing. *@
+<AuthorizeView>
+    <Authorized Context="library">
+<div class="spe-page-shell md:max-w-300">
     <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <p class="spe-page-kicker">Courses</p>
-            <h1 class="spe-page-title">Learning Courses</h1>
+            <p class="spe-page-kicker">Chapter Library</p>
+            <h2 class="spe-page-title">Learning Courses</h2>
             <p class="mt-2 text-sm text-slate-600">Explore community learning courses with descriptions and embedded YouTube videos.</p>
         </div>
         <AuthorizeView Roles="CommitteeMember,TeamLeader">
@@ -88,8 +190,50 @@
         </div>
     }
 </div>
+    </Authorized>
+    <NotAuthorized Context="guest">
+        <div class="spe-page-shell md:max-w-300">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center">
+                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-spe-cobalt/10 text-spe-cobalt">
+                    <Icon Name="desktop" Class="h-6 w-6" />
+                </div>
+                <h2 class="font-heading text-xl font-bold text-black">Members-only learning library</h2>
+                <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">
+                    Sign in with your SPE membership email to browse and search the chapter's
+                    learning videos.
+                </p>
+                <a href="/login" class="spe-primary-btn mt-6 inline-block">Sign in</a>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
+    // #UpdateContent: the eight SPE technical disciplines, rendered as chips beside the copy.
+    private static readonly string[] Disciplines =
+    [
+        "Drilling", "Completions", "Production & Operations", "Reservoir",
+        "Projects, Facilities & Construction", "HSE & Sustainability",
+        "Management", "Data Science & Engineering Analytics"
+    ];
+
+    private static readonly Competition[] Competitions =
+    [
+        // #UpdateLinks — PetroBowl: replace "#" with the SPE competition page
+        new("PetroBowl® Competition",
+            "Represent your university student chapter in a fast-paced global quiz competition challenging your oil, gas, and energy knowledge.",
+            "https://www.spe.org/en/students/petrobowl/"),
+
+        // #UpdateLinks — SPE Student Paper Contest: replace "#" with the SPE contest page
+        new("SPE Student Paper Contest",
+            "Present your academic research or thesis papers to industry judges at regional and international levels.",
+            "https://www.spe.org/en/students/contest/")
+    ];
+
+
+    /// <summary>A card in the photo band. No icon — the panel is carried by the background image.</summary>
+    private sealed record Competition(string Title, string Description, string Url);
+
     private List<Course>? courses;
     private bool showForm;
     private string newTitle = "";
@@ -105,7 +249,19 @@
             course.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
         ?? Enumerable.Empty<Course>();
 
-    protected override async Task OnInitializedAsync() => await LoadCourses();
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    /// <summary>
+    /// Guests see only the public benefits panel, so they never trigger the course query —
+    /// this mirrors the &lt;AuthorizeView&gt; in the markup rather than loading rows nobody renders.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = AuthStateTask is null ? null : await AuthStateTask;
+        if (authState?.User.Identity?.IsAuthenticated == true)
+            await LoadCourses();
+    }
 
     private async Task LoadCourses() => courses = await CourseSvc.GetAllAsync();
 

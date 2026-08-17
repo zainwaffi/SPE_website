@@ -1,54 +1,93 @@
 @page "/opportunities"
 @rendermode InteractiveServer
-@attribute [Authorize]
+@attribute [AllowAnonymous]
 @inject OpportunityService OppSvc
 @inject NavigationManager Nav
 
-<PageTitle>Opportunities — SPE Chapter</PageTitle>
+<PageTitle>Opportunities & Development — SPE Chapter</PageTitle>
 
 <div class="spe-page-shell md:max-w-[1200px]">
     <div class="mb-10">
-        <p class="spe-page-kicker">Opportunities</p>
+        <p class="spe-page-kicker">Opportunities And Development</p>
         <h1 class="spe-page-title">Get Involved</h1>
         <p class="mt-2 text-sm text-slate-600">
             Volunteer with the chapter, plan a route into the industry, and browse the current opportunity board.
         </p>
     </div>
+</div>
+    @* #UpdateContent: every string in this section is placeholder copy awaiting the real text.
 
-    @* #Updates: placeholder copy — replace the two article sections below with the real text. *@
-    <section class="mb-12">
-        <h2 class="mb-4 font-heading text-2xl font-bold text-black">Volunteering</h2>
-        <div class="spe-prose">
-            <p>
-                Placeholder — this section will describe the volunteering routes open to members,
-                from helping run a single event to taking on a committee role for the year.
-            </p>
-            <ul>
-                <li>Placeholder: event support — setup, registration desk, photography.</li>
-                <li>Placeholder: outreach and school visits.</li>
-                <li>Placeholder: committee roles and how to stand for one.</li>
-            </ul>
-            <p>Placeholder: who to contact and what the time commitment looks like.</p>
+       Photo flanked by two tiles, over a text block. The three-column row collapses to a single
+       centred column below lg — each item carries mx-auto so it centres rather than stretching
+       once the columns are gone. *@
+    <div class="spe-page-shell bg-white/15 backdrop-blur-none md:max-w-[1200px]">
+    <section class="mb-12  p-6 lg:p-8 ">
+        <div class="rounded-2xl bg-white p-6 shadow-lg lg:p-8">
+            <h2 class="mb-6 text-center font-heading text-2xl font-bold text-spe-cobalt lg:text-left">Volunteering</h2>
+
+            <div class="grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_2fr_1fr]">
+                @* Two empty tiles from the layout sketch — no content decided yet. *@
+                <div aria-hidden="true" class="h-40 w-full rounded-xl bg-spe-blue lg:h-56"></div>
+
+                @* A CSS background rather than an <img>: decorative, so it needs no alt text, and
+                   a missing file degrades to a plain tile instead of a broken-image icon. *@
+                <div aria-hidden="true" class="spe-volunteering-photo mx-auto aspect-4/3 w-full rounded-lg"></div>
+
+                <div aria-hidden="true" class="h-40 w-full rounded-xl bg-spe-blue lg:h-56"></div>
+            </div>
+
+            <div class="mt-6 rounded-lg bg-slate-200 px-6 py-8">
+                <p class="text-center leading-relaxed text-slate-600 lg:text-left">@PlaceholderBody</p>
+            </div>
         </div>
     </section>
 
-    <section class="mb-12">
-        <h2 class="mb-4 font-heading text-2xl font-bold text-black">Careers</h2>
-        <div class="spe-prose">
-            <p>
-                Placeholder — this section will cover career paths in the energy industry and the
-                support the chapter offers members preparing to apply for them.
-            </p>
-            <ul>
-                <li>Placeholder: graduate schemes and summer internships.</li>
-                <li>Placeholder: CV and interview preparation sessions.</li>
-                <li>Placeholder: mentoring and industry contacts.</li>
-            </ul>
-            <p>Placeholder: key application deadlines through the academic year.</p>
+
+
+    @* #UpdateContent: every string in this section is placeholder copy awaiting the real text.
+
+       Copy on the left, feature card on the right; below lg the grid collapses to one column
+       and both halves centre — hence text-center / lg:text-left and the mx-auto on the card. *@
+    <section class="mb-12 rounded-2xl bg-spe-blue px-6 py-10 lg:px-12">
+        <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+            <div class="text-center lg:text-left">
+                <h2 class="mb-4 font-heading text-3xl font-extrabold text-spe-gold">Careers</h2>
+                <p class="mb-6 leading-relaxed text-white/85">@PlaceholderBody</p>
+
+                @* Three empty tiles from the layout sketch — no content decided yet. *@
+                <div class="grid grid-cols-3 gap-4">
+                    @for (var tile = 0; tile < 3; tile++)
+                    {
+                        <div @key="tile" aria-hidden="true" class="aspect-square rounded-lg bg-spe-endeavor/50"></div>
+                    }
+                </div>
+            </div>
+
+            <div class="mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white p-3 shadow-xl">
+                @* A CSS background rather than an <img>: decorative, so it needs no alt text, and
+                   a missing file degrades to a plain tile instead of a broken-image icon. *@
+                <div aria-hidden="true" class="spe-careers-photo aspect-video w-full rounded-xl"></div>
+                <div class="px-3 pb-2 pt-4">
+                    <h3 class="mb-2 font-heading text-xl font-bold text-spe-cobalt">Title</h3>
+                    <p class="mb-5 text-sm leading-relaxed text-slate-600">@PlaceholderBody</p>
+                    @* #UpdateLinks — Careers feature card: replace "#" with the real destination *@
+                    <a href="#"
+                       class="block rounded-full bg-spe-endeavor px-5 py-2.5 text-center font-heading text-sm font-bold text-white transition-colors hover:bg-spe-cobalt">
+                        Find out more
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
+</div>
 
-    <section class="border-t border-slate-200 pt-10">
+
+<div class="spe-page-shell md:max-w-[1200px]">
+    @* Volunteering and Careers above are public; the live opportunity board is not. Guests get
+       a sign-in prompt in its place rather than an empty search box over nothing. *@
+    <AuthorizeView>
+        <Authorized Context="board">
+    <section class=" border-slate-200 pt-10">
         <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
                 <h2 class="font-heading text-2xl font-bold text-black">Available Opportunities</h2>
@@ -131,9 +170,40 @@
             </div>
         }
     </section>
+
+        </Authorized>
+        <NotAuthorized Context="guest">
+            <section class="border-t border-slate-200 pt-10">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-spe-cobalt/10 text-spe-cobalt">
+                        <Icon Name="list-check" Class="h-6 w-6" />
+                    </div>
+                    <h2 class="font-heading text-xl font-bold text-black">Members-only opportunity board</h2>
+                    <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">
+                        Sign in with your SPE membership email to search the jobs, internships and
+                        graduate vacancies shared with the chapter.
+                    </p>
+                    <a href="/login" class="spe-primary-btn mt-6 inline-block">Sign in</a>
+                </div>
+            </section>
+        </NotAuthorized>
+    </AuthorizeView>
 </div>
 
 @code {
+    // #UpdateContent: Volunteering and Careers copy. Edit the text here rather than in the
+    // markup above — the two sections are rendered by looping over these.
+    // #UpdateContent: placeholder body copy for the Volunteering and Careers sections.
+    // One constant so replacing it updates every placeholder at once.
+    private const string PlaceholderBody =
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec et volutpat tortor, " +
+        "vel euismod ante. Curabitur pellentesque, libero eget sagittis ultrices.";
+
+    /// <summary>A volunteering route. <paramref name="Details"/> is rendered as a labelled list,
+    /// so pathways with no stated commitment simply omit that pair.</summary>
+    private sealed record VolunteerPathway(string Icon, string Title, (string Label, string Text)[] Details);
+
+
     private const string MarkdownPlaceholder = """
         ## About the role
 
@@ -180,8 +250,20 @@
             opp.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
         ?? Enumerable.Empty<Opportunity>();
 
-    protected override async Task OnInitializedAsync() =>
-        opportunities = await OppSvc.GetAllAsync();
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    /// <summary>
+    /// Guests see only the public Volunteering and Careers sections, so they never trigger the
+    /// board query — this mirrors the &lt;AuthorizeView&gt; in the markup rather than loading
+    /// rows nobody renders.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = AuthStateTask is null ? null : await AuthStateTask;
+        if (authState?.User.Identity?.IsAuthenticated == true)
+            opportunities = await OppSvc.GetAllAsync();
+    }
 
     private async Task SaveOpp()
     {

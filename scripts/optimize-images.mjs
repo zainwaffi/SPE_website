@@ -18,7 +18,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const assets = path.join(root, "assets");
 const wwwroot = path.join(root, "wwwroot");
 
-/** @type {{src: string, out: string, width: number, format?: "webp"|"png", quality?: number}[]} */
+/** @type {{src: string, out: string, width: number, height?: number, format?: "webp"|"png", quality?: number}[]} */
 const jobs = [
     // Full-bleed page background (MainLayout). Three widths behind a srcset.
     { src: "banner.jpg", out: "images/banner-640.webp", width: 640, quality: 72 },
@@ -34,6 +34,30 @@ const jobs = [
     // Home "About Us" photo, rendered in an aspect-4/3 box.
     { src: "student-chapter.jpeg", out: "images/student-chapter.webp", width: 800, quality: 78 },
 
+    // Banner behind the "Why Join Us" heading (.spe-photo-wash). Kept at its native 1588 px so
+    // the band is never upscaled, and re-encoded from a 1.5 MB PNG — PNG is the wrong format
+    // for a photograph, which is most of that size.
+    { src: "background.png", out: "images/background-1588.webp", width: 1588, quality: 80 },
+
+    // Photo in the Volunteering block's centre column (.spe-volunteering-photo). Rendered in a
+    // half-width aspect-4/3 box. Drop the master in as assets/volunteering.jpg.
+    { src: "volunteering.jpg", out: "images/volunteering-1280.webp", width: 1280, quality: 78 },
+
+    // Photo at the top of the Careers feature card (.spe-careers-photo). Rendered in a
+    // max-w-sm aspect-video box, so 1280 covers it on a high-DPI screen.
+    // Drop the master in as assets/careers.jpg.
+    { src: "careers.jpg", out: "images/careers-1280.webp", width: 1280, quality: 78 },
+
+    // Photo beside the "Technical & Academic Development" copy (.spe-academic-photo). Rendered
+    // in a half-width aspect-4/3 box, so 1280 covers it on a high-DPI screen.
+    // Drop the master in as assets/academic.jpg.
+    { src: "academic.jpg", out: "images/academic-1280.webp", width: 1280, quality: 78 },
+
+    // Photo behind the "Competitions & Academic Recognition" band (.spe-competition-wash).
+    // Drop the master in as assets/competition.jpg; until then this job logs a SKIP and the
+    // band renders as the navy tint alone.
+    { src: "competition.jpg", out: "images/competition-1280.webp", width: 1280, quality: 76 },
+
     // Favicons must stay PNG — WebP favicons are still unevenly supported.
     { src: "favicon.png", out: "favicon.png", width: 32, format: "png" },
     { src: "favicon.png", out: "apple-touch-icon.png", width: 180, format: "png" },
@@ -45,7 +69,7 @@ async function isStale(srcPath, outPath) {
     return srcStat.mtimeMs > outStat.mtimeMs;
 }
 
-async function run({ src, out, width, format = "webp", quality = 80 }) {
+async function run({ src, out, width, height, format = "webp", quality = 80 }) {
     const srcPath = path.join(assets, src);
     const outPath = path.join(wwwroot, out);
 
@@ -61,7 +85,15 @@ async function run({ src, out, width, format = "webp", quality = 80 }) {
         return 0;
     }
 
-    const pipeline = sharp(srcPath).resize({ width, withoutEnlargement: true });
+    // With a height given the resize becomes a crop; "attention" keeps the busiest region
+    // (faces, in practice) rather than blindly taking the centre band.
+    const pipeline = sharp(srcPath).resize({
+        width,
+        height,
+        fit: height ? "cover" : undefined,
+        position: "attention",
+        withoutEnlargement: true
+    });
     const buffer = await (format === "png"
         ? pipeline.png({ compressionLevel: 9, palette: true }).toBuffer()
         : pipeline.webp({ quality, effort: 6 }).toBuffer());

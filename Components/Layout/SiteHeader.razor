@@ -50,14 +50,11 @@
         <div class="max-w-360 px-6 py-2 lg:px-20">
             <a href="/" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Home</a>
             <a href="/events" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Events</a>
-            <a href="/resources" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Resources</a>
-            <a href="/news" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Newtork</a>
-            <AuthorizeView>
-                <Authorized Context="memberLinks">
-                    <a href="/opportunities" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Opportunities</a>
-                    <a href="/courses" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Courses</a>
-                </Authorized>
-            </AuthorizeView>
+            <a href="/Scholarships" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Scholarships and Bursaries</a>
+            @* Both pages are public: guests get the written sections, and the members-only
+               board / video library inside them shows a sign-in prompt instead. *@
+            <a href="/opportunities" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Opportunities &amp; Development</a>
+            <a href="/courses" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Technical &amp; Academic Development</a>
 
             <AuthorizeView>
                 <Authorized>

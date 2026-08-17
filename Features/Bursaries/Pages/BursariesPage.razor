@@ -1,0 +1,104 @@
+@page "/Scholarships"
+@attribute [AllowAnonymous]
+
+@* Public page, like Home and Events — [AllowAnonymous] is stated rather than left implied so
+   the intent survives anyone adding a fallback authorization policy later.
+
+   Static SSR: the content is fixed copy with no state or event handlers, so this must not
+   open a SignalR circuit (see AGENTS.md). *@
+
+<PageTitle>Scholarships and Bursaries — SPE Chapter</PageTitle>
+
+@* Cobalt band matching the home page's "Why Join Us" and the Technical & Academic Development
+   panel. Copy lives in the @@code block so the markup stays one card loop. *@
+<FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
+    <div class="px-6 lg:px-8">
+        <div class="mb-10 text-center">
+            <p class="spe-page-kicker text-spe-gold">—Scholarships &amp; Bursaries—</p>
+            <h1 class="mb-3 font-heading text-3xl font-extrabold text-white">Financial Support</h1>
+            <p class="mx-auto max-w-2xl text-sm text-white/75">
+                SPE is committed to lowering financial barriers for students pursuing degrees
+                related to energy and engineering.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+            @foreach (var support in SupportOptions)
+            {
+                <article @key="support.Title" class="flex flex-col rounded-xl bg-white/10 p-6">
+                    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="@support.Icon" Class="h-6 w-6" />
+                    </div>
+                    <h2 class="mb-3 font-heading text-lg font-bold text-white">@support.Title</h2>
+
+                    <dl class="space-y-3">
+                        @foreach (var (label, text) in support.Details)
+                        {
+                            <div @key="label">
+                                <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">@label</dt>
+                                <dd class="mt-0.5 text-sm leading-relaxed text-white/75">@text</dd>
+                            </div>
+                        }
+                    </dl>
+
+                    @* The bursary is the only option with dated stages, so the timeline renders
+                       only when there is one rather than as an empty block on the other cards. *@
+                    @if (support.Timeline.Length > 0)
+                    {
+                        <div class="mt-4 border-t border-white/15 pt-4">
+                            <p class="mb-2 text-[11px] font-bold uppercase tracking-wider text-spe-gold">Timeline</p>
+                            <ul class="space-y-2">
+                                @foreach (var (stage, when) in support.Timeline)
+                                {
+                                    <li @key="stage" class="flex items-baseline justify-between gap-3 text-sm">
+                                        <span class="text-white/75">@stage</span>
+                                        <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">@when</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    </div>
+</FadeUp>
+
+@code {
+    // #UpdateContent: scholarship and bursary copy. Edit here rather than in the markup above.
+    private static readonly SupportOption[] SupportOptions =
+    [
+        new("trophy", "SPE Aberdeen Student Bursary Programme",
+        [
+            ("Overview", "An annual funding initiative managed by the Student Development Committee, supporting students studying energy-related disciplines within the section."),
+            ("Eligible institutions", "University of Aberdeen, Robert Gordon University (RGU), University of Dundee, and Heriot-Watt University.")
+        ],
+        [
+            ("Programme announced", "November"),
+            ("Applications reviewed", "December – January"),
+            ("Winners announced", "February / March")
+        ]),
+
+        new("tag", "100% Free Student Membership",
+        [
+            ("Cost", "Student membership dues are completely waived through the SPE Student Dues Program, sponsored by Chevron."),
+            ("Eligibility", "Open to all students enrolled in at least 30% of a full-time academic workload on a petroleum- or energy-related curriculum.")
+        ], []),
+
+        new("arrow-right", "Graduate Transition Dues Discount",
+        [
+            ("Year 1 post-graduation", "Dues are 100% waived for graduating SPE student members entering professional membership."),
+            ("Year 2 post-graduation", "Dues remain significantly discounted, supporting your early-career transition.")
+        ], [])
+    ];
+
+    /// <summary>
+    /// One funding route. <paramref name="Timeline"/> is empty for anything without dated stages,
+    /// which is what hides the timeline block on those cards.
+    /// </summary>
+    private sealed record SupportOption(
+        string Icon,
+        string Title,
+        (string Label, string Text)[] Details,
+        (string Stage, string When)[] Timeline);
+}

@@ -88,16 +88,24 @@
 
 <FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
     <div class="px-6 lg:px-8">
-        <div class="mb-10 text-center">
-            <h1 class="spe-page-kicker text-spe-gold">—Why Join Us—</h1>
-            <h2 class="mb-3 font-heading text-3xl font-extrabold text-white">Featured Guest Speakers & Hosts from</h2>
-        </div>
-        <div class="mb-12 flex flex-wrap justify-center gap-3">
-            @foreach (var company in Companies)
-            {
-                <a href="@company.LinkedIn" @key="company" rel="noopener noreferrer" target="_blank"
-                      class="rounded-lg bg-white/15 px-5 py-2.5 font-heading text-sm font-bold text-white/90 transition-colors hover:bg-amber-500 hover:text-spe-ink">@company.Name</a>
-            }
+        @* Photo band behind the heading only — the benefit cards below keep the plain cobalt.
+           The band carries the image's own 4.03:1 ratio so `contain` fills it without cropping;
+           min-h-40 stops it collapsing to an unreadable sliver on a phone, where the image
+           letterboxes instead. overflow-hidden clips it to the rounded corners, and the text
+           needs `relative` to stack above the absolutely-positioned background. *@
+        <div class="relative mb-12 flex min-h-40 items-center justify-center overflow-hidden rounded-xl px-4 py-10 md:aspect-1588/394 md:py-0">
+            <div aria-hidden="true" class="spe-photo-wash pointer-events-none absolute inset-0"></div>
+            <div class="relative text-center">
+                <h1 class="spe-page-kicker text-spe-gold">—Why Join Us—</h1>
+                <h2 class="mb-4 font-heading text-3xl font-extrabold text-white">Featured Guest Speakers & Hosts from</h2>
+                <div class="flex flex-wrap justify-center gap-3">
+                    @foreach (var company in Companies)
+                    {
+                        <a href="@company.LinkedIn" @key="company" rel="noopener noreferrer" target="_blank"
+                           class="rounded-lg bg-spe-cobalt/70 px-5 py-2.5 font-heading text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-amber-500 hover:text-spe-ink">@company.Name</a>
+                    }
+                </div>
+            </div>
         </div>
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
             @foreach (var benefit in Benefits)
