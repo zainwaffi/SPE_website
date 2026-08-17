@@ -20,6 +20,16 @@ public class ApplicationUser : IdentityUser
     /// <summary>Committee title/position, assigned by a Team Leader (free-form string).</summary>
     public string? CommitteeTitle { get; set; }
 
+    /// <summary>
+    /// Whether this member wants notification emails (strikes, strike removals, task
+    /// assignments, task completions). Opt-out rather than opt-in — on by default.
+    ///
+    /// Set by the member on their own profile page, and deliberately NOT part of the
+    /// OpenWater login sync: that sync overwrites the fields it owns on every sign-in, which
+    /// would silently reset this choice.
+    /// </summary>
+    public bool EmailNotificationsEnabled { get; set; } = true;
+
     /// <summary>Whether OpenWater reports this user as a student chapter officer — drives Identity role sync.</summary>
     public bool IsStudentChapterOfficer { get; set; }
 
@@ -34,4 +44,10 @@ public class ApplicationUser : IdentityUser
 
     /// <summary>Tasks assigned to this member by the President (see <see cref="TaskItem"/>).</summary>
     public ICollection<TaskItem> AssignedTasks { get; set; } = [];
+
+    /// <summary>
+    /// Teams this member has been allocated to by a Team Leader. Drives which tutorials they can
+    /// see: no team means no tutorials. Owned by the admin panel, not by the OpenWater sync.
+    /// </summary>
+    public ICollection<MemberTeam> Teams { get; set; } = [];
 }

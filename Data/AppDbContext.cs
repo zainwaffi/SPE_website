@@ -21,11 +21,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<Tutorial> Tutorials => Set<Tutorial>();
+    public DbSet<TutorialTeam> TutorialTeams => Set<TutorialTeam>();
+    public DbSet<MemberTeam> MemberTeams => Set<MemberTeam>();
     public DbSet<Course> Courses => Set<Course>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        // Notification emails are opt-out. The database default matters as much as the CLR one:
+        // without it the migration backfills every existing member to false and silently opts
+        // the whole committee out.
+        builder.Entity<ApplicationUser>()
+            .Property(u => u.EmailNotificationsEnabled)
+            .HasDefaultValue(true);
 
         // A rating always belongs to exactly one event; deleting the event removes its ratings too.
         builder.Entity<EventRating>()
@@ -49,6 +58,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .WithMany()
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Team allocations are pure join rows — they carry no history worth keeping once the
+        // member or the tutorial is gone, so both cascade rather than lingering as orphans.
+        // The unique indexes stop a double-submitted form filing the same pair twice.
+        builder.Entity<MemberTeam>(membership =>
+        {
+            membership.HasOne(m => m.User)
+                      .WithMany(u => u.Teams)
+                      .HasForeignKey(m => m.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+            membership.HasIndex(m => new { m.UserId, m.Team }).IsUnique();
+        });
+
+        builder.Entity<TutorialTeam>(filing =>
+        {
+            filing.HasOne(t => t.Tutorial)
+                  .WithMany(t => t.Teams)
+                  .HasForeignKey(t => t.TutorialId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            filing.HasIndex(t => new { t.TutorialId, t.Team }).IsUnique();
+        });
 
         builder.Entity<EventRegistration>(registration =>
         {

@@ -6,7 +6,6 @@
 @implements IAsyncDisposable
 @inject EventService EventSvc
 @inject IJSRuntime JS
-@inject NavigationManager Nav
 
 <PageTitle>Events — SPE Chapter</PageTitle>
 
@@ -39,7 +38,7 @@
         </button>
 
         @* #Updates: point this at the SPE Aberdeen Section events page when the URL is confirmed. *@
-        <a href="" target="_blank" rel="noopener noreferrer"
+        <a href="https://www.spe-aberdeen.org/events" target="_blank" rel="noopener noreferrer"
            class="inline-flex items-center gap-2 rounded-lg border border-white/30 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
             <Icon Name="globe" Class="h-4 w-4" />
             Find more events from Aberdeen Section
@@ -548,7 +547,8 @@
                 </div>
 
                 @* Fallback for the desktop Outlook app, university calendars, and anything else
-                   that wants the raw feed. onfocus/select is plain HTML — no JS interop needed. *@
+                   that wants the raw feed. onfocus/select is plain HTML — no JS interop needed.
+                   All four URLs are #UpdateLinks constants in the @@code block below. *@
                 <div class="mt-6 border-t border-slate-200 pt-5">
                     <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500" for="calendar-feed-url">
                         Or use the calendar link
@@ -580,12 +580,14 @@
             </p>
             <ul class="flex flex-col items-center gap-3 text-sm text-white/70">
                 <li>
+                    @* #UpdateLinks — chapter contact address *@
                     <a class="inline-flex items-center gap-2 transition-colors hover:text-white" href="mailto:spe@ausa.org.uk">
                         <Icon Name="envelope" Class="h-4 w-4" />
                         spe@@ausa.org.uk
                     </a>
                 </li>
                 <li>
+                    @* #UpdateLinks — LinkedIn *@
                     <a class="inline-flex items-center gap-2 transition-colors hover:text-white"
                        href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true"
                        target="_blank" rel="noopener noreferrer">
@@ -594,6 +596,7 @@
                     </a>
                 </li>
                 <li>
+                    @* #UpdateLinks — collaboration enquiries: href is EMPTY, this link goes nowhere *@
                     <a class="inline-flex items-center gap-2 transition-colors hover:text-white" href="">
                         <Icon Name="globe" Class="h-4 w-4" />
                         Collaboration enquiries
@@ -643,29 +646,41 @@
         if (!selectedCategories.Add(category)) selectedCategories.Remove(category);
     }
 
-    /// <summary>The public iCalendar feed, as an absolute URL — subscribers are off-site.</summary>
-    private string CalendarFeedUrl => $"{Nav.BaseUri.TrimEnd('/')}/events/calendar.ics";
+    // ---- Calendar subscription links -------------------------------------------------
+    //
+    // These point at the chapter's shared Google Calendar (spe@ausa.org.uk), NOT at the feed
+    // this app generates from the Events table at /events/calendar.ics. That endpoint is still
+    // served, but nothing links to it any more — so an event added through this site does not
+    // reach a subscriber unless it is also put in the Google Calendar.
+    //
+    // Each is the platform's own "subscribe" entry point, so they are not interchangeable and
+    // are not derived from one another. If the calendar address changes, all four need editing.
+
+    /// <summary>Raw iCalendar URL, offered as the copy-and-paste fallback.</summary>
+    // #UpdateLinks — chapter calendar: raw .ics feed
+    private const string CalendarFeedUrl =
+        "https://calendar.google.com/calendar/ical/spe%40ausa.org.uk/public/basic.ics";
 
     /// <summary>
     /// webcal:// is what makes Apple Calendar (and several others) offer to *subscribe* rather
-    /// than import a one-off snapshot. It is the same URL, only the scheme differs.
+    /// than import a one-off snapshot. Same address, different scheme.
     /// </summary>
-    private string WebcalFeedUrl =>
-        CalendarFeedUrl.Replace("https://", "webcal://").Replace("http://", "webcal://");
+    // #UpdateLinks — chapter calendar: iPhone & Mac (Apple Calendar)
+    private const string AppleCalendarUrl =
+        "webcal://calendar.google.com/calendar/ical/spe%40ausa.org.uk/public/basic.ics";
 
-    private string AppleCalendarUrl => WebcalFeedUrl;
+    // #UpdateLinks — chapter calendar: Android (Google Calendar)
+    private const string GoogleCalendarUrl =
+        "https://calendar.google.com/calendar/u/0/r?cid=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2Fspe%2540ausa.org.uk%2Fpublic%2Fbasic.ics";
 
-    private string GoogleCalendarUrl =>
-        $"https://calendar.google.com/calendar/r?cid={Uri.EscapeDataString(WebcalFeedUrl)}";
-
-    private string OutlookCalendarUrl =>
-        "https://outlook.live.com/calendar/0/addfromweb" +
-        $"?url={Uri.EscapeDataString(CalendarFeedUrl)}" +
-        $"&name={Uri.EscapeDataString(EventCalendarService.CalendarName)}";
+    // #UpdateLinks — chapter calendar: Outlook on the web
+    private const string OutlookCalendarUrl =
+        "https://outlook.office.com/calendar/0/addfromweb?url=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2Fspe%2540ausa.org.uk%2Fpublic%2Fbasic.ics&name=SPE%20AUSA%20Events";
 
     // Attendance sign-up state. currentUserId is null for anonymous visitors, who see a
     // "sign in to attend" link instead of the form.
     private string? currentUserId;
+    
     private HashSet<int> registeredEventIds = [];
     private Dictionary<int, int> registrationCounts = [];
     private int? signUpEventId;

@@ -4,19 +4,37 @@
    the logout form is a plain POST, so no circuit is needed. *@
 
 <header class="sticky top-0 z-50 border-b border-white/10 bg-spe-cobalt/95 shadow-lg backdrop-blur">
-    <div class="flex flex-row pl-6 pr-2 mx-2 lg:pl-15 lg:pr-4">
-        <div class="flex flex-2 h-24">
-            <a href="/" class="group flex items-center gap-3">
-                <img src="/images/spe-logo.webp" alt="SPE Logo" class="h-24 w-auto" width="192" height="96"
-                     fetchpriority="high" />
-                <div class="hidden text-left sm:block">
-                    <p class="font-heading text-xl font-bold leading-tight text-white">Society of Petroleum Engineers</p>
-                    <p class="text-lg leading-tight text-white/70">University of Aberdeen Chapter</p>
-                </div>
-            </a>
-        </div>
+    @* Logout sits in this bar from lg up, and moves into the menu below that. On a narrow screen
+       its width came straight out of the logo's — the <img> is a shrinkable flex item, so it was
+       being squeezed narrower than its own aspect ratio. lg is also where the logo returns to
+       h-24 and the full-size layout has room for both. *@
+    <div class="flex items-center justify-between gap-3 pl-6 pr-2 mx-2 lg:pl-15 lg:pr-4">
+        <a href="/" class="group flex min-w-0 items-center gap-3 py-2">
+            @* shrink-0 so the logo is never squashed to make room for its neighbours, and a
+               smaller height on phones so the served file comfortably covers a 3x screen. *@
+            <img src="/images/spe-logo-384.webp"
+                 srcset="/images/spe-logo-384.webp 384w, /images/spe-logo-768.webp 768w"
+                 sizes="(min-width: 1024px) 190px, 127px"
+                 alt="SPE Logo" class="h-16 w-auto shrink-0 lg:h-24" width="384" height="194"
+                 fetchpriority="high" />
+            <div class="hidden text-left sm:block">
+                <p class="font-heading text-xl font-bold leading-tight text-white">Society of Petroleum Engineers</p>
+                <p class="text-lg leading-tight text-white/70">University of Aberdeen Chapter</p>
+            </div>
+        </a>
 
-        <div class="flex flex-1 flex-row-reverse items-center gap-4 p-3 mx-8">
+        <div class="flex shrink-0 items-center gap-4">
+            <AuthorizeView>
+                <Authorized>
+                    <form method="post" action="/logout" class="hidden lg:block">
+                        <button type="submit"
+                                class="rounded-lg border border-white/25 px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-white/10">
+                            Logout
+                        </button>
+                    </form>
+                </Authorized>
+            </AuthorizeView>
+
             <button type="button" data-toggle="site-nav" aria-expanded="false" aria-controls="site-nav"
                     aria-label="Open navigation menu"
                     class="rounded-full p-3 text-white transition-colors hover:bg-white/10">
@@ -25,16 +43,6 @@
                     <path d="M3 6h18M3 12h18M3 18h18" />
                 </svg>
             </button>
-            <AuthorizeView>
-                <Authorized>
-                    <form method="post" action="/logout">
-                        <button type="submit"
-                                class="rounded-lg border border-white/25 px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-white/10">
-                            Logout
-                        </button>
-                    </form>
-                </Authorized>
-            </AuthorizeView>
         </div>
     </div>
 
@@ -42,14 +50,14 @@
         <div class="max-w-360 px-6 py-2 lg:px-20">
             <a href="/" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Home</a>
             <a href="/events" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Events</a>
+            <a href="/resources" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Resources</a>
+            <a href="/news" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Newtork</a>
             <AuthorizeView>
                 <Authorized Context="memberLinks">
                     <a href="/opportunities" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Opportunities</a>
                     <a href="/courses" class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Courses</a>
                 </Authorized>
             </AuthorizeView>
-            <a href="https://www.spe-aberdeen.org/news" target="_blank" rel="noopener noreferrer"
-               class="block border-b border-white/10 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">News</a>
 
             <AuthorizeView>
                 <Authorized>
@@ -68,12 +76,19 @@
                                         <a href="/admin/members" class="block rounded px-2 py-2 text-white transition-colors hover:bg-white/10">Admin Panel</a>
                                     </Authorized>
                                 </AuthorizeView>
-                                <form method="post" action="/logout" class="pt-1">
-                                    <button type="submit" class="w-full rounded px-2 py-2 text-left text-white/80 transition-colors hover:bg-white/10 hover:text-white">Logout</button>
-                                </form>
                             </div>
                         </Authorized>
                     </AuthorizeView>
+
+                    @* Top level, not inside Tools: Tools only renders for committee roles, so a
+                       plain signed-in member would otherwise have no logout at all on a phone.
+                       Hidden from lg up, where the bar shows its own Logout button instead. *@
+                    <form method="post" action="/logout" class="mt-2 lg:hidden">
+                        <button type="submit"
+                                class="w-full rounded border border-white/20 px-2 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                            Logout
+                        </button>
+                    </form>
                 </Authorized>
                 <NotAuthorized>
                     <a href="/login" class="mt-2 block rounded border border-white/20 px-2 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">Login</a>

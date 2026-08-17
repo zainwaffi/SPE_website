@@ -17,6 +17,20 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Users.AsNoTracking()
                        .Include(u => u.AssignedTasks)
+                       .Include(u => u.Teams)
                        .FirstOrDefaultAsync(u => u.Id == userId);
+    }
+
+    /// <summary>
+    /// Turns the member's notification emails on or off. Returns false if the account no longer
+    /// exists, so the page can tell "saved" apart from "silently did nothing".
+    /// </summary>
+    public async Task<bool> SetEmailNotificationsAsync(string userId, bool enabled)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var updated = await db.Users
+                              .Where(u => u.Id == userId)
+                              .ExecuteUpdateAsync(set => set.SetProperty(u => u.EmailNotificationsEnabled, enabled));
+        return updated > 0;
     }
 }

@@ -17,23 +17,33 @@ namespace SPE_website.Features.Events.Services;
 public class EventService(IDbContextFactory<AppDbContext> dbFactory)
 {
     /// <summary>
+    /// Grace period after an event's start time before it counts as past. Only the start time
+    /// is stored, so without this an event dropped out of "Upcoming" the moment it began —
+    /// while it was still running and members were still arriving.
+    /// </summary>
+    private static readonly TimeSpan PastEventGrace = TimeSpan.FromHours(2);
+
+    /// <summary>
     /// Both event lists in one round trip, upcoming soonest-first and past most-recent-first.
     /// The events page renders them together, so issuing two queries just doubled the
     /// latency of every load and every reload after an edit.
+    ///
+    /// An event stays in <c>Upcoming</c> until <see cref="PastEventGrace"/> has elapsed past
+    /// its start time.
     /// </summary>
     public async Task<(List<Event> Upcoming, List<Event> Past)> GetUpcomingAndPastAsync()
     {
         await using var db = await dbFactory.CreateDbContextAsync();
 
         // UK wall-clock, matching how event times are stored (see UkTime).
-        var now = UkTime.Now;
+        var cutoff = UkTime.Now - PastEventGrace;
         var all = await db.Events.AsNoTracking()
                           .Include(e => e.Ratings)
                           .OrderBy(e => e.Date)
                           .ToListAsync();
 
-        var upcoming = all.Where(e => e.Date >= now).ToList();
-        var past = all.Where(e => e.Date < now).OrderByDescending(e => e.Date).ToList();
+        var upcoming = all.Where(e => e.Date >= cutoff).ToList();
+        var past = all.Where(e => e.Date < cutoff).OrderByDescending(e => e.Date).ToList();
 
         return (upcoming, past);
     }

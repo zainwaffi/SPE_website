@@ -42,13 +42,17 @@ endpoint in `Program.cs` for the same reason.
 | Model | File | Key fields | Notes |
 |---|---|---|---|
 | `ApplicationUser` | `Data/Models/ApplicationUser.cs` | `FullName`, `StrikeCount`, `CommitteeTitle`, `IsStudentChapterOfficer`, `OpenWaterMemberId`, `OpenWaterOrganization`, `OpenWaterProfileJson`, `AssignedTasks` | Extends `IdentityUser`. No local passwords — refreshed from OpenWater on every login. `CommitteeTitle` is a **free-form string** ("President", "Vice President"), separate from Identity roles. |
-| `AppDbContext` | `Data/AppDbContext.cs` | `Events`, `EventRatings`, `Opportunities`, `TaskItems`, `Tutorials`, `Courses` | Extends `IdentityDbContext<ApplicationUser>`, so Identity and feature tables share one database. |
+| `AppDbContext` | `Data/AppDbContext.cs` | `Events`, `EventRatings`, `EventRegistrations`, `Opportunities`, `TaskItems`, `Tutorials`, `TutorialTeams`, `MemberTeams`, `Courses` | Extends `IdentityDbContext<ApplicationUser>`, so Identity and feature tables share one database. |
 
-Two relationships are configured explicitly in `OnModelCreating`:
+Relationships configured explicitly in `OnModelCreating`:
 
 - `EventRating` → `Event` **cascade delete**: deleting an event removes its ratings.
 - `TaskItem` → `ApplicationUser` **set null**: deleting a member clears the assignment but
   preserves task history rather than destroying it.
+- `MemberTeam` → `ApplicationUser` and `TutorialTeam` → `Tutorial` **cascade delete**, each with
+  a unique index on the pair — they are join rows with no history worth keeping.
+- `ApplicationUser.EmailNotificationsEnabled` has a **database default of `true`**, so the
+  migration that added it did not silently opt every existing member out.
 
 `Data/Models/Enums.cs` is now an empty namespace declaration. The old `CommitteeRole` enum was
 replaced by the `CommitteeTitle` string in migration
@@ -58,13 +62,14 @@ replaced by the `CommitteeTitle` string in migration
 
 | Model | File | Key fields | Notes |
 |---|---|---|---|
-| `Event` | `Features/Events/Models/Event.cs` | `Title`, `Description`, `Date`, `Location`, `IsUpcoming`, `Category`, `InstagramEmbedUrl`, `ImageUrl`, `GoogleCalendarEventId`, `Ratings` | `IsUpcoming` and `GoogleCalendarEventId` are stored but **not used for filtering** — upcoming/past is computed live from `Date` vs `UtcNow`. `Location` is used as a URL (rendered as a "View Location" link). |
+| `Event` | `Features/Events/Models/Event.cs` | `Title`, `Description`, `Date`, `Location`, `IsUpcoming`, `Category`, `InstagramEmbedUrl`, `ImageUrl`, `GoogleCalendarEventId`, `Ratings` | `IsUpcoming` and `GoogleCalendarEventId` are stored but **not used for filtering** — upcoming/past is computed live from `Date` vs `UkTime.Now`, minus a 2-hour grace period so an event still in progress stays under "Upcoming". `Location` is used as a URL (rendered as a "View Location" link). |
 | `EventCategory` (enum) | `Features/Events/Models/EventCategory.cs` | `Talk`, `SiteVisit`, `Workshop`, `Other` | Persisted as `integer`. |
 | `EventRating` | `Features/Events/Models/EventRating.cs` | `EventId`, `Stars`, `Comment` | Anonymous 1–5 star feedback on past events. |
 | `Opportunity` | `Features/Opportunities/Models/Opportunity.cs` | `Title`, `Description`, `ExternalUrl` | `Description` is Markdown, rendered with Markdig. |
 | `TaskItem` | `Features/Tasks/Models/TaskItem.cs` | `Title`, `Description`, `Deadline`, `Status`, `AssignedToUserId`, `AssignedTo` | Status enum is `AssignmentStatus` (`Processing`/`Completed`/`Failed`) — named to avoid clashing with `System.Threading.Tasks.TaskStatus`. |
-| `Tutorial` | `Features/Tutorials/Models/Tutorial.cs` | `Title`, `Description`, `YoutubeEmbedUrl`, `CategoryRole` | `CategoryRole` is a free-form string defaulting to `"Member"`. |
-| `Course` | `Features/Courses/Models/Course.cs` | `Title`, `Description`, `YoutubeEmbedUrl` | Same shape as `Tutorial` minus role gating. |
+| `Tutorial` | `Features/Tutorials/Models/Tutorial.cs` | `Title`, `Description`, `YoutubeEmbedUrl`, `ArticleContent`, `Format`, `Teams` | Filed against one or more `Team`s via `TutorialTeam`. A member sees a tutorial only if they share a team with it; Team Leaders see all. Replaced the old free-string `CategoryRole`. |
+| `Course` | `Features/Courses/Models/Course.cs` | `Title`, `Description`, `YoutubeEmbedUrl` | Same shape as `Tutorial` minus team gating. |
+| `Team` (enum) | `Data/Models/Team.cs` | `SocialMediaAndProgramming`, `CoordinationAndOperations`, `EngagementAndOutreach` | Persisted as `integer` — do not reorder. `MemberTeam` joins members to teams (many-to-many), `TutorialTeam` joins tutorials to teams. |
 | `OpenWaterMemberProfile` | `Features/Authentication/Models/` | `Email`, `FullName`, `StudentId`, `Organization`, `DegreeProgramLevel`, `IsStudentOfficer`, `IsStudentMember`, `RawJson` | DTO only — never persisted directly; mapped onto `ApplicationUser`. |
 | `EmailSettings` | `Shared/Models/EmailSettings.cs` | `SmtpHost`, `SmtpPort`, `Username`, `Password`, `From` | Bound from the `EmailSettings` config section. |
 | `EmailResult` | `Shared/Models/EmailResult.cs` | `Sent`, `Error` | Record. Lets callers distinguish "delivered" from "email disabled" from "SMTP rejected it" without exceptions. |
@@ -162,7 +167,7 @@ circuit, not the HTTP request — a service instance lives as long as the user's
 | `OpportunityService` | `AppDbContext` | `GetAllAsync`, `GetByIdAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync` | `OpportunitiesPage`, `OpportunityDetailPage` |
 | `CourseService` | `AppDbContext` | `GetAllAsync`, `CreateAsync`, `DeleteAsync` | `CoursesPage` |
 | `TaskItemService` | `AppDbContext` | `GetForUserAsync`, `GetAllAsync`, `CreateAsync`, `UpdateStatusAsync`, `DeleteAsync` | `TasksPage`, `MemberDashboardPage` |
-| `TutorialService` | `AppDbContext` | `GetAllAsync`, `GetForRoleAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync` | `TutorialsPage` |
+| `TutorialService` | `AppDbContext` | `GetVisibleToMemberAsync`, `GetByIdForMemberAsync`, `CreateAsync`, `DeleteAsync` | `TutorialsPage`, `TutorialDetailPage` |
 | `ProfileService` | `AppDbContext` | `GetByIdAsync`, `UpdateProfileAsync` | `ProfilePage` |
 | `AdminService` | `AppDbContext`, `UserManager`, `EmailService`, `ILogger` | `GetAllMembersAsync`, `AddStrikeAsync`, `RemoveStrikeAsync`, `AssignTaskAsync`, `UpdateMemberTitleAsync`, `CreateMemberAsync`, `GetPrimaryRoleAsync`, `UpdateMemberDetailsAsync`, `CanManageRolesAsync`, `DeleteMemberAsync` | `MemberDashboardPage`, `TaskCalendarPage` |
 | `EmailService` | `IOptions<EmailSettings>`, `ILogger` | `SendAsync` | `AdminService` only (not injected into any page) |
@@ -180,11 +185,10 @@ circuit, not the HTTP request — a service instance lives as long as the user's
 
 ### Dead code (defined, never called)
 
-Four public service methods have no callers anywhere in the solution:
+Three public service methods have no callers anywhere in the solution:
 
 | Method | Note |
 |---|---|
-| `TutorialService.GetForRoleAsync` | `TutorialsPage` calls `GetAllAsync()` and groups by `CategoryRole` client-side, showing **every** tutorial to any committee member. The per-role filtering this method implements is not actually applied. |
 | `ProfileService.UpdateProfileAsync` | `ProfilePage` is read-only; there is no edit form. |
 | `AdminService.CreateMemberAsync` | The "add member" UI is present in the page's `@code` as unused fields but not wired up. |
 | `AdminService.UpdateMemberTitleAsync` | Superseded by `UpdateMemberDetailsAsync`. |
@@ -201,7 +205,7 @@ Four public service methods have no callers anywhere in the solution:
 | `OpportunitiesPage.razor` | `/opportunities` | `[Authorize]` | Searchable job/internship list. | `OpportunityService` |
 | `OpportunityDetailPage.razor` | `/opportunities/{id:int}` | `[Authorize]` | Markdown detail view with external link. | `OpportunityService` |
 | `CoursesPage.razor` | `/courses` | `[Authorize]` | Searchable YouTube course grid. | `CourseService` |
-| `TutorialsPage.razor` | `/tutorials` | `CommitteeMember,TeamLeader` | SOP videos grouped by `CategoryRole`. | `TutorialService` |
+| `TutorialsPage.razor` | `/tutorials` | `CommitteeMember,TeamLeader` | SOP videos and articles grouped by team; a member with no team sees none. | `TutorialService` |
 | `ProfilePage.razor` | `/profile` | `CommitteeMember,TeamLeader` | Read-only profile: title, strike status, assigned tasks. | `ProfileService`, `AuthenticationStateProvider` |
 | `TasksPage.razor` | `/tasks` | `CommitteeMember,TeamLeader` | The signed-in member's own tasks, with complete/fail actions. | `TaskItemService`, `AuthenticationStateProvider` |
 | `MemberDashboardPage.razor` | `/admin/members` | `TeamLeader` | Member table with task counts, strike add/remove, task assignment, edit and delete. | `AdminService`, `TaskItemService`, `AuthenticationStateProvider` |
@@ -250,7 +254,6 @@ Recorded as-is; none are addressed here.
    moved to user secrets or environment variables.
 2. **Hardcoded bootstrap admin.** `OpenWaterAuthService.FullAccessEmail` and the seeding block
    in `Program.cs` both hardcode a personal Gmail address that always receives `TeamLeader`.
-3. **Tutorials are not actually role-filtered** — see `GetForRoleAsync` above.
 4. **`MemberDashboardPage` has a redundant `isAuthorized` check** in `@code` that predates the
    `[Authorize]` attribute and the `AuthorizeView` guard now wrapping the page.
 5. **Unused `Event` fields**: `IsUpcoming` and `GoogleCalendarEventId` are persisted but never

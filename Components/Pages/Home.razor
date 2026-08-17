@@ -30,6 +30,7 @@
 
             <AuthorizeView>
                 <NotAuthorized>
+                    @* #UpdateLinks — SPE membership sign-up *@
                     <a href="https://www.spe.org/en/join/" target="_blank" rel="noopener noreferrer"
                        class="spe-gold-btn px-7 py-3">
                         Join SPE
@@ -63,6 +64,7 @@
             <div class="flex flex-wrap gap-3">
                 <AuthorizeView>
                     <NotAuthorized>
+                        @* #UpdateLinks — SPE homepage *@
                         <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-primary-btn">Join Now</a>
                     </NotAuthorized>
                 </AuthorizeView>
@@ -88,13 +90,13 @@
     <div class="px-6 lg:px-8">
         <div class="mb-10 text-center">
             <h1 class="spe-page-kicker text-spe-gold">—Why Join Us—</h1>
-            <h2 class="mb-3 font-heading text-3xl font-extrabold text-white">Our contributors and patrons</h2>
+            <h2 class="mb-3 font-heading text-3xl font-extrabold text-white">Featured Guest Speakers & Hosts from</h2>
         </div>
         <div class="mb-12 flex flex-wrap justify-center gap-3">
             @foreach (var company in Companies)
             {
-                <span @key="company"
-                      class="rounded-lg bg-white/15 px-5 py-2.5 font-heading text-sm font-bold text-white/90 transition-colors hover:bg-amber-500 hover:text-spe-ink">@company</span>
+                <a href="@company.LinkedIn" @key="company" rel="noopener noreferrer" target="_blank"
+                      class="rounded-lg bg-white/15 px-5 py-2.5 font-heading text-sm font-bold text-white/90 transition-colors hover:bg-amber-500 hover:text-spe-ink">@company.Name</a>
             }
         </div>
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -162,6 +164,7 @@
         </article>
         <div class="mt-6 text-center">
             <p class="mb-3 text-sm text-white/80">Learn more about SPE chapters' achievements and awards.</p>
+            @* #UpdateLinks — SPE awards stories *@
             <a href="https://www.spe.org/en/awards/nominator-and-recipient-stories/" target="_blank"
                rel="noopener noreferrer" class="spe-primary-btn">Find Out More</a>
         </div>
@@ -170,13 +173,17 @@
 
 @code {
 
-    // #Updates: Companies and contributors
-    private static readonly string[] Companies =
+    // #UpdateLinks: Companies and contributors
+    private static readonly Company[] Companies =
     [
-        "BP", "Equinor", "SLB", "Halliburton", "Hydrasun"
+        new("BP", "https://www.linkedin.com/company/bp/"),
+        new("Equinor", "https://www.linkedin.com/company/equinor/"),
+        new("SLB", "https://www.linkedin.com/company/slb/"),
+        new("Halliburton", "https://www.linkedin.com/company/halliburton/"),
+        new("Hydrasun", "https://www.linkedin.com/company/hydrasun/")
     ];
 
-    // #Updates: Membership benefits shown in the "Why Join Us" cards
+    // #UpdateContent: Membership benefits shown in the "Why Join Us" cards
     private static readonly Benefit[] Benefits =
     [
         new("gear", "Technical Excellence",
@@ -187,7 +194,7 @@
             "Gain visibility into internships, graduate roles, mentorship, and speaker-led learning pathways.")
     ];
 
-    // #Updates: Team members pictures, info, and LinkedIn profiles.
+    // #UpdateContent: Team members pictures, info, and LinkedIn profiles.
     // The fourth value is the member's LinkedIn URL — paste it between the quotes to make
     // their icon live. Left empty for now, which renders the icon as a dead link.
     // Image paths are all-lowercase on purpose — they 404 on Linux hosting otherwise.
@@ -204,7 +211,7 @@
         new("Dr. Hossein Hamidi", "Faculty Advisor", "/members/hamidi.webp", "")
     ];
 
-    // #Updates: Achievements and awards
+    // #UpdateContent: Achievements and awards
     private static readonly string[] Achievements =
     [
         "Gold Standard Chapter 2018",
@@ -218,4 +225,5 @@
     private sealed record TeamMember(string Name, string Role, string ImageUrl, string LinkedInUrl);
 
     private sealed record Benefit(string Icon, string Title, string Description);
+    private sealed record Company(string Name, string LinkedIn);
 }

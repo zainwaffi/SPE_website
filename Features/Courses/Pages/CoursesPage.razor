@@ -33,7 +33,7 @@
                 <input class="spe-input"
                        placeholder="Video title" @bind="newTitle" />
                 <input class="spe-input"
-                       placeholder="YouTube URL (watch, short, or embed URL)" @bind="newYoutubeUrl" />
+                       placeholder="YouTube URL (watch, youtu.be, Shorts or embed)" @bind="newYoutubeUrl" />
                 <textarea class="spe-input"
                           rows="3" placeholder="Course description" @bind="newDescription"></textarea>
             </div>
@@ -118,7 +118,7 @@
             return;
         }
 
-        var embedUrl = ToEmbedUrl(newYoutubeUrl);
+        var embedUrl = YouTubeUrl.ToEmbedUrl(newYoutubeUrl);
         if (embedUrl is null)
         {
             formError = "Please provide a valid YouTube URL.";
@@ -149,38 +149,5 @@
         newTitle = "";
         newDescription = "";
         newYoutubeUrl = "";
-    }
-
-    private static string? ToEmbedUrl(string input)
-    {
-        if (!Uri.TryCreate(input, UriKind.Absolute, out var uri))
-        {
-            return null;
-        }
-
-        if (uri.Host.Contains("youtu.be", StringComparison.OrdinalIgnoreCase))
-        {
-            var shortId = uri.AbsolutePath.Trim('/');
-            return string.IsNullOrWhiteSpace(shortId) ? null : $"https://www.youtube.com/embed/{shortId}";
-        }
-
-        if (!uri.Host.Contains("youtube.com", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        if (uri.AbsolutePath.Contains("/embed/", StringComparison.OrdinalIgnoreCase))
-        {
-            return uri.ToString();
-        }
-
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (query.TryGetValue("v", out var videoId))
-        {
-            var id = videoId.ToString();
-            return string.IsNullOrWhiteSpace(id) ? null : $"https://www.youtube.com/embed/{id}";
-        }
-
-        return null;
     }
 }

@@ -6,7 +6,8 @@
 <PageTitle>@(tutorial?.Title ?? "Tutorial") — SPE Chapter</PageTitle>
 
 <div class="spe-page-shell md:max-w-4xl">
-    <a href="/tutorials" class="mb-6 inline-block text-sm font-semibold text-spe-cobalt hover:underline">
+    <a href="/tutorials" class="spe-back-btn mb-6">
+        <Icon Name="circle-chevron-left" Class="h-4 w-4 shrink-0" />
         Back to Tutorials
     </a>
 
@@ -16,15 +17,21 @@
     }
     else if (tutorial is null)
     {
+        @* Deliberately the same message whether it was deleted or belongs to another team —
+           a distinct "no access" page would confirm that a given id exists. *@
         <div class="py-20 text-center">
             <h1 class="spe-page-title">Tutorial not found</h1>
-            <p class="mt-2 text-sm text-slate-600">It may have been deleted.</p>
+            <p class="mt-2 text-sm text-slate-600">It may have been deleted, or it belongs to a team you're not in.</p>
         </div>
     }
     else
     {
         <article class="spe-card border-slate-200 p-8">
-            <p class="spe-page-kicker">@tutorial.CategoryRole</p>
+            <p class="spe-page-kicker">
+                @(tutorial.Teams.Count == 0
+                    ? "Tutorial"
+                    : string.Join(" · ", tutorial.Teams.Select(t => t.Team.DisplayName())))
+            </p>
             <h1 class="font-heading text-3xl font-extrabold text-black">@tutorial.Title</h1>
 
             @if (!string.IsNullOrWhiteSpace(tutorial.Description))
@@ -59,6 +66,9 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
     [Parameter]
     public int Id { get; set; }
 
@@ -67,7 +77,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        tutorial = await TutorialSvc.GetByIdAsync(Id);
+        // The list page filters by team, but this URL is guessable, so the check is repeated
+        // here — in the service, where both pages share one definition of "allowed to see".
+        var authState = AuthStateTask is null ? null : await AuthStateTask;
+        var seesAllTeams = authState?.User.IsInRole("TeamLeader") ?? false;
+        var userId = await AuthStateTask.GetUserIdAsync();
+
+        if (userId is not null)
+            tutorial = await TutorialSvc.GetByIdForMemberAsync(Id, userId, seesAllTeams);
+
         loading = false;
     }
 }

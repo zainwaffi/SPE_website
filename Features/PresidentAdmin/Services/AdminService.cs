@@ -35,6 +35,7 @@ public class AdminService(
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Users.AsNoTracking()
                        .Include(u => u.AssignedTasks)
+                       .Include(u => u.Teams)
                        .OrderBy(u => u.FullName)
                        .ToListAsync();
     }
@@ -154,7 +155,8 @@ public class AdminService(
     /// panel would silently be undone at the member's next sign-in — and because the email is
     /// also the Identity username, changing it would move the account the member signs in with.
     /// </summary>
-    public async Task<IdentityResult> UpdateMemberDetailsAsync(string actingUserId, string userId, string identityRole, string? committeeTitle)
+    public async Task<IdentityResult> UpdateMemberDetailsAsync(
+        string actingUserId, string userId, string identityRole, string? committeeTitle, IEnumerable<Team> teams)
     {
         var canManageRoles = await CanManageRolesAsync(actingUserId);
         if (!canManageRoles)
@@ -173,7 +175,33 @@ public class AdminService(
             await userManager.AddToRoleAsync(user, identityRole);
         }
 
-        return await userManager.UpdateAsync(user);
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded) return result;
+
+        await SetTeamsAsync(userId, teams);
+        return result;
+    }
+
+    /// <summary>
+    /// Replaces a member's team allocation with exactly the teams given. Only the difference is
+    /// written, so re-saving the edit form without touching the checkboxes doesn't churn rows —
+    /// which matters because the unique index makes a delete-then-reinsert a race with itself.
+    /// </summary>
+    private async Task SetTeamsAsync(string userId, IEnumerable<Team> teams)
+    {
+        var wanted = teams.Distinct().ToHashSet();
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var existing = await db.MemberTeams.Where(m => m.UserId == userId).ToListAsync();
+
+        var removed = existing.Where(m => !wanted.Contains(m.Team)).ToList();
+        if (removed.Count > 0) db.MemberTeams.RemoveRange(removed);
+
+        var alreadyThere = existing.Select(m => m.Team).ToHashSet();
+        foreach (var team in wanted.Where(t => !alreadyThere.Contains(t)))
+            db.MemberTeams.Add(new MemberTeam { UserId = userId, Team = team });
+
+        await db.SaveChangesAsync();
     }
 
     /// <summary>Only a Team Leader (Identity role) may manage member roles.</summary>
@@ -195,12 +223,22 @@ public class AdminService(
     }
 
     /// <summary>
-    /// Sends a notification email. <see cref="EmailService"/> already swallows its own exceptions,
-    /// but this guards against anything else going wrong so an unreachable SMTP server can never
-    /// undo a strike or task assignment that is already committed to the database.
+    /// Sends a notification email, unless the member has opted out on their profile. The action
+    /// itself (strike, task) has already been committed either way — this only decides whether
+    /// they hear about it by email.
+    ///
+    /// <see cref="EmailService"/> already swallows its own exceptions, but this guards against
+    /// anything else going wrong so an unreachable SMTP server can never undo a strike or task
+    /// assignment that is already saved.
     /// </summary>
     private async Task<EmailResult> SendNotificationAsync(ApplicationUser user, string subject, string htmlBody)
     {
+        if (!user.EmailNotificationsEnabled)
+        {
+            logger.LogInformation("Skipped \"{Subject}\" — {Email} has notification emails turned off", subject, user.Email);
+            return EmailResult.Failure("This member has turned off email notifications in their profile.");
+        }
+
         try
         {
             return await emailService.SendAsync(user.Email ?? string.Empty, user.FullName, subject, htmlBody);

@@ -11,6 +11,21 @@
         <h1 class="spe-page-title">My Tasks</h1>
     </div>
 
+    @if (completionNotice is not null)
+    {
+        <div class="mb-6 rounded-lg border px-4 py-3 text-sm @(completionNotice.Sent ? "border-green-200 bg-green-50 text-green-800" : "border-amber-200 bg-amber-50 text-amber-800")">
+            <p class="font-semibold">Task marked complete.</p>
+            @if (completionNotice.Sent)
+            {
+                <p>Your team leader has been notified by email.</p>
+            }
+            else
+            {
+                <p>Your team leader was <strong>not</strong> notified by email: @completionNotice.Error</p>
+            }
+        </div>
+    }
+
     @if (tasks is null)
     {
         <p class="text-slate-500">Loading tasks...</p>
@@ -67,6 +82,10 @@
     private List<TaskItem>? tasks;
     private string? userId;
 
+    // Outcome of the team-leader notification for the last completed task. Null for any other
+    // status change, which sends nothing and so has nothing to report.
+    private EmailResult? completionNotice;
+
     protected override async Task OnInitializedAsync()
     {
         userId = await AuthStateTask.GetUserIdAsync();
@@ -75,7 +94,7 @@
 
     private async Task UpdateStatus(int taskId, AssignmentStatus status)
     {
-        await TaskSvc.UpdateStatusAsync(taskId, status);
+        completionNotice = await TaskSvc.UpdateStatusAsync(taskId, status);
         await ReloadTasksAsync();
     }
 

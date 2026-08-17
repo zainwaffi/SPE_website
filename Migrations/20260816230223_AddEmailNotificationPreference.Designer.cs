@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SPE_website.Data;
@@ -11,9 +12,11 @@ using SPE_website.Data;
 namespace SPE_website.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260816230223_AddEmailNotificationPreference")]
+    partial class AddEmailNotificationPreference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -245,29 +248,6 @@ namespace SPE_website.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("SPE_website.Data.Models.MemberTeam", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Team")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "Team")
-                        .IsUnique();
-
-                    b.ToTable("MemberTeams");
-                });
-
             modelBuilder.Entity("SPE_website.Features.Courses.Models.Course", b =>
                 {
                     b.Property<int>("Id")
@@ -493,6 +473,10 @@ namespace SPE_website.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("CategoryRole")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -514,28 +498,6 @@ namespace SPE_website.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tutorials");
-                });
-
-            modelBuilder.Entity("SPE_website.Features.Tutorials.Models.TutorialTeam", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Team")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TutorialId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TutorialId", "Team")
-                        .IsUnique();
-
-                    b.ToTable("TutorialTeams");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -589,17 +551,6 @@ namespace SPE_website.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SPE_website.Data.Models.MemberTeam", b =>
-                {
-                    b.HasOne("SPE_website.Data.Models.ApplicationUser", "User")
-                        .WithMany("Teams")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("SPE_website.Features.Events.Models.EventRating", b =>
                 {
                     b.HasOne("SPE_website.Features.Events.Models.Event", "Event")
@@ -646,22 +597,9 @@ namespace SPE_website.Migrations
                     b.Navigation("AssignedTo");
                 });
 
-            modelBuilder.Entity("SPE_website.Features.Tutorials.Models.TutorialTeam", b =>
-                {
-                    b.HasOne("SPE_website.Features.Tutorials.Models.Tutorial", "Tutorial")
-                        .WithMany("Teams")
-                        .HasForeignKey("TutorialId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Tutorial");
-                });
-
             modelBuilder.Entity("SPE_website.Data.Models.ApplicationUser", b =>
                 {
                     b.Navigation("AssignedTasks");
-
-                    b.Navigation("Teams");
                 });
 
             modelBuilder.Entity("SPE_website.Features.Events.Models.Event", b =>
@@ -669,11 +607,6 @@ namespace SPE_website.Migrations
                     b.Navigation("Ratings");
 
                     b.Navigation("Registrations");
-                });
-
-            modelBuilder.Entity("SPE_website.Features.Tutorials.Models.Tutorial", b =>
-                {
-                    b.Navigation("Teams");
                 });
 #pragma warning restore 612, 618
         }

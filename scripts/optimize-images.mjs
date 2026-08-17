@@ -25,8 +25,11 @@ const jobs = [
     { src: "banner.jpg", out: "images/banner-1280.webp", width: 1280, quality: 72 },
     { src: "banner.jpg", out: "images/banner-1920.webp", width: 1920, quality: 70 },
 
-    // Header logo, rendered at h-24 (96 px tall); 2x for high-DPI.
-    { src: "spe-logo.png", out: "images/spe-logo.webp", width: 384, quality: 90 },
+    // Header logo. Rendered up to h-24 (96 px tall, ~190 px wide), so a phone at 3x DPR wants
+    // ~570 px of real pixels — the single 384 px file it used to get was visibly soft there.
+    // Two widths behind a srcset instead.
+    { src: "spe-logo.png", out: "images/spe-logo-384.webp", width: 384, quality: 90 },
+    { src: "spe-logo.png", out: "images/spe-logo-768.webp", width: 768, quality: 90 },
 
     // Home "About Us" photo, rendered in an aspect-4/3 box.
     { src: "student-chapter.jpeg", out: "images/student-chapter.webp", width: 800, quality: 78 },

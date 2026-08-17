@@ -96,6 +96,23 @@
                                         @member.CommitteeTitle
                                     </span>
                                 }
+                                @* Team allocation drives tutorial access, so it belongs on the
+                                   table rather than only behind the edit form. *@
+                                @if (member.Teams.Count == 0)
+                                {
+                                    <p class="mt-1.5 text-xs text-slate-400">No team</p>
+                                }
+                                else
+                                {
+                                    <div class="mt-1.5 flex flex-col gap-1">
+                                        @foreach (var membership in member.Teams.OrderBy(m => m.Team))
+                                        {
+                                            <span @key="membership.Team" class="inline-block whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                                @membership.Team.DisplayName()
+                                            </span>
+                                        }
+                                    </div>
+                                }
                             </td>
                             <td class="px-6 py-4 text-center">
                                 <div class="flex justify-center gap-3 text-xs">
@@ -124,18 +141,21 @@
                                         <Icon Name="rotate" Class="h-4 w-4" />
                                     </button>
                                     <button @onclick="() => OpenAssignTask(member)"
-                                            class="text-xs bg-blue-100 text-spe-blue hover:bg-blue-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                        Assign Task
+                                            title="Assign task" aria-label="Assign task"
+                                            class="text-xs bg-blue-100 text-spe-blue hover:bg-blue-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                        <Icon Name="list-check" Class="h-4 w-4" />
                                     </button>
                                     <button @onclick="() => OpenEditMember(member)"
-                                            class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                        Edit
+                                            title="Edit member" aria-label="Edit member"
+                                            class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                        <Icon Name="pen-to-square" Class="h-4 w-4" />
                                     </button>
                                     @if (member.Id != currentUserId)
                                     {
                                         <button @onclick="() => deleteTarget = member"
-                                                class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                            Delete
+                                                title="Remove member" aria-label="Remove member"
+                                                class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                            <Icon Name="user-minus" Class="h-4 w-4" />
                                         </button>
                                     }
                                 </div>
@@ -215,6 +235,23 @@
                     <input class="spe-input w-full" placeholder="e.g. Vice President, Secretary..."
                            @bind="editCommitteeTitle" />
                 </div>
+                <div>
+                    <span class="block text-sm font-medium text-slate-600 mb-1">Teams</span>
+                    <div class="space-y-1 rounded-lg border border-slate-300 p-3">
+                        @foreach (var team in Data.Models.Teams.All)
+                        {
+                            <label @key="team" class="flex cursor-pointer items-center gap-2.5 rounded px-1 py-1 text-sm text-slate-700 hover:bg-slate-50">
+                                <input type="checkbox" class="h-4 w-4 accent-spe-cobalt"
+                                       checked="@editTeams.Contains(team)"
+                                       @onchange="e => ToggleTeam(team, e)" />
+                                @team.DisplayName()
+                            </label>
+                        }
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Tutorials are filed by team — a member with no team sees none of them.
+                    </p>
+                </div>
             </div>
             <div class="flex gap-3 mt-6">
                 <button @onclick="ConfirmEditMember"
@@ -274,6 +311,7 @@
     private ApplicationUser? editMember;
     private string editIdentityRole = "CommitteeMember";
     private string? editCommitteeTitle;
+    private readonly HashSet<Team> editTeams = [];
     private string? editError;
 
     private ApplicationUser? deleteTarget;
@@ -369,7 +407,18 @@
         editMember = member;
         editCommitteeTitle = member.CommitteeTitle;
         editIdentityRole = await AdminSvc.GetPrimaryRoleAsync(member.Id);
+
+        // Seeded from the row already loaded with the table, so opening the form costs no query.
+        editTeams.Clear();
+        foreach (var membership in member.Teams) editTeams.Add(membership.Team);
+
         editError = null;
+    }
+
+    private void ToggleTeam(Team team, ChangeEventArgs e)
+    {
+        if (e.Value is bool ticked && ticked) editTeams.Add(team);
+        else editTeams.Remove(team);
     }
 
     private async Task ConfirmEditMember()
@@ -384,7 +433,7 @@
 
         var member = editMember;
         var result = await AdminSvc.UpdateMemberDetailsAsync(
-            currentUserId, member.Id, editIdentityRole, editCommitteeTitle);
+            currentUserId, member.Id, editIdentityRole, editCommitteeTitle, editTeams);
 
         if (!result.Succeeded)
         {
@@ -392,8 +441,9 @@
             return;
         }
 
-        // Only the title is editable now, so the alphabetical-by-name ordering can't change.
+        // Only the title and teams are editable, so the alphabetical-by-name ordering can't change.
         member.CommitteeTitle = editCommitteeTitle;
+        member.Teams = [.. editTeams.Select(t => new MemberTeam { UserId = member.Id, Team = t })];
 
         editMember = null;
     }

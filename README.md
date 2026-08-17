@@ -133,6 +133,85 @@ not reference each other — they share only `Data/` and `Shared/`.
 
 ---
 
+## Updating the chapter's links
+
+Every outward-facing link the committee owns — social media, the contact address, SPE and AUSA
+pages — is marked in the source with a `#UpdateLinks` comment on the line above it. To find
+them all:
+
+```bash
+grep -rn "#UpdateLinks" Components/ Features/
+```
+
+Your editor's project-wide search for `#UpdateLinks` works just as well. Each marker names what
+the link is for, so you can change the URL without reading the surrounding markup:
+
+```razor
+@* #UpdateLinks — Instagram *@
+<a href="https://www.instagram.com/spe_aberdeen?…" target="_blank" rel="noopener noreferrer">
+```
+
+They currently live in three files:
+
+| File | Links |
+|---|---|
+| `Components/Layout/MainLayout.razor` | Footer: **Useful Links ×5 (all blank)**, SPE Aberdeen news, SPE publications, JPT, contact email, Instagram, LinkedIn, WhatsApp, source repo, AUSA sign-up |
+| `Components/Pages/Home.razor` | SPE membership sign-up, SPE homepage, SPE awards stories |
+| `Features/Events/Pages/EventsPage.razor` | Contact email, LinkedIn, collaboration enquiries, and the four calendar-subscription URLs (in the `@code` block, as `//` comments) |
+
+### Calendar subscription links
+
+The "Add SPE Event Calendar" modal offers four routes to the same calendar — Apple, Google,
+Outlook, and a raw `.ics` URL to paste anywhere else. They are four separate `#UpdateLinks`
+constants in `EventsPage.razor`, not derived from one another, because each is that platform's
+own subscribe entry point. **If the calendar address changes, all four need editing.**
+
+They point at the chapter's shared Google Calendar (`spe@ausa.org.uk`) — **not** at the feed
+this app builds from its own Events table at `/events/calendar.ics`. That endpoint still works
+and is still served, but nothing links to it, so an event added through the admin UI does not
+reach subscribers unless it is also added to the Google Calendar.
+
+### The "Useful Links" footer column
+
+The middle footer column is five **empty placeholders**, waiting to be filled in. Each is a
+`<li>` with a `#UpdateLinks` marker; to activate one, change the `href` and the label text:
+
+```razor
+<li>
+    @* #UpdateLinks — useful link 1 *@
+    <a class="transition-colors hover:text-white" href="#">Useful link 1</a>
+</li>
+```
+
+becomes
+
+```razor
+<li>
+    @* #UpdateLinks — SPE student chapter handbook *@
+    <a class="transition-colors hover:text-white" href="https://www.spe.org/…"
+       target="_blank" rel="noopener noreferrer">Student Chapter Handbook</a>
+</li>
+```
+
+Delete any `<li>` you don't need — the column has no fixed length. Until they are filled in,
+the placeholders **are visible to the public** and their `href="#"` does nothing when clicked.
+
+Two things to know when editing any of these:
+
+- **Keep `target="_blank" rel="noopener noreferrer"`** on external links. Without `rel`, the
+  page you link to can reach back into this one through `window.opener`.
+- **Internal links are not marked.** Paths like `/events` and `/profile` are routes defined by
+  the `@page` directive on each page, not content — changing one means renaming the route.
+
+> **Known gap:** the "Collaboration enquiries" link in `EventsPage.razor` has an empty
+> `href=""` and currently goes nowhere. It is marked with `#UpdateLinks`; give it a real
+> destination or remove the list item.
+
+When you add a new outward-facing link, add a `#UpdateLinks` comment above it so it shows up in
+the same search.
+
+---
+
 ## Writing content with Markdown
 
 Two things are written in Markdown by the committee:

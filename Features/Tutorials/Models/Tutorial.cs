@@ -29,6 +29,13 @@ public class Tutorial
     /// </summary>
     public string ArticleContent { get; set; } = string.Empty;
 
-    public string CategoryRole { get; set; } = "Member";
+    /// <summary>
+    /// Teams this tutorial is filed under. A member sees it if they are in at least one of them,
+    /// so an empty collection means only Team Leaders (who see everything) can reach it.
+    /// Replaced the old free-string <c>CategoryRole</c>, which grouped cards visually but never
+    /// actually restricted anything.
+    /// </summary>
+    public ICollection<TutorialTeam> Teams { get; set; } = [];
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

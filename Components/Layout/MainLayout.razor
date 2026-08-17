@@ -21,33 +21,64 @@
 
     <footer class="mt-20 bg-black text-white">
         <div class="mx-auto max-w-360 px-6 py-16 lg:px-20">
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-10 md:grid-cols-3">
+                <!-- SPE network section -->
                 <div class="flex flex-col items-center">
                     <h4
-                        class="mb-5 border-b border-spe-gold pb-2 font-heading text-sm font-bold uppercase tracking-[0.2em] text-spe-gold">
-                        Quick Links
+                        class=" mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold  ">
+                        Oil & Gas News
                     </h4>
+                    <ul class="list-disc space-y-3 text-sm text-white/70 ">
+                        <li>
+                            @* #UpdateLinks — SPE Aberdeen Section news *@
+                            <a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news"
+                               target="_blank" rel="noopener noreferrer">SPE Aberdeen Section News</a>
+                        </li>
+                        <li>
+                            @* #UpdateLinks — SPE publications and insights *@
+                            <a class="transition-colors hover:text-white"
+                               href="https://www.spe.org/en/publications-and-insights/" target="_blank"
+                               rel="noopener noreferrer">SPE Resources</a>
+                        </li>
+                        <li>
+                            @* #UpdateLinks — Journal of Petroleum Technology *@
+                            <a class="transition-colors hover:text-white" href="https://jpt.spe.org/" target="_blank"
+                               rel="noopener noreferrer">JPT</a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Useful links section -->
+                <div class="flex flex-col items-center">
+                    <h4
+                        class="mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold ">
+                        Useful Links
+                    </h4>
+                    @* Five placeholders. To fill one in, replace the href and the label text —
+                       add target="_blank" rel="noopener noreferrer" if it points off-site.
+                       Delete any <li> you don't end up needing. *@
                     <ul class="space-y-3 text-sm text-white/70">
-                        <li><a class="transition-colors hover:text-white" href="/">About Us</a></li>
-                        <li><a class="transition-colors hover:text-white" href="/events">Events</a></li>
-                        <AuthorizeView>
-                            <Authorized Context="memberLinks">
-                                <li><a class="transition-colors hover:text-white"
-                                           href="/opportunities">Opportunities</a></li>
-                                    <li><a class="transition-colors hover:text-white" href="/courses">Courses</a></li>
-                                </Authorized>
-                            </AuthorizeView>
-                            <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                                <Authorized Context="staffLinks">
-                                    <li><a class="transition-colors hover:text-white" href="/tutorials">Tutorials</a></li>
-                                </Authorized>
-                            </AuthorizeView>
-                            <li>
-                                <a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news"
-                                   target="_blank" rel="noopener noreferrer">News</a>
-                            </li>
-                        </ul>
-                    </div>
+                        <li>
+                            @* #UpdateLinks — useful link 1 *@
+                            <a class="transition-colors hover:text-white" href="https://connect.spe.org/home" target="_blank" rel="noopener noreferrer">SPE Connect</a>
+                        </li>
+                        <li>
+                            @* #UpdateLinks — useful link 2 *@
+                            <a class="transition-colors hover:text-white" href="https://www.energy4me.org/" target="_blank" rel="noopener noreferrer">Energy4me</a>
+                        </li>
+                        <li>
+                            @* #UpdateLinks — useful link 3 *@
+                            <a class="transition-colors hover:text-white" href="https://www.linkedin.com/company/spe-young-members/posts/" target="_blank" rel="noopener noreferrer">Young Professionals</a>
+                        </li>
+                        <li>
+                            @* #UpdateLinks — useful link 4 *@
+                            <a class="transition-colors hover:text-white" href="#">Useful link 4</a>
+                        </li>
+                        <li>
+                            @* #UpdateLinks — useful link 5 *@
+                            <a class="transition-colors hover:text-white" href="#">Useful link 5</a>
+                        </li>
+                    </ul>
+                </div>
 
                     <!-- Contact Us section -->
                     <div class="flex flex-col items-center">
@@ -56,30 +87,30 @@
                             Contact Us
                         </h4>
                         <div class="flex flex-row gap-4">
+                            @* #UpdateLinks — chapter contact address *@
                             <a href="mailto:spe@ausa.org.uk" aria-label="Email the chapter">
                                 <Icon Name="envelope" Class="h-8 w-8" />
                             </a>
-                            <!-- #Updates: Add social media links here -->
-                            @* instagram *@
+                            @* #UpdateLinks — Instagram *@
                             <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                                target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                                 <Icon Name="instagram" Class="h-8 w-8" />
                             </a>
-                            @* linkedin *@
+                            @* #UpdateLinks — LinkedIn *@
                             <a href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true" target="_blank"
                                rel="noopener noreferrer" aria-label="LinkedIn">
                                 <Icon Name="linkedin" Class="h-8 w-8" />
                             </a>
                             <AuthorizeView>
                                 <Authorized Context="memberLinks">
-                                    @* whatsapp *@
+                                    @* #UpdateLinks — WhatsApp group invite *@
                                     <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" target="_blank"
                                        rel="noopener noreferrer" aria-label="WhatsApp group">
                                         <Icon Name="whatsapp" Class="h-8 w-8" />
                                     </a>
                                 </Authorized>
                             </AuthorizeView>
-                            @* github *@
+                            @* #UpdateLinks — source repository *@
                             <AuthorizeView Roles="TeamLeader">
                                 <Authorized Context="repoLink">
                                     <a href="https://github.com/zainwaffi/SPE_website" target="_blank"
@@ -89,9 +120,10 @@
                                 </Authorized>
                             </AuthorizeView>
                         </div>
+                        @* #UpdateLinks — AUSA society sign-up *@
                         <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer"
                            class="spe-primary-btn mt-6 inline-block">
-                            Join Our Society
+                            Join Our University Society
                         </a>
                     </div>
                 </div>

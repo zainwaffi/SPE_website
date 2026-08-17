@@ -10,7 +10,7 @@
         <div>
             <p class="spe-page-kicker">Tutorials & Courses</p>
             <h1 class="spe-page-title">Technical Learning Library</h1>
-            <p class="mt-2 text-sm text-slate-600">Role-based SOP and learning content for committee members.</p>
+            <p class="mt-2 text-sm text-slate-600">SOP and learning content, shared with each team.</p>
         </div>
         <AuthorizeView Roles="TeamLeader">
             <Authorized>
@@ -42,13 +42,27 @@
                 </div>
             </div>
 
+            @* Teams decide who can see this, so the picker sits with the other required fields
+               rather than being tucked under the format toggle. *@
+            <div class="mb-5">
+                <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600">Teams</p>
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var team in Data.Models.Teams.All)
+                    {
+                        <button type="button" @key="team" @onclick="() => ToggleTeam(team)"
+                                aria-pressed="@newTeams.Contains(team)"
+                                class="rounded-lg border px-4 py-2 text-sm font-semibold transition-colors @(newTeams.Contains(team)
+                                        ? "border-spe-cobalt bg-spe-cobalt text-white"
+                                        : "border-slate-300 text-slate-600 hover:bg-slate-50")">
+                            @team.DisplayName()
+                        </button>
+                    }
+                </div>
+                <p class="mt-1.5 text-xs text-slate-500">Pick every team that should see this tutorial.</p>
+            </div>
+
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <input class="spe-input" placeholder="Title" @bind="newTitle" />
-                <select class="spe-input" @bind="newRole">
-                    <option value="Member">Member</option>
-                    <option value="CommitteeMember">Committee Member</option>
-                    <option value="TeamLeader">Team Leader</option>
-                </select>
+                <input class="spe-input sm:col-span-2" placeholder="Title" @bind="newTitle" />
 
                 <textarea class="spe-input sm:col-span-2" rows="2"
                           placeholder="Short summary shown on the card" @bind="newDescription"></textarea>
@@ -56,7 +70,7 @@
                 @if (newFormat == TutorialFormat.Video)
                 {
                     <input class="spe-input sm:col-span-2"
-                           placeholder="YouTube Embed URL (https://www.youtube.com/embed/...)" @bind="newYoutubeUrl" />
+                           placeholder="YouTube URL (watch, youtu.be, Shorts or embed)" @bind="newYoutubeUrl" />
                 }
                 else
                 {
@@ -67,8 +81,8 @@
                         <textarea id="tutorial-body" class="spe-input w-full font-mono text-sm" rows="14"
                                   placeholder="@MarkdownPlaceholder" @bind="newArticleContent"></textarea>
                         <p class="mt-1.5 text-xs text-slate-500">
-                            Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
-                            <code>[link](https://example.com)</code>, <code>**bold**</code>.
+                            <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-blue-500">Markdown cheat sheet, Supports:</a><code>## Heading</code>, <code>- bullet</code>,
+                            <code>[link](https://example.com)</code>, <code>**bold**</code> .
                         </p>
                     </div>
                 }
@@ -89,11 +103,23 @@
         </section>
     }
 
-    @if (grouped is null)
+    @if (!loaded)
     {
         <p class="py-20 text-center text-slate-500">Loading tutorials...</p>
     }
-    else if (!grouped.Any())
+    else if (!seesAllTeams && memberTeams.Count == 0)
+    {
+        @* Distinct from "no tutorials": nothing is missing, they just haven't been allocated
+           to a team yet, and only a Team Leader can fix that. *@
+        <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+            <p class="text-xl text-slate-400">You're not in a team yet.</p>
+            <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                Tutorials are shared with each team separately. Ask a Team Leader to add you to a
+                team and they'll appear here.
+            </p>
+        </div>
+    }
+    else if (grouped is null || grouped.Count == 0)
     {
         <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
             <p class="text-xl text-slate-400">No tutorials yet.</p>
@@ -103,10 +129,10 @@
     {
         @foreach (var group in grouped)
         {
-            <section @key="group.Key" class="mb-10">
-                <h2 class="mb-4 border-b border-slate-200 pb-2 text-xl font-bold text-slate-700">@group.Key.ToString()</h2>
+            <section @key="group.Team" class="mb-10">
+                <h2 class="mb-4 border-b border-slate-200 pb-2 text-xl font-bold text-slate-700">@group.Team.DisplayName()</h2>
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    @foreach (var t in group.Value)
+                    @foreach (var t in group.Tutorials)
                     {
                         <article @key="t.Id" class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
                             @if (t.Format == TutorialFormat.Video && !string.IsNullOrEmpty(t.YoutubeEmbedUrl))
@@ -179,29 +205,58 @@
         See the [SPE handbook](https://www.spe.org) for more.
         """;
 
-    private Dictionary<string, List<Tutorial>>? grouped;
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    // Sections in team order, so the page reads the same way every visit. A tutorial filed under
+    // several teams appears under each of them.
+    private List<(Team Team, List<Tutorial> Tutorials)>? grouped;
+    private List<Team> memberTeams = [];
+    private bool seesAllTeams;
+    private bool loaded;
+
     private bool showForm;
     private string newTitle = "";
     private string newDescription = "";
     private string newYoutubeUrl = "";
     private string newArticleContent = "";
-    private string newRole = "Member";
+    private readonly HashSet<Team> newTeams = [];
     private TutorialFormat newFormat = TutorialFormat.Video;
     private string? formError;
 
-    protected override async Task OnInitializedAsync() => await LoadTutorials();
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = AuthStateTask is null ? null : await AuthStateTask;
+        seesAllTeams = authState?.User.IsInRole("TeamLeader") ?? false;
+        await LoadTutorials();
+    }
 
     private async Task LoadTutorials()
     {
-        var all = await TutorialSvc.GetAllAsync();
-        grouped = all.GroupBy(t => t.CategoryRole)
-                     .ToDictionary(g => g.Key, g => g.ToList());
+        var userId = await AuthStateTask.GetUserIdAsync();
+        if (userId is null) return;
+
+        var visible = await TutorialSvc.GetVisibleToMemberAsync(userId, seesAllTeams);
+        memberTeams = visible.MemberTeams;
+
+        grouped = [.. Data.Models.Teams.All
+            .Select(team => (Team: team, Tutorials: visible.Tutorials
+                                                          .Where(t => t.Teams.Any(tt => tt.Team == team))
+                                                          .ToList()))
+            .Where(section => section.Tutorials.Count > 0)];
+
+        loaded = true;
     }
 
     private void OpenForm()
     {
         showForm = true;
         formError = null;
+    }
+
+    private void ToggleTeam(Team team)
+    {
+        if (!newTeams.Remove(team)) newTeams.Add(team);
     }
 
     private async Task SaveTutorial()
@@ -214,12 +269,33 @@
             return;
         }
 
+        // A tutorial with no team is invisible to every member, so refuse it rather than
+        // silently creating something only Team Leaders will ever see.
+        if (newTeams.Count == 0)
+        {
+            formError = "Pick at least one team that should see this tutorial.";
+            return;
+        }
+
         // Each format has its own required field; without this an article could be saved with
         // no body, leaving a card that opens onto an empty page.
-        if (newFormat == TutorialFormat.Video && string.IsNullOrWhiteSpace(newYoutubeUrl))
+        string? embedUrl = null;
+        if (newFormat == TutorialFormat.Video)
         {
-            formError = "Add the YouTube embed URL, or switch to a written article.";
-            return;
+            if (string.IsNullOrWhiteSpace(newYoutubeUrl))
+            {
+                formError = "Add the YouTube link, or switch to a written article.";
+                return;
+            }
+
+            // Whatever they pasted — watch, youtu.be, Shorts or embed — is normalised here, so
+            // an unusable link is caught at save time instead of rendering as a blank card.
+            embedUrl = YouTubeUrl.ToEmbedUrl(newYoutubeUrl);
+            if (embedUrl is null)
+            {
+                formError = "That doesn't look like a YouTube link. Paste the URL from the address bar or the Share button.";
+                return;
+            }
         }
 
         if (newFormat == TutorialFormat.Article && string.IsNullOrWhiteSpace(newArticleContent))
@@ -233,13 +309,13 @@
             Title = newTitle,
             Description = newDescription,
             Format = newFormat,
-            YoutubeEmbedUrl = newFormat == TutorialFormat.Video ? newYoutubeUrl : "",
-            ArticleContent = newFormat == TutorialFormat.Article ? newArticleContent : "",
-            CategoryRole = newRole
-        });
+            YoutubeEmbedUrl = embedUrl ?? "",
+            ArticleContent = newFormat == TutorialFormat.Article ? newArticleContent : ""
+        }, newTeams);
 
         showForm = false;
         newTitle = newDescription = newYoutubeUrl = newArticleContent = "";
+        newTeams.Clear();
         newFormat = TutorialFormat.Video;
         await LoadTutorials();
     }

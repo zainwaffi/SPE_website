@@ -7,88 +7,130 @@
 <PageTitle>Opportunities — SPE Chapter</PageTitle>
 
 <div class="spe-page-shell md:max-w-[1200px]">
-    <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <p class="spe-page-kicker">Opportunities</p>
-            <h1 class="spe-page-title">Jobs & Internships</h1>
-            <p class="mt-2 text-sm text-slate-600">Curated opportunities from leading energy companies.</p>
-        </div>
-        <AuthorizeView Roles="CommitteeMember,TeamLeader">
-            <Authorized>
-                <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add</button>
-            </Authorized>
-        </AuthorizeView>
+    <div class="mb-10">
+        <p class="spe-page-kicker">Opportunities</p>
+        <h1 class="spe-page-title">Get Involved</h1>
+        <p class="mt-2 text-sm text-slate-600">
+            Volunteer with the chapter, plan a route into the industry, and browse the current opportunity board.
+        </p>
     </div>
 
-    <div class="mb-6">
-        <input class="w-full spe-input"
-               placeholder="Search opportunities by title or description..."
-               @bind="searchQuery" @bind:event="oninput" />
-    </div>
-
-    @if (showForm)
-    {
-        <section class="spe-card mb-8 p-6">
-            <h2 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Opportunity</h2>
-            @* Blog-style authoring, matching tutorial articles: the body is markdown and is
-               rendered with headings, bullets and links on the detail page. *@
-            <div class="flex flex-col gap-3">
-                <input class="spe-input" placeholder="Title" @bind="newTitle" />
-                <div>
-                    <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="opportunity-body">
-                        Details
-                    </label>
-                    <textarea id="opportunity-body" class="spe-input w-full font-mono text-sm" rows="12"
-                              placeholder="@MarkdownPlaceholder" @bind="newDescription"></textarea>
-                    <p class="mt-1.5 text-xs text-slate-500">
-                        Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
-                        <code>[link](https://example.com)</code>, <code>**bold**</code>.
-                    </p>
-                </div>
-                <input class="spe-input" placeholder="External URL (optional)" @bind="newUrl" />
-            </div>
-            <div class="mt-4 flex gap-3">
-                <button @onclick="SaveOpp" class="spe-primary-btn">Save</button>
-                <button @onclick="() => showForm = false" class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
-            </div>
-        </section>
-    }
-
-    @if (opportunities is null)
-    {
-        <p class="py-20 text-center text-slate-500">Loading...</p>
-    }
-    else if (!FilteredOpportunities.Any())
-    {
-        <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
-            <p class="text-xl font-medium text-slate-400">No opportunities match your search.</p>
+    @* #Updates: placeholder copy — replace the two article sections below with the real text. *@
+    <section class="mb-12">
+        <h2 class="mb-4 font-heading text-2xl font-bold text-black">Volunteering</h2>
+        <div class="spe-prose">
+            <p>
+                Placeholder — this section will describe the volunteering routes open to members,
+                from helping run a single event to taking on a committee role for the year.
+            </p>
+            <ul>
+                <li>Placeholder: event support — setup, registration desk, photography.</li>
+                <li>Placeholder: outreach and school visits.</li>
+                <li>Placeholder: committee roles and how to stand for one.</li>
+            </ul>
+            <p>Placeholder: who to contact and what the time commitment looks like.</p>
         </div>
-    }
-    else
-    {
-        <div class="space-y-4">
-            @foreach (var opp in FilteredOpportunities)
-            {
-                <article @key="opp.Id" class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md" @onclick="() => GoToDetail(opp.Id)">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="flex-1">
-                            <h3 class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor font-heading">@opp.Title</h3>
-                            <p class="mb-3 line-clamp-3 text-slate-600">@Excerpt(opp.Description)</p>
-                            <span class="text-sm font-semibold text-spe-cobalt">View Details</span>
-                        </div>
-                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                            <Authorized>
-                                <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
-                                        class="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-600">
-                                    Delete
-                                </button>
-                            </Authorized>
-                        </AuthorizeView>
+    </section>
+
+    <section class="mb-12">
+        <h2 class="mb-4 font-heading text-2xl font-bold text-black">Careers</h2>
+        <div class="spe-prose">
+            <p>
+                Placeholder — this section will cover career paths in the energy industry and the
+                support the chapter offers members preparing to apply for them.
+            </p>
+            <ul>
+                <li>Placeholder: graduate schemes and summer internships.</li>
+                <li>Placeholder: CV and interview preparation sessions.</li>
+                <li>Placeholder: mentoring and industry contacts.</li>
+            </ul>
+            <p>Placeholder: key application deadlines through the academic year.</p>
+        </div>
+    </section>
+
+    <section class="border-t border-slate-200 pt-10">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h2 class="font-heading text-2xl font-bold text-black">Available Opportunities</h2>
+                <p class="mt-2 text-sm text-slate-600">Curated opportunities from leading energy companies.</p>
+            </div>
+            <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                <Authorized>
+                    <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add</button>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+
+        <div class="mb-6">
+            <input class="w-full spe-input"
+                   placeholder="Search opportunities by title or description..."
+                   @bind="searchQuery" @bind:event="oninput" />
+        </div>
+
+        @if (showForm)
+        {
+            <div class="spe-card mb-8 p-6">
+                <h3 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Opportunity</h3>
+                @* Blog-style authoring, matching tutorial articles: the body is markdown and is
+                   rendered with headings, bullets and links on the detail page. *@
+                <div class="flex flex-col gap-3">
+                    <input class="spe-input" placeholder="Title" @bind="newTitle" />
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="opportunity-body">
+                            Details
+                        </label>
+                        <textarea id="opportunity-body" class="spe-input w-full font-mono text-sm" rows="12"
+                                  placeholder="@MarkdownPlaceholder" @bind="newDescription"></textarea>
+                        <p class="mt-1.5 text-xs text-slate-500">
+                            Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
+                            <code>[link](https://example.com)</code>, <code>**bold**</code>.
+                        </p>
                     </div>
-                </article>
-            }
-        </div>
-    }
+                    <input class="spe-input" placeholder="External URL (optional)" @bind="newUrl" />
+                </div>
+                <div class="mt-4 flex gap-3">
+                    <button @onclick="SaveOpp" class="spe-primary-btn">Save</button>
+                    <button @onclick="() => showForm = false" class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                </div>
+            </div>
+        }
+
+        @if (opportunities is null)
+        {
+            <p class="py-20 text-center text-slate-500">Loading...</p>
+        }
+        else if (!FilteredOpportunities.Any())
+        {
+            <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+                <p class="text-xl font-medium text-slate-400">No opportunities match your search.</p>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var opp in FilteredOpportunities)
+                {
+                    <article @key="opp.Id" class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md" @onclick="() => GoToDetail(opp.Id)">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1">
+                                <h3 class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor font-heading">@opp.Title</h3>
+                                <p class="mb-3 line-clamp-3 text-slate-600">@Excerpt(opp.Description)</p>
+                                <span class="text-sm font-semibold text-spe-cobalt">View Details</span>
+                            </div>
+                            <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                <Authorized>
+                                    <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
+                                            class="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-600">
+                                        Delete
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
 </div>
 
 @code {
