@@ -24,6 +24,11 @@
                 <Icon Name="download" Class="h-4 w-4" />
                 Export Attendance
             </a>
+            <a href="/tasks/assigned"
+               class="inline-flex items-center gap-2 rounded-lg border border-white/30 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                <Icon Name="list-check" Class="h-4 w-4" />
+                Assigned Tasks
+            </a>
             <a href="/admin/calendar"
                class="inline-flex items-center gap-2 bg-spe-blue text-white px-5 py-2.5 rounded-lg hover:bg-blue-800 transition-colors font-semibold text-sm">
                 Task Calendar
@@ -392,7 +397,7 @@
         if (string.IsNullOrWhiteSpace(taskTitle) || assignTaskMember is null) return;
 
         var member = assignTaskMember;
-        var (task, emailResult) = await AdminSvc.AssignTaskAsync(member.Id, taskTitle, taskDescription, deadline);
+        var (task, emailResult) = await AdminSvc.AssignTaskAsync(member.Id, taskTitle, taskDescription, deadline, currentUserId);
 
         // Keep the table's task counts current without re-reading every member.
         member.AssignedTasks.Add(task);

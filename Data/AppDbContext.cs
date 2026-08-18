@@ -51,6 +51,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasForeignKey(t => t.AssignedToUserId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // The leader who handed the task out. No inverse collection on ApplicationUser: nothing
+        // loads a user in order to walk their authored tasks, and a second navigation to the same
+        // principal would only make the two relationships easier to confuse. Set null on delete
+        // for the same reason as the assignee — the task is the record, not the people on it.
+        builder.Entity<TaskItem>()
+            .HasOne(t => t.AssignedBy)
+            .WithMany()
+            .HasForeignKey(t => t.AssignedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Reviews outlive their author for the same reason attendance does: the export is a
         // historical record. Clearing the link leaves the review in place, exporting as anonymous.
         builder.Entity<EventRating>()

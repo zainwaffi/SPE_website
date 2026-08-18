@@ -9,6 +9,10 @@
     <div class="mb-8">
         <p class="spe-page-kicker">Tasks</p>
         <h1 class="spe-page-title">My Tasks</h1>
+        <p class="mt-2 text-sm text-slate-600">
+            Soonest deadline first. Finished tasks drop off a week after their deadline;
+            anything still outstanding stays until you close it off.
+        </p>
     </div>
 
     @if (completionNotice is not null)
@@ -33,11 +37,22 @@
     else if (tasks.Count == 0)
     {
         <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
-            <p class="text-xl font-medium text-slate-400">No tasks assigned yet.</p>
+            @* Covers "never assigned anything", "cleared them all" and "they all aged out",
+               which this page cannot tell apart without a second query it has no other use for. *@
+            <p class="text-xl font-medium text-slate-400">Nothing on your list right now.</p>
         </div>
     }
     else
     {
+        @* Only worth offering once there is more than one card to reorder. *@
+        @if (tasks.Count > 1)
+        {
+            <div class="mb-4 flex justify-end">
+                <SortToggleButton Ascending="soonestFirst" OnToggle="ToggleSort"
+                                  AscendingLabel="Soonest first" DescendingLabel="Latest first" />
+            </div>
+        }
+
         <div class="flex flex-col gap-4">
             @foreach (var task in tasks)
             {
@@ -69,6 +84,18 @@
                             </button>
                         </div>
                     }
+                    else
+                    {
+                        @* Finished tasks can be cleared away so the list stays about what is still
+                           outstanding. This only hides it from this page — see ClearAsync. *@
+                        <div class="mt-4 flex items-center gap-3">
+                            <button @onclick="() => Clear(task.Id)"
+                                    class="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200">
+                                Clear from my list
+                            </button>
+                            <span class="text-xs text-slate-400">Your team leader keeps a copy.</span>
+                        </div>
+                    }
                 </article>
             }
         </div>
@@ -81,6 +108,10 @@
 
     private List<TaskItem>? tasks;
     private string? userId;
+
+    // Deadline sort direction. Ordering happens in SQL, so flipping this re-queries rather than
+    // reversing the list in place.
+    private bool soonestFirst = true;
 
     // Outcome of the team-leader notification for the last completed task. Null for any other
     // status change, which sends nothing and so has nothing to report.
@@ -98,10 +129,30 @@
         await ReloadTasksAsync();
     }
 
+    /// <summary>
+    /// Archives a finished task off this list. The completion notice is dismissed at the same
+    /// time — it refers to the task being cleared, so leaving it up would strand a message about
+    /// a card that is no longer on screen.
+    /// </summary>
+    private async Task Clear(int taskId)
+    {
+        if (userId is null) return;
+
+        completionNotice = null;
+        await TaskSvc.ClearAsync(taskId, userId);
+        await ReloadTasksAsync();
+    }
+
+    private async Task ToggleSort()
+    {
+        soonestFirst = !soonestFirst;
+        await ReloadTasksAsync();
+    }
+
     private async Task ReloadTasksAsync()
     {
         if (userId is not null)
-            tasks = await TaskSvc.GetForUserAsync(userId);
+            tasks = await TaskSvc.GetForUserAsync(userId, soonestFirst);
     }
 
     private static string StatusBadge(AssignmentStatus s) => s switch

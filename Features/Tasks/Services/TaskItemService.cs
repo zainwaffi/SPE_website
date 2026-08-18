@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SPE_website.Data;
 using SPE_website.Data.Models;
 using SPE_website.Features.Tasks.Models;
+using SPE_website.Shared;
 using SPE_website.Shared.Models;
 using SPE_website.Shared.Services;
 
@@ -20,14 +21,100 @@ public class TaskItemService(
     EmailService emailService,
     ILogger<TaskItemService> logger)
 {
-    /// <summary>Tasks assigned to a specific member, soonest deadline first — used by the member's own "My Tasks" page.</summary>
-    public async Task<List<TaskItem>> GetForUserAsync(string userId)
+    /// <summary>
+    /// How long a <em>finished</em> task stays on screen after its deadline. Past that it ages off
+    /// both the member's list and the leader's review table, so what is displayed is current work
+    /// rather than a growing archive.
+    ///
+    /// Still-Processing tasks are exempt however old they get: ageing one out would quietly hide
+    /// work nobody ever closed off from both the member who owes it and the leader chasing it.
+    /// </summary>
+    public static readonly TimeSpan VisibleAfterDeadline = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// Deadlines earlier than this have aged out. Read once per query into a local, so EF sends it
+    /// as a parameter instead of trying to translate <see cref="UkTime"/> into SQL.
+    /// </summary>
+    private static DateTime AgeOutCutoff => UkTime.Today - VisibleAfterDeadline;
+
+    /// <summary>
+    /// Tasks assigned to a specific member — used by the member's own "My Tasks" page. Excludes
+    /// anything the member has cleared, and any finished task whose deadline aged out. Both are
+    /// filters rather than deletes, so the rows still count on the admin dashboard and the
+    /// assigning leader's review page.
+    /// </summary>
+    /// <param name="soonestFirst">Deadline order: soonest first, or latest first when false.</param>
+    public async Task<List<TaskItem>> GetForUserAsync(string userId, bool soonestFirst = true)
+    {
+        var cutoff = AgeOutCutoff;
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var query = db.TaskItems.AsNoTracking()
+                      .Where(t => t.AssignedToUserId == userId
+                               && t.ClearedAt == null
+                               && (t.Deadline >= cutoff || t.Status == AssignmentStatus.Processing));
+
+        return await ByDeadline(query, soonestFirst).ToListAsync();
+    }
+
+    /// <summary>
+    /// Tasks a given team leader handed out, with the assignee loaded for display. Passing
+    /// <c>null</c> returns every task on record instead — which is how the review page reaches
+    /// assignments made before authorship was recorded, and those by other leaders.
+    ///
+    /// Finished tasks age out here on the same terms as on the member's list, so the two agree on
+    /// what still counts as live. Note this ignores <c>ClearedAt</c> — a member clearing a task off
+    /// their own page must not take it off the leader's record.
+    /// </summary>
+    /// <param name="soonestFirst">Deadline order: soonest first, or latest first when false.</param>
+    public async Task<List<TaskItem>> GetAssignedByAsync(string? leaderUserId, bool soonestFirst = true)
+    {
+        var cutoff = AgeOutCutoff;
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var query = db.TaskItems.AsNoTracking()
+                      .Include(t => t.AssignedTo)
+                      .Include(t => t.AssignedBy)
+                      .Where(t => t.Deadline >= cutoff || t.Status == AssignmentStatus.Processing);
+
+        if (leaderUserId is not null)
+            query = query.Where(t => t.AssignedByUserId == leaderUserId);
+
+        return await ByDeadline(query, soonestFirst).ToListAsync();
+    }
+
+    /// <summary>
+    /// Applies the deadline sort both task views share. Id breaks ties so tasks due the same day
+    /// hold a stable order — without it the database is free to return them differently on each
+    /// query, and the list would reshuffle under the reader on an unrelated refresh.
+    /// </summary>
+    private static IQueryable<TaskItem> ByDeadline(IQueryable<TaskItem> query, bool soonestFirst) =>
+        soonestFirst
+            ? query.OrderBy(t => t.Deadline).ThenBy(t => t.Id)
+            : query.OrderByDescending(t => t.Deadline).ThenByDescending(t => t.Id);
+
+    /// <summary>
+    /// Archives a finished task off the member's own list. Returns false — changing nothing — if
+    /// the task is gone, belongs to someone else, or is still Processing.
+    ///
+    /// The ownership check is here rather than only in the page because the page passes an id
+    /// straight from the markup: without it, any signed-in member could clear another's task by
+    /// invoking the handler with a different number.
+    /// </summary>
+    public async Task<bool> ClearAsync(int id, string userId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.TaskItems.AsNoTracking()
-                       .Where(t => t.AssignedToUserId == userId)
-                       .OrderBy(t => t.Deadline)
-                       .ToListAsync();
+        var task = await db.TaskItems.FindAsync(id);
+
+        if (task is null || task.AssignedToUserId != userId) return false;
+        if (task.Status == AssignmentStatus.Processing) return false;
+        if (task.ClearedAt is not null) return false;
+
+        task.ClearedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return true;
     }
 
     /// <summary>

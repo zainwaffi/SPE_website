@@ -1,0 +1,211 @@
+@page "/tasks/assigned"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "TeamLeader")]
+@inject TaskItemService TaskSvc
+
+@* Lives in the Tasks slice rather than PresidentAdmin because it reads task data: a page under
+   PresidentAdmin would have to import TaskItemService across features. The Admin dashboard just
+   links here, which costs it no dependency. *@
+
+<PageTitle>Assigned Tasks — SPE Chapter</PageTitle>
+
+<DesktopOnly Title="Assigned Tasks">
+<div class="spe-page-shell md:max-w-5xl">
+    <a href="/admin/members" class="spe-back-btn mb-6">
+        <Icon Name="circle-chevron-left" Class="h-4 w-4 shrink-0" />
+        Back to Member Dashboard
+    </a>
+
+    <div class="mb-8">
+        <p class="spe-page-kicker">Tasks</p>
+        <h1 class="spe-page-title">Assigned Tasks</h1>
+        <p class="mt-2 text-sm text-slate-600">
+            What you have handed out and where each one got to, soonest deadline first.
+            Finished tasks drop off a week after their deadline; anything still outstanding stays.
+        </p>
+    </div>
+
+    @* Tasks assigned before authorship was recorded have no author at all, and would be
+       invisible behind a hard "mine only" filter — hence the second tab rather than a checkbox
+       that reads as an afterthought. *@
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1">
+            <button @onclick="() => SetScope(true)"
+                    class="rounded-md px-4 py-1.5 text-sm font-semibold transition-colors @(mineOnly ? "bg-spe-cobalt text-white" : "text-slate-600 hover:bg-slate-50")">
+                Assigned by me
+            </button>
+            <button @onclick="() => SetScope(false)"
+                    class="rounded-md px-4 py-1.5 text-sm font-semibold transition-colors @(mineOnly ? "text-slate-600 hover:bg-slate-50" : "bg-spe-cobalt text-white")">
+                All leaders
+            </button>
+        </div>
+
+        <SortToggleButton Ascending="soonestFirst" OnToggle="ToggleSort"
+                          AscendingLabel="Soonest first" DescendingLabel="Latest first" />
+    </div>
+
+    @if (tasks is null)
+    {
+        <p class="text-slate-500">Loading tasks...</p>
+    }
+    else if (tasks.Count == 0)
+    {
+        <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+            @* "None" here means nothing outstanding and nothing finished recently, not none ever —
+               worth saying, or a leader who assigned plenty last month reads this as a bug. *@
+            <p class="text-xl font-medium text-slate-400">
+                @(mineOnly ? "No current tasks assigned by you." : "No current tasks assigned.")
+            </p>
+            <p class="mt-2 text-sm text-slate-500">Finished tasks more than a week past their deadline have dropped off.</p>
+            <a href="/admin/calendar" class="spe-primary-btn mt-6 inline-block">Assign a task</a>
+        </div>
+    }
+    else
+    {
+        <div class="mb-4 flex flex-wrap gap-3 text-xs font-semibold">
+            <span class="rounded-full bg-amber-100 px-3 py-1 text-amber-700">@counts.Active active</span>
+            <span class="rounded-full bg-green-100 px-3 py-1 text-green-700">@counts.Completed completed</span>
+            <span class="rounded-full bg-red-100 px-3 py-1 text-red-700">@counts.Failed failed</span>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-6 py-4 text-left font-semibold">Task</th>
+                        <th class="px-6 py-4 text-left font-semibold">Assigned to</th>
+                        @if (!mineOnly)
+                        {
+                            <th class="px-6 py-4 text-left font-semibold">Assigned by</th>
+                        }
+                        <th class="px-6 py-4 text-left font-semibold">Deadline</th>
+                        <th class="px-6 py-4 text-center font-semibold">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var task in tasks)
+                    {
+                        <tr @key="task.Id" class="transition-colors hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <p class="font-semibold text-slate-800">@task.Title</p>
+                                @if (!string.IsNullOrWhiteSpace(task.Description))
+                                {
+                                    <p class="mt-0.5 max-w-md text-xs text-slate-500">@task.Description</p>
+                                }
+                            </td>
+                            <td class="px-6 py-4">
+                                @if (task.AssignedTo is null)
+                                {
+                                    @* The FK is set null when a member is deleted, so the task
+                                       outlives them with nobody attached. *@
+                                    <span class="text-xs italic text-slate-400">Member removed</span>
+                                }
+                                else
+                                {
+                                    <p class="font-medium text-slate-700">@task.AssignedTo.FullName</p>
+                                    <p class="text-xs text-slate-400">@task.AssignedTo.Email</p>
+                                }
+                            </td>
+                            @if (!mineOnly)
+                            {
+                                <td class="px-6 py-4 text-slate-600">
+                                    @(task.AssignedBy?.FullName is { Length: > 0 } author
+                                        ? author
+                                        : "—")
+                                </td>
+                            }
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="@(task.Deadline < UkTime.Now && task.Status == AssignmentStatus.Processing ? "font-semibold text-red-500" : "text-slate-600")">
+                                    @task.Deadline.ToString("d MMM yyyy")
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                <span class="rounded-full px-3 py-1 text-xs font-bold @StatusBadge(task.Status)">@task.Status</span>
+                                @if (task.ClearedAt is not null)
+                                {
+                                    @* The member has archived it off their own list. Worth showing
+                                       so a leader knows why they can no longer see it mentioned. *@
+                                    <p class="mt-1 text-[11px] text-slate-400">cleared by member</p>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+</DesktopOnly>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private List<TaskItem>? tasks;
+    private string? userId;
+    private bool mineOnly = true;
+
+    // Deadline sort direction. Ordering happens in SQL, so flipping this re-queries rather than
+    // reversing the list in place.
+    private bool soonestFirst = true;
+
+    private (int Active, int Completed, int Failed) counts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = await AuthStateTask.GetUserIdAsync();
+        await LoadAsync();
+    }
+
+    private async Task SetScope(bool mine)
+    {
+        if (mineOnly == mine) return;
+        mineOnly = mine;
+        tasks = null;
+        await LoadAsync();
+    }
+
+    /// <summary>
+    /// Flips the deadline order. The table is not blanked first, unlike a scope change: the same
+    /// rows come back in the other order, so holding them on screen avoids a flash of "Loading".
+    /// </summary>
+    private async Task ToggleSort()
+    {
+        soonestFirst = !soonestFirst;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        // A null userId would make GetAssignedByAsync fall through to "every task on record",
+        // which is the opposite of what the "Assigned by me" tab asked for.
+        tasks = mineOnly && userId is null
+            ? []
+            : await TaskSvc.GetAssignedByAsync(mineOnly ? userId : null, soonestFirst);
+
+        counts = Count(tasks);
+    }
+
+    /// <summary>One pass over the list rather than three LINQ Count() calls per render.</summary>
+    private static (int Active, int Completed, int Failed) Count(List<TaskItem> tasks)
+    {
+        int active = 0, completed = 0, failed = 0;
+        foreach (var task in tasks)
+        {
+            switch (task.Status)
+            {
+                case AssignmentStatus.Processing: active++; break;
+                case AssignmentStatus.Completed: completed++; break;
+                case AssignmentStatus.Failed: failed++; break;
+            }
+        }
+        return (active, completed, failed);
+    }
+
+    private static string StatusBadge(AssignmentStatus s) => s switch
+    {
+        AssignmentStatus.Completed => "bg-green-100 text-green-700",
+        AssignmentStatus.Failed => "bg-red-100 text-red-700",
+        _ => "bg-amber-100 text-amber-700"
+    };
+}

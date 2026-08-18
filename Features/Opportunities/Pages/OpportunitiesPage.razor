@@ -6,80 +6,146 @@
 
 <PageTitle>Opportunities & Development — SPE Chapter</PageTitle>
 
-<div class="spe-page-shell md:max-w-[1200px]">
-    <div class="mb-10">
-        <p class="spe-page-kicker">Opportunities And Development</p>
-        <h1 class="spe-page-title">Get Involved</h1>
-        <p class="mt-2 text-sm text-slate-600">
-            Volunteer with the chapter, plan a route into the industry, and browse the current opportunity board.
+
+@* Page heading. Kept out of the mockup block below so the page still has an h1 — the mockup
+   starts straight in at the Volunteering card. *@
+
+
+@* Volunteering and Careers, transcribed from the supplied mockup (v3). Every colour, size and
+   spacing value below is the mockup's own, written as Tailwind arbitrary values rather than
+   inline styles — several (#E6F1FB, #1257c9, #378ADD, #1b2c47 …) have no theme-token equivalent,
+   and matching the mockup exactly is the brief.
+
+   The mockup's outer #e9edf3 box wraps all three blocks, and keeps the page shell's margins and
+   max-width so it lines up with the heading above and the opportunity board below. *@
+
+
+    <FadeUp class="spe-page-shell md:max-w-[1200px] bg-white px-[26px] pb-[22px] pt-[26px]">
+        <div class="spe-page-kicker">Opportunities And Development</div>
+        <p class="mt-2 mb-2.5 text-sm text-slate-600">
+        Volunteer with the chapter, plan a route into the industry, and browse the current opportunity board.
+    </p>
+        <div class="mb-2.5 text-[22px] font-medium text-[#0047BB]">Volunteering</div>
+        <p class="mb-2 max-w-[580px] text-sm leading-[1.65] text-[#33445e]">
+            SPE Aberdeen is run by its members. Nine committees and around 150 volunteers deliver
+            every conference, technical evening, school visit and networking event we hold across
+            the North East — alongside full-time jobs in the energy sector.
         </p>
-    </div>
-</div>
-    @* #UpdateContent: every string in this section is placeholder copy awaiting the real text.
+        <p class="mb-5 max-w-[580px] text-sm leading-[1.65] text-[#33445e]">
+            Roles are open to members at any career stage, and you set the commitment. Some
+            volunteers give a single afternoon a year; others chair a committee.
+        </p>
 
-       Photo flanked by two tiles, over a text block. The three-column row collapses to a single
-       centred column below lg — each item carries mx-auto so it centres rather than stretching
-       once the columns are gone. *@
-    <div class="spe-page-shell bg-white/15 backdrop-blur-none md:max-w-[1200px]">
-    <section class="mb-12  p-6 lg:p-8 ">
-        <div class="rounded-2xl bg-white p-6 shadow-lg lg:p-8">
-            <h2 class="mb-6 text-center font-heading text-2xl font-bold text-spe-cobalt lg:text-left">Volunteering</h2>
+        @* The mockup draws three columns at every width; below md they stack instead. Straight
+           to one column rather than via two — with three tiles, a two-column row leaves an
+           orphan on its own line. *@
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+            @foreach (var route in VolunteerRoutes)
+            {
+                @if (route.Featured)
+                {
+                    <div @key="route.Title" class="rounded-xl bg-[#E6F1FB] p-4">
+                        <Icon Name="@route.Icon" Class="h-[22px] w-[22px] text-[#185FA5]" />
+                        <div class="mb-[5px] mt-[9px] text-sm font-medium text-[#0C447C]">@route.Title</div>
+                        <div class="text-xs leading-[1.55] text-[#185FA5]">@route.Text</div>
+                        <div class="mt-2 border-t border-[#cfe0f5] pt-2 text-[11px] text-[#378ADD]">@route.Committee</div>
+                    </div>
+                }
+                else
+                {
+                    @* Photo sits behind the copy at .5 opacity over the blue tile, so the text
+                       stays legible wherever the image happens to be busy. *@
+                    <div @key="route.Title"
+                         class="relative flex min-h-[150px] flex-col justify-end overflow-hidden rounded-xl bg-[#0047BB]">
+                        <div class="relative p-4">
+                            <Icon Name="@route.Icon" Class="h-[22px] w-[22px] text-white" />
+                            <div class="mb-[5px] mt-[9px] text-sm font-medium text-white">@route.Title</div>
+                            <div class="text-xs leading-[1.55] text-[#e3ecfa]">@route.Text</div>
+                            <div class="mt-2 border-t border-white/[0.28] pt-2 text-[11px] text-[#c6d8f5]">@route.Committee</div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
 
-            <div class="grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_2fr_1fr]">
-                @* Two empty tiles from the layout sketch — no content decided yet. *@
-                <div aria-hidden="true" class="h-40 w-full rounded-xl bg-spe-blue lg:h-56"></div>
-
-                @* A CSS background rather than an <img>: decorative, so it needs no alt text, and
-                   a missing file degrades to a plain tile instead of a broken-image icon. *@
-                <div aria-hidden="true" class="spe-volunteering-photo mx-auto aspect-4/3 w-full rounded-lg"></div>
-
-                <div aria-hidden="true" class="h-40 w-full rounded-xl bg-spe-blue lg:h-56"></div>
-            </div>
-
-            <div class="mt-6 rounded-lg bg-slate-200 px-6 py-8">
-                <p class="text-center leading-relaxed text-slate-600 lg:text-left">@PlaceholderBody</p>
+        <div class="mb-[18px] mt-4 rounded-xl bg-[#eef1f6] px-[18px] py-4">
+            <div class="mb-2.5 text-[13px] font-medium text-[#0047BB]">Why volunteer</div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                @foreach (var benefit in Benefits)
+                {
+                    <div @key="benefit.Title">
+                        <div class="mb-[3px] text-sm font-medium text-[#1b2c47]">@benefit.Title</div>
+                        <div class="text-xs leading-[1.55] text-[#4a5a72]">@benefit.Text</div>
+                    </div>
+                }
             </div>
         </div>
-    </section>
 
+        <div class="flex flex-wrap items-center gap-4">
+            <a href="https://www.spe-aberdeen.org/volunteering" target="_blank" rel="noopener noreferrer"
+               class="rounded-md bg-[#0047BB] px-[18px] py-2.5 text-[13px] font-medium text-white">
+                See current opportunities
+            </a>
+            <a href="https://www.spe-aberdeen.org/committees" target="_blank" rel="noopener noreferrer"
+               class="text-[13px] text-[#0047BB]">
+                All nine committees<Icon Name="arrow-right" Class="ml-1 inline h-[14px] w-[14px] -translate-y-px" />
+            </a>
+          
+        </div>
+    </FadeUp>
 
-
-    @* #UpdateContent: every string in this section is placeholder copy awaiting the real text.
-
-       Copy on the left, feature card on the right; below lg the grid collapses to one column
-       and both halves centre — hence text-center / lg:text-left and the mx-auto on the card. *@
-    <section class="mb-12 rounded-2xl bg-spe-blue px-6 py-10 lg:px-12">
-        <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-            <div class="text-center lg:text-left">
-                <h2 class="mb-4 font-heading text-3xl font-extrabold text-spe-gold">Careers</h2>
-                <p class="mb-6 leading-relaxed text-white/85">@PlaceholderBody</p>
-
-                @* Three empty tiles from the layout sketch — no content decided yet. *@
-                <div class="grid grid-cols-3 gap-4">
-                    @for (var tile = 0; tile < 3; tile++)
-                    {
-                        <div @key="tile" aria-hidden="true" class="aspect-square rounded-lg bg-spe-endeavor/50"></div>
-                    }
-                </div>
+    <FadeUp class="spe-page-shell md:max-w-[1200px] my-3 flex flex-wrap justify-center gap-8  bg-white px-[18px] py-3">
+        @foreach (var stat in Stats)
+        {
+            <div @key="stat.Value" class="text-lg text-[#33445e]">
+                @stat.Before<strong class="font-medium text-[#0047BB]">@stat.Value</strong>@stat.After
             </div>
+        }
+    </FadeUp>
 
-            <div class="mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white p-3 shadow-xl">
-                @* A CSS background rather than an <img>: decorative, so it needs no alt text, and
-                   a missing file degrades to a plain tile instead of a broken-image icon. *@
-                <div aria-hidden="true" class="spe-careers-photo aspect-video w-full rounded-xl"></div>
-                <div class="px-3 pb-2 pt-4">
-                    <h3 class="mb-2 font-heading text-xl font-bold text-spe-cobalt">Title</h3>
-                    <p class="mb-5 text-sm leading-relaxed text-slate-600">@PlaceholderBody</p>
-                    @* #UpdateLinks — Careers feature card: replace "#" with the real destination *@
-                    <a href="#"
-                       class="block rounded-full bg-spe-endeavor px-5 py-2.5 text-center font-heading text-sm font-bold text-white transition-colors hover:bg-spe-cobalt">
-                        Find out more
-                    </a>
-                </div>
+    <FadeUp class="spe-page-shell md:max-w-[1200px] grid grid-cols-1 gap-[22px]  bg-spe-cobalt p-[26px] lg:grid-cols-3">
+        <div class="lg:col-span-2">
+            <div class="mb-[9px] text-[22px] font-medium text-[#F5A623]">Careers</div>
+            <p class="mb-2 text-[13px] leading-[1.65] text-[#dbe6f7]">
+                Energy careers are built on exposure as much as coursework. Degrees teach the
+                theory; what employers look for is evidence that you understand how the industry
+                actually operates — and that you have met the people who run it.
+            </p>
+            <p class="mb-[18px] text-[13px] leading-[1.65] text-[#dbe6f7]">
+                Our events and student chapters put you in that position early, across oil and gas,
+                offshore wind, hydrogen, geothermal, carbon storage and electrification.
+            </p>
+            <div class="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+                @foreach (var route in CareerRoutes)
+                {
+                    <div @key="route.Title" class="rounded-[10px] bg-[#1257c9] p-[13px]">
+                        <Icon Name="@route.Icon" Class="h-5 w-5 text-[#F5A623]" />
+                        <div class="mb-1 mt-[7px] text-[13px] font-medium text-white">@route.Title</div>
+                        <div class="text-[11px] leading-[1.5] text-[#c6d8f5]">@route.Text</div>
+                    </div>
+                }
             </div>
         </div>
-    </section>
-</div>
+
+        <div class="rounded-xl bg-white p-[11px]">
+            <img src="/images/careers-800.webp" alt="" width="800" height="360" loading="lazy" decoding="async"
+                 class="block h-[180px] w-full rounded-lg object-cover" />
+            <div class="mb-1.5 mt-[11px] text-[15px] font-medium text-[#0047BB]">Student chapters</div>
+            <p class="mb-1.5 text-xs leading-[1.6] text-[#4a5a72]">
+                University of Aberdeen Chapter give you early exposure to the
+                industry while you are still studying — company visits, technical talks, and direct
+                contact with engineers doing the work.
+            </p>
+            <p class="mb-3 text-xs leading-[1.6] text-[#4a5a72]">
+                Members regularly move from chapter committee roles into the section's wider
+                volunteer programme.
+            </p>
+            <a href="https://www.spe-aberdeen.org/student-chapters" target="_blank" rel="noopener noreferrer"
+               class="block rounded-md bg-[#1a72c4] py-[9px] text-center text-[13px] font-medium text-white">
+                Find out more
+            </a>
+        </div>
+    </FadeUp>
 
 
 <div class="spe-page-shell md:max-w-[1200px]">
@@ -87,121 +153,187 @@
        a sign-in prompt in its place rather than an empty search box over nothing. *@
     <AuthorizeView>
         <Authorized Context="board">
-    <section class=" border-slate-200 pt-10">
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <div>
-                <h2 class="font-heading text-2xl font-bold text-black">Available Opportunities</h2>
-                <p class="mt-2 text-sm text-slate-600">Curated opportunities from leading energy companies.</p>
-            </div>
-            <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                <Authorized>
-                    <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add</button>
-                </Authorized>
-            </AuthorizeView>
-        </div>
-
-        <div class="mb-6">
-            <input class="w-full spe-input"
-                   placeholder="Search opportunities by title or description..."
-                   @bind="searchQuery" @bind:event="oninput" />
-        </div>
-
-        @if (showForm)
-        {
-            <div class="spe-card mb-8 p-6">
-                <h3 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Opportunity</h3>
-                @* Blog-style authoring, matching tutorial articles: the body is markdown and is
-                   rendered with headings, bullets and links on the detail page. *@
-                <div class="flex flex-col gap-3">
-                    <input class="spe-input" placeholder="Title" @bind="newTitle" />
+            <section class=" border-slate-200 pt-10">
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="opportunity-body">
-                            Details
-                        </label>
-                        <textarea id="opportunity-body" class="spe-input w-full font-mono text-sm" rows="12"
-                                  placeholder="@MarkdownPlaceholder" @bind="newDescription"></textarea>
-                        <p class="mt-1.5 text-xs text-slate-500">
-                            Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
-                            <code>[link](https://example.com)</code>, <code>**bold**</code>.
-                        </p>
+                        <h2 class="font-heading text-2xl font-bold text-black">Available Opportunities</h2>
+                        <p class="mt-2 text-sm text-slate-600">Curated opportunities from leading energy companies.</p>
                     </div>
-                    <input class="spe-input" placeholder="External URL (optional)" @bind="newUrl" />
+                    <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                        <Authorized>
+                            <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add</button>
+                        </Authorized>
+                    </AuthorizeView>
                 </div>
-                <div class="mt-4 flex gap-3">
-                    <button @onclick="SaveOpp" class="spe-primary-btn">Save</button>
-                    <button @onclick="() => showForm = false" class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
-                </div>
-            </div>
-        }
 
-        @if (opportunities is null)
-        {
-            <p class="py-20 text-center text-slate-500">Loading...</p>
-        }
-        else if (!FilteredOpportunities.Any())
-        {
-            <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
-                <p class="text-xl font-medium text-slate-400">No opportunities match your search.</p>
-            </div>
-        }
-        else
-        {
-            <div class="space-y-4">
-                @foreach (var opp in FilteredOpportunities)
+                <div class="mb-6">
+                    <input class="w-full spe-input" placeholder="Search opportunities by title or description..."
+                           @bind="searchQuery" @bind:event="oninput" />
+                </div>
+
+                @if (showForm)
                 {
-                    <article @key="opp.Id" class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md" @onclick="() => GoToDetail(opp.Id)">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex-1">
-                                <h3 class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor font-heading">@opp.Title</h3>
-                                <p class="mb-3 line-clamp-3 text-slate-600">@Excerpt(opp.Description)</p>
-                                <span class="text-sm font-semibold text-spe-cobalt">View Details</span>
+                    <div class="spe-card mb-8 p-6">
+                        <h3 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Opportunity</h3>
+                        @* Blog-style authoring, matching tutorial articles: the body is markdown and is
+                   rendered with headings, bullets and links on the detail page. *@
+                        <div class="flex flex-col gap-3">
+                            <input class="spe-input" placeholder="Title" @bind="newTitle" />
+                            <div>
+                                <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600"
+                                       for="opportunity-body">
+                                    Details
+                                </label>
+                                <textarea id="opportunity-body" class="spe-input w-full font-mono text-sm" rows="12"
+                                          placeholder="@MarkdownPlaceholder" @bind="newDescription"></textarea>
+                                <p class="mt-1.5 text-xs text-slate-500">
+                                    Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
+                                    <code>[link](https://example.com)</code>, <code>**bold**</code>.
+                                </p>
                             </div>
-                            <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                                <Authorized>
-                                    <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
-                                            class="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-600">
-                                        Delete
-                                    </button>
-                                </Authorized>
-                            </AuthorizeView>
+                            <input class="spe-input" placeholder="External URL (optional)" @bind="newUrl" />
                         </div>
-                    </article>
-                }
-            </div>
-        }
-    </section>
-
-        </Authorized>
-        <NotAuthorized Context="guest">
-            <section class="border-t border-slate-200 pt-10">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center">
-                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-spe-cobalt/10 text-spe-cobalt">
-                        <Icon Name="list-check" Class="h-6 w-6" />
+                        <div class="mt-4 flex gap-3">
+                            <button @onclick="SaveOpp" class="spe-primary-btn">Save</button>
+                            <button @onclick="() => showForm = false"
+                                    class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                        </div>
                     </div>
-                    <h2 class="font-heading text-xl font-bold text-black">Members-only opportunity board</h2>
-                    <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">
-                        Sign in with your SPE membership email to search the jobs, internships and
-                        graduate vacancies shared with the chapter.
-                    </p>
-                    <a href="/login" class="spe-primary-btn mt-6 inline-block">Sign in</a>
-                </div>
-            </section>
-        </NotAuthorized>
-    </AuthorizeView>
-</div>
+                }
+
+                @if (opportunities is null)
+                {
+                    <p class="py-20 text-center text-slate-500">Loading...</p>
+                }
+                else if (!FilteredOpportunities.Any())
+                {
+                    <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+                        <p class="text-xl font-medium text-slate-400">No opportunities match your search.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="space-y-4">
+                        @foreach (var opp in FilteredOpportunities)
+                        {
+                            <article @key="opp.Id"
+                                     class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md"
+                                     @onclick="() => GoToDetail(opp.Id)">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="flex-1">
+                                        <h3
+                                            class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor font-heading">
+                                            @opp.Title</h3>
+                                            <p class="mb-3 line-clamp-3 text-slate-600">@Excerpt(opp.Description)</p>
+                                            <span class="text-sm font-semibold text-spe-cobalt">View Details</span>
+                                        </div>
+                                        <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                            <Authorized>
+                                                <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
+                                                        class="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-600">
+                                                    Delete
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
+
+            </Authorized>
+            <NotAuthorized Context="guest">
+                <section class="border-t border-slate-200 pt-10">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center">
+                        <div
+                            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-spe-cobalt/10 text-spe-cobalt">
+                            <Icon Name="list-check" Class="h-6 w-6" />
+                        </div>
+                        <h2 class="font-heading text-xl font-bold text-black">Members-only opportunity board</h2>
+                        <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">
+                            Sign in with your SPE membership email to search the jobs, internships and
+                            graduate vacancies shared with the chapter.
+                        </p>
+                        <a href="/login" class="spe-primary-btn mt-6 inline-block">Sign in</a>
+                    </div>
+                </section>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
 
 @code {
     // #UpdateContent: Volunteering and Careers copy. Edit the text here rather than in the
-    // markup above — the two sections are rendered by looping over these.
-    // #UpdateContent: placeholder body copy for the Volunteering and Careers sections.
-    // One constant so replacing it updates every placeholder at once.
-    private const string PlaceholderBody =
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec et volutpat tortor, " +
-        "vel euismod ante. Curabitur pellentesque, libero eget sagittis ultrices.";
+    // markup above — both sections are rendered by looping over these.
+    private static readonly VolunteerRoute[] VolunteerRoutes =
+    [
+        new("graduation-cap", "Inspire the next generation",
+            "Speak at school career fairs, run STEM activities in primary and secondary classrooms, and coach pupils through CV writing and mock interviews.",
+            "Schools career guidance committee", true),
 
-    /// <summary>A volunteering route. <paramref name="Details"/> is rendered as a labelled list,
-    /// so pathways with no stated commitment simply omit that pair.</summary>
-    private sealed record VolunteerPathway(string Icon, string Title, (string Label, string Text)[] Details);
+        new("users", "Support students",
+            "Mentor undergraduates and postgraduates at our four partner universities, host a company tour, or speak to a student chapter about your own route in.",
+            "Student development committee",
+            false),
+
+        new("calendar", "Shape the programme",
+            "Help plan technical evenings, soft-skills sessions, tech tours and international exchanges for professionals aged 35 and under.",
+            "Young professionals committee", true)
+    ];
+
+    private static readonly Benefit[] Benefits =
+    [
+        new("Lead sooner",
+            "Run a budget, a team or an event years before your day job offers the same scope."),
+
+        new("A wider network",
+            "Work alongside operators, service companies, academics and regulators across the sector."),
+
+        new("Skills that transfer",
+            "Public speaking, chairing, stakeholder management — evidence for CVs and chartership.")
+    ];
+
+    private static readonly Stat[] Stats =
+    [
+        new("", "9", " committees"),
+        new("", "~150", " volunteers"),
+        new("", "4", " partner universities"),
+        new("One of the ", "largest", " SPE sections worldwide")
+    ];
+
+    private static readonly CareerRoute[] CareerRoutes =
+    [
+        new("users", "Networking",
+            "Technical evenings and informal events where students sit alongside working engineers and hiring managers."),
+
+        new("location-dot", "Site visits",
+            "Tech tours behind the scenes at local operators and service companies — see the equipment and the working culture first hand."),
+
+        new("mouse-pointer-click", "Get involved",
+            "Take a committee role in your chapter: organise events, invite speakers, and build a track record before you graduate.")
+    ];
+
+    /// <summary>
+    /// One way into volunteering. <paramref name="Committee"/> is the committee that owns the
+    /// work, shown as a footer line on the tile. A non-null <paramref name="Photo"/> renders the
+    /// dark photo-backed variant instead of the pale one.
+    /// </summary>
+    private sealed record VolunteerRoute(
+        string Icon, string Title, string Text, string Committee, bool Featured);
+
+    /// <summary>One way in to the industry, rendered as a tile on the Careers panel.</summary>
+    private sealed record CareerRoute(string Icon, string Title, string Text);
+
+    /// <summary>An entry in the "Why volunteer" grid.</summary>
+    private sealed record Benefit(string Title, string Text);
+
+    /// <summary>
+    /// A figure in the strip between the two sections. Split three ways rather than
+    /// value-plus-label because the emphasis is not always leading — "One of the
+    /// <strong>largest</strong> SPE sections worldwide" puts it mid-sentence. Spacing around the
+    /// emphasis lives in <paramref name="Before"/> and <paramref name="After"/>.
+    /// </summary>
+    private sealed record Stat(string Before, string Value, string After);
 
 
     private const string MarkdownPlaceholder = """

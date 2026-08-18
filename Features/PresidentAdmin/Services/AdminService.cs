@@ -97,8 +97,14 @@ public class AdminService(
     /// <summary>
     /// Creates and assigns a new task to a member, emailing them the details. The task is always
     /// saved; the returned <see cref="EmailResult"/> reports whether the notification went out.
+    ///
+    /// <paramref name="assignedByUserId"/> is the leader doing the assigning, recorded so they can
+    /// review what they handed out. It is nullable rather than required because the caller reads
+    /// it from the cascading auth state, which can come back null — an unattributed task is a far
+    /// better outcome there than refusing to create one.
     /// </summary>
-    public async Task<(TaskItem Task, EmailResult Notification)> AssignTaskAsync(string userId, string title, string description, DateTime deadline)
+    public async Task<(TaskItem Task, EmailResult Notification)> AssignTaskAsync(
+        string userId, string title, string description, DateTime deadline, string? assignedByUserId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(userId);
@@ -109,6 +115,7 @@ public class AdminService(
             Description = description,
             Deadline = deadline,
             AssignedToUserId = userId,
+            AssignedByUserId = assignedByUserId,
             Status = AssignmentStatus.Processing
         };
 

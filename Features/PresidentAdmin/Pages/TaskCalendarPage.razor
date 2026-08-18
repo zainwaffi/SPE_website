@@ -118,6 +118,10 @@
 @code {
     private static readonly string[] WeekDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private string? currentUserId;
     private DateTime currentDate = UkTime.Today;
     private DateTime? selectedDate;
     private List<ApplicationUser>? members;
@@ -130,8 +134,11 @@
     private int firstDayOffset => (int)new DateTime(currentDate.Year, currentDate.Month, 1).DayOfWeek;
     private int daysInMonth => DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
 
-    protected override async Task OnInitializedAsync() =>
+    protected override async Task OnInitializedAsync()
+    {
+        currentUserId = await AuthStateTask.GetUserIdAsync();
         members = await AdminSvc.GetAllMembersAsync();
+    }
 
     private void SelectDate(DateTime date)
     {
@@ -146,7 +153,7 @@
     private async Task AssignTask()
     {
         if (string.IsNullOrWhiteSpace(taskTitle) || string.IsNullOrWhiteSpace(selectedUserId) || selectedDate is null) return;
-        var (_, emailResult) = await AdminSvc.AssignTaskAsync(selectedUserId, taskTitle, taskDescription, selectedDate.Value);
+        var (_, emailResult) = await AdminSvc.AssignTaskAsync(selectedUserId, taskTitle, taskDescription, selectedDate.Value, currentUserId);
         notification = emailResult;
         successMessage = "Task assigned successfully!";
         taskTitle = taskDescription = selectedUserId = "";

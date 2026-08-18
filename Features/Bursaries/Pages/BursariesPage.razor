@@ -22,6 +22,16 @@
             </p>
         </div>
 
+        @* Chapter group photo. This is content rather than decoration — it shows who the funding
+           is for — so it is an <img> with alt text instead of one of the .spe-*-photo background
+           tiles. It sits high enough to be above the fold on desktop, hence no loading="lazy". *@
+        <img src="/images/bursaries-1280.webp"
+             srcset="/images/bursaries-1280.webp 1280w, /images/bursaries-1920.webp 1920w"
+             sizes="(min-width: 768px) 1200px, 100vw"
+             width="1920" height="459" decoding="async"
+             alt="Students and staff from the SPE student chapter at a University of Dundee lecture on the energy transition."
+             class="mb-10 w-full rounded-xl shadow-lg ring-1 ring-white/15" />
+
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
             @foreach (var support in SupportOptions)
             {

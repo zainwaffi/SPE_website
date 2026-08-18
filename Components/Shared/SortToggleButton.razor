@@ -1,0 +1,31 @@
+@* Flips a list between ascending and descending order.
+
+   Holds no sort state of its own — the parent owns the direction and re-queries on toggle,
+   because the ordering is done in SQL rather than by reordering an in-memory list.
+
+   The label names the order currently applied, not the one clicking would switch to. Both
+   readings are common, so aria-label spells it out for anyone who can't see the arrows. *@
+
+<button type="button" @onclick="OnToggle"
+        aria-label="@($"Sorted {(Ascending ? AscendingLabel : DescendingLabel)}. Switch to {(Ascending ? DescendingLabel : AscendingLabel)}.")"
+        class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-spe-cobalt hover:text-spe-cobalt">
+    <Icon Name="arrow-down-up" Class="h-4 w-4 shrink-0" />
+    @(Ascending ? AscendingLabel : DescendingLabel)
+</button>
+
+@code {
+    /// <summary>Current direction. The parent owns this — the button only reports the click.</summary>
+    [Parameter, EditorRequired]
+    public bool Ascending { get; set; }
+
+    /// <summary>Label shown while ascending, e.g. "Soonest first".</summary>
+    [Parameter, EditorRequired]
+    public string AscendingLabel { get; set; } = "Ascending";
+
+    /// <summary>Label shown while descending, e.g. "Latest first".</summary>
+    [Parameter, EditorRequired]
+    public string DescendingLabel { get; set; } = "Descending";
+
+    [Parameter, EditorRequired]
+    public EventCallback OnToggle { get; set; }
+}
