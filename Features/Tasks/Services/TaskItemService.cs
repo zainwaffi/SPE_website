@@ -172,6 +172,7 @@ public class TaskItemService(
             return EmailResult.Failure("There is no team leader currently receiving email notifications.");
 
         var memberName = member?.FullName is { Length: > 0 } name ? name : "A member";
+        // #UpdateLink — wording of the task-completed email sent to team leaders.
         var subject = $"Task Completed: {task.Title} — SPE Chapter";
         var lastError = "No team leader could be notified.";
         var anySent = false;

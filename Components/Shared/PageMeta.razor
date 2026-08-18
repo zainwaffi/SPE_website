@@ -1,0 +1,60 @@
+@* Title, search description and link-preview tags for one page.
+
+   The chapter recruits mainly through Instagram, WhatsApp and LinkedIn, so how a URL unfurls
+   when someone pastes it matters more here than search ranking does. Without og: tags those
+   platforms show the bare URL and whatever text they manage to scrape.
+
+   URLs are built from the incoming request rather than a configured domain, so this works
+   unchanged on localhost, on a staging host, and on whatever address the site finally gets.
+   Emits nothing visible. *@
+
+@inject NavigationManager Nav
+
+<PageTitle>@Title</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="@Description" />
+    <link rel="canonical" href="@CanonicalUrl" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SPE University of Aberdeen Student Chapter" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:title" content="@Title" />
+    <meta property="og:description" content="@Description" />
+    <meta property="og:url" content="@CanonicalUrl" />
+    <meta property="og:image" content="@AbsoluteImageUrl" />
+    <meta property="og:image:alt" content="@ImageAlt" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@Title" />
+    <meta name="twitter:description" content="@Description" />
+    <meta name="twitter:image" content="@AbsoluteImageUrl" />
+</HeadContent>
+
+@code {
+    /// <summary>Browser tab title, and the headline of the link preview.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "";
+
+    /// <summary>
+    /// One or two sentences. This is the grey line under the title in search results and the
+    /// body of a shared-link preview, so write it for a person, not for a crawler. Around
+    /// 150 characters is the point at which both start truncating.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Description { get; set; } = "";
+
+    /// <summary>Site-relative path of the preview image. Defaults to the page banner.</summary>
+    [Parameter]
+    public string Image { get; set; } = "/images/banner-1280.webp";
+
+    /// <summary>Alt text for the preview image, read out by some platforms.</summary>
+    [Parameter]
+    public string ImageAlt { get; set; } = "SPE University of Aberdeen Student Chapter";
+
+    // Query strings and fragments are stripped: /events?search=x is the same page as /events,
+    // and pointing them at one canonical URL stops them being indexed as separate pages.
+    private string CanonicalUrl => Nav.Uri.Split('?')[0].Split('#')[0];
+
+    private string AbsoluteImageUrl => new Uri(new Uri(Nav.BaseUri), Image).ToString();
+}

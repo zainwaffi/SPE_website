@@ -1,0 +1,181 @@
+@rendermode InteractiveServer
+@inject OpportunityService OppSvc
+@inject NavigationManager Nav
+
+@* The live opportunity board: search, the committee's add/delete controls, and row
+   navigation.
+
+   This is the only part of the Opportunities page that needs a SignalR circuit, so it is a
+   component rather than markup on the page. The page itself is static SSR — Volunteering, the
+   stats strip and Careers are fixed copy rendered from arrays — which means a guest, who never
+   sees this board at all, does not open a circuit just to read them.
+
+   The caller is responsible for only rendering this for signed-in users; it does not repeat
+   that check. *@
+
+    <section class=" border-slate-200 pt-10">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h2 class="font-heading text-2xl font-bold text-black">Available Opportunities</h2>
+                <p class="mt-2 text-sm text-slate-600">Curated opportunities from leading energy companies.</p>
+            </div>
+            <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                <Authorized>
+                    <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add</button>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+
+        <div class="mb-6">
+            <input class="w-full spe-input" placeholder="Search opportunities by title or description..."
+                   @bind="searchQuery" @bind:event="oninput" />
+        </div>
+
+        @if (showForm)
+        {
+            <div class="spe-card mb-8 p-6">
+                <h3 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Opportunity</h3>
+                @* Blog-style authoring, matching tutorial articles: the body is markdown and is
+           rendered with headings, bullets and links on the detail page. *@
+                <div class="flex flex-col gap-3">
+                    <input class="spe-input" placeholder="Title" @bind="newTitle" />
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600"
+                               for="opportunity-body">
+                            Details
+                        </label>
+                        <textarea id="opportunity-body" class="spe-input w-full font-mono text-sm" rows="12"
+                                  placeholder="@MarkdownPlaceholder" @bind="newDescription"></textarea>
+                        <p class="mt-1.5 text-xs text-slate-500">
+                            Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
+                            <code>[link](https://example.com)</code>, <code>**bold**</code>.
+                        </p>
+                    </div>
+                    <input class="spe-input" placeholder="External URL (optional)" @bind="newUrl" />
+                </div>
+                <div class="mt-4 flex gap-3">
+                    <button @onclick="SaveOpp" class="spe-primary-btn">Save</button>
+                    <button @onclick="() => showForm = false"
+                            class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                </div>
+            </div>
+        }
+
+        @if (opportunities is null)
+        {
+            <p class="py-20 text-center text-slate-500">Loading...</p>
+        }
+        else if (!FilteredOpportunities.Any())
+        {
+            <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+                <p class="text-xl font-medium text-slate-400">No opportunities match your search.</p>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var opp in FilteredOpportunities)
+                {
+                    <article @key="opp.Id"
+                             class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md"
+                             @onclick="() => GoToDetail(opp.Id)">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1">
+                                <h3
+                                    class="mb-1 text-lg font-bold text-spe-cobalt transition-colors hover:text-spe-endeavor font-heading">
+                                    @opp.Title</h3>
+                                    <p class="mb-3 line-clamp-3 text-slate-600">@Excerpt(opp.Description)</p>
+                                    <span class="text-sm font-semibold text-spe-cobalt">View Details</span>
+                                </div>
+                                <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                    <Authorized>
+                                        <button @onclick:stopPropagation="true" @onclick="() => DeleteOpp(opp.Id)"
+                                                class="shrink-0 text-sm font-medium text-red-400 transition-colors hover:text-red-600">
+                                            Delete
+                                        </button>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+
+@code {
+    /* ---------- Board state ---------- */
+
+    private List<Opportunity>? opportunities;
+    private bool showForm;
+    private string newTitle = "";
+    private string newDescription = "";
+    private string newUrl = "";
+    private string searchQuery = "";
+
+    private IEnumerable<Opportunity> FilteredOpportunities =>
+        opportunities?.Where(opp =>
+            string.IsNullOrWhiteSpace(searchQuery) ||
+            opp.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+            opp.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+        ?? Enumerable.Empty<Opportunity>();
+
+    // #UpdateLink — the example text shown in the empty "Details" box on the add form.
+    private const string MarkdownPlaceholder = """
+        ## About the role
+
+        A short intro paragraph.
+
+        - Requirement one
+        - Requirement two
+
+        Apply via the [company site](https://example.com).
+        """;
+
+    /* ---------- Load, create, delete ---------- */
+
+    protected override async Task OnInitializedAsync() => opportunities = await OppSvc.GetAllAsync();
+
+    private async Task SaveOpp()
+    {
+        if (string.IsNullOrWhiteSpace(newTitle)) return;
+        await OppSvc.CreateAsync(new Opportunity
+        {
+            Title = newTitle,
+            Description = newDescription,
+            ExternalUrl = string.IsNullOrWhiteSpace(newUrl) ? null : newUrl
+        });
+        showForm = false;
+        newTitle = newDescription = newUrl = "";
+        opportunities = await OppSvc.GetAllAsync();
+    }
+
+    private async Task DeleteOpp(int id)
+    {
+        await OppSvc.DeleteAsync(id);
+        opportunities = await OppSvc.GetAllAsync();
+    }
+
+    private void GoToDetail(int id) => Nav.NavigateTo($"/opportunities/{id}");
+
+    /// <summary>
+    /// Plain-text preview for the list card. The body is markdown, so showing it raw would leak
+    /// "##" and "- " into the summary. This strips only the common inline and block markers —
+    /// it is a preview, not a renderer.
+    /// </summary>
+    private static string Excerpt(string? markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown)) return "";
+
+        var text = System.Text.RegularExpressions.Regex.Replace(markdown, @"^#{1,6}\s*", "",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*[-*+]\s+", "",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*>\s?", "",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\[([^\]]*)\]\([^)]*\)", "$1");
+        text = text.Replace("**", "").Replace("__", "").Replace("`", "");
+
+        return string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+    }
+}

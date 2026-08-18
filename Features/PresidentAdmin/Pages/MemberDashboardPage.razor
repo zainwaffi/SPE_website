@@ -11,6 +11,8 @@
 
 <DesktopOnly Title="Member Dashboard">
 <div class="max-w-6xl mx-auto px-6 py-12">
+    @* ---------- Heading and admin tool links ---------- *@
+
     <div class="flex items-start justify-between gap-4 mb-10">
         <div>
             <h1 class="text-3xl font-bold text-spe-gold mb-2">Member Dashboard</h1>
@@ -20,12 +22,12 @@
             @* A plain link, not a button: the browser downloads it directly instead of
                streaming the workbook back over the SignalR circuit. *@
             <a href="/admin/export/attendance.xlsx"
-               class="inline-flex items-center gap-2 rounded-lg border border-white/30 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+               class="spe-ghost-btn px-5">
                 <Icon Name="download" Class="h-4 w-4" />
                 Export Attendance
             </a>
             <a href="/tasks/assigned"
-               class="inline-flex items-center gap-2 rounded-lg border border-white/30 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+               class="spe-ghost-btn px-5">
                 <Icon Name="list-check" Class="h-4 w-4" />
                 Assigned Tasks
             </a>
@@ -35,6 +37,8 @@
             </a>
         </div>
     </div>
+
+    @* ---------- Last-action notification banner ---------- *@
 
     @if (notification is not null)
     {
@@ -50,6 +54,8 @@
             }
         </div>
     }
+
+    @* ---------- Member table ---------- *@
 
     @if (members is null)
     {
@@ -173,10 +179,12 @@
     }
 </div>
 
+@* ---------- Modal: assign task ---------- *@
+
 @if (assignTaskMember is not null)
 {
-    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+    <div class="spe-modal-backdrop">
+        <div class="spe-modal-card">
             <h2 class="text-xl font-bold text-spe-blue mb-6">Assign Task</h2>
             <div class="flex flex-col gap-4">
                 <input class="spe-input" placeholder="Task title" @bind="taskTitle" />
@@ -205,10 +213,12 @@
     </div>
 }
 
+@* ---------- Modal: edit member ---------- *@
+
 @if (editMember is not null)
 {
-    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+    <div class="spe-modal-backdrop">
+        <div class="spe-modal-card">
             <h2 class="text-xl font-bold text-spe-blue mb-6">Edit Member</h2>
 
             @if (!string.IsNullOrEmpty(editError))
@@ -272,10 +282,12 @@
     </div>
 }
 
+@* ---------- Modal: remove member ---------- *@
+
 @if (deleteTarget is not null)
 {
-    <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+    <div class="spe-modal-backdrop">
+        <div class="spe-modal-card">
             <h2 class="text-xl font-bold text-red-600 mb-4">Remove Member</h2>
             <p class="text-slate-600 mb-6">
                 Are you sure you want to permanently remove <strong>@deleteTarget.FullName</strong> (@deleteTarget.Email)?
@@ -297,6 +309,8 @@
 </DesktopOnly>
 
 @code {
+    /* ---------- Page state ---------- */
+
     [CascadingParameter]
     private Task<AuthenticationState>? AuthStateTask { get; set; }
 
@@ -307,11 +321,15 @@
     private EmailResult? notification;
     private string notificationAction = "";
 
+    /* ---------- Assign-task modal ---------- */
+
     private ApplicationUser? assignTaskMember;
     private string taskTitle = "";
     private string taskDescription = "";
     private string taskDeadlineString = "";
     private bool deadlineParseError;
+
+    /* ---------- Edit-member modal ---------- */
 
     private ApplicationUser? editMember;
     private string editIdentityRole = "CommitteeMember";
@@ -319,7 +337,11 @@
     private readonly HashSet<Team> editTeams = [];
     private string? editError;
 
+    /* ---------- Remove-member modal ---------- */
+
     private ApplicationUser? deleteTarget;
+
+    /* ---------- Lifecycle and actions ---------- */
 
     protected override async Task OnInitializedAsync()
     {

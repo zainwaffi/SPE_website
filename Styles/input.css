@@ -7,14 +7,52 @@
 @source "../Components/**/*.razor";
 @source "../Features/**/*.razor";
 
-/* here where you add your custom styles and components*/
+/* ---------- Design tokens ---------- */
 
 @theme {
+  /* Brand colours. */
   --color-spe-blue: #003DA5;
   --color-spe-gold: #F4A300;
   --color-spe-cobalt: #0046AD;
   --color-spe-endeavor: #0067B1;
   --color-spe-ink: #000000;
+
+  /* Volunteering / Careers panel palette (Opportunities page).
+     ---------------------------------------------------------
+     These came in as hard-coded hex values from a supplied mockup and were spread across
+     ~30 arbitrary Tailwind values in one file. They are named here so the palette is
+     greppable, editable in one place, and visible to anyone restyling the site.
+
+     They are NOT duplicates of the brand colours above — each was measured against them and
+     none is within the just-noticeable-difference threshold (ΔE 2.3). The four closest are
+     noted below; a designer could reasonably collapse those onto the brand tokens, which is
+     now a one-line change each. Anything unmarked is its own colour.
+
+     #UpdateLink — the Volunteering and Careers panel colours. */
+
+  /* Surfaces. */
+  --color-spe-panel-blue: #0047BB;        /* headings, stat figures, primary button, dark tile — ΔE 7.5 from spe-blue */
+  --color-spe-panel-blue-soft: #1257C9;   /* career route tiles — ΔE 8.6 from spe-cobalt */
+  --color-spe-panel-pale: #E6F1FB;        /* pale volunteer tile */
+  --color-spe-panel-grey: #EEF1F6;        /* "Why volunteer" panel */
+  --color-spe-panel-action: #1A72C4;      /* "Find out more" button — ΔE 6.1 from spe-endeavor */
+  --color-spe-amber: #F5A623;             /* Careers heading and route icons — ΔE 5.4 from spe-gold */
+
+  /* Ink on the pale volunteer tile. */
+  --color-spe-pale-title: #0C447C;
+  --color-spe-pale-body: #185FA5;         /* ΔE 4.1 from spe-endeavor */
+  --color-spe-pale-meta: #378ADD;
+  --color-spe-pale-rule: #CFE0F5;
+
+  /* Ink on white. */
+  --color-spe-copy: #33445E;
+  --color-spe-copy-soft: #4A5A72;
+  --color-spe-copy-strong: #1B2C47;
+
+  /* Ink on the cobalt band and the dark blue tile. */
+  --color-spe-on-dark: #DBE6F7;
+  --color-spe-on-dark-soft: #C6D8F5;
+  --color-spe-on-blue: #E3ECFA;
 
   /* Generates font-heading / font-body / font-kicker utilities, replacing the 38
      hand-written style="font-family:Montserrat, sans-serif;" attributes. */
@@ -31,6 +69,8 @@
 }
 
 @layer components {
+  /* ---------- Page furniture: shells, headings, buttons, inputs ---------- */
+
   .spe-page-shell {
     @apply mx-4 my-6 rounded-2xl border border-slate-200 bg-white/95 px-6 py-12 shadow-sm backdrop-blur md:mx-auto md:max-w-6xl lg:px-8;
   }
@@ -67,6 +107,34 @@
   .spe-input {
     @apply rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-spe-cobalt;
   }
+
+  /* Footer column headings and links. Repeated three and six times respectively before this
+     was extracted; the utilities still win over these, so a one-off variant can override. */
+  .spe-footer-heading {
+    @apply mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold;
+  }
+
+  .spe-footer-link {
+    @apply transition-colors hover:text-white;
+  }
+
+  /* Outlined button for use on the dark cobalt/photo backgrounds, where .spe-primary-btn
+     would disappear. Horizontal padding stays inline — callers use px-4 or px-5. */
+  .spe-ghost-btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-white/30 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10;
+  }
+
+  /* Modal backdrop and card. Repeated verbatim for all three dashboard dialogs; the events
+     page keeps its own slightly darker backdrop. */
+  .spe-modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4;
+  }
+
+  .spe-modal-card {
+    @apply w-full max-w-md rounded-2xl bg-white p-8 shadow-xl;
+  }
+
+  /* ---------- Rendered markdown (.spe-prose) ---------- */
 
   /* Article styling for committee-authored markdown (tutorials, opportunities).
      Hand-written rather than pulling in @plugin "@tailwindcss/typography" for two pages —
@@ -109,77 +177,59 @@
 
   .spe-prose img { @apply my-4 max-w-full rounded-lg; }
 
-  /* Photo band behind the "Why Join Us" heading on the home page.
+  /* ---------- Photo bands and tiles ---------- */
 
-     Two layers in one background property: a flat navy wash sitting over the photo, using the
-     same rgba(0, 20, 60, …) that MainLayout lays over the page banner, so the two read as one
-     treatment. The two numbers to tune are the tint's alpha (how blue) and `opacity` (how much
-     photo shows through the cobalt panel behind). The heading is a sibling of this element
-     rather than a child, so neither value touches its contrast.
+  /* #UpdateLink — the three photos below (home banner band, competitions band, academic
+     tile). Swap the master in assets/ and re-run `npm run build:images` rather than editing
+     these paths, unless you are pointing a band at a different photo entirely. */
+
+  /* One treatment for every photo panel: fill the box, centred, never tiled. Grouped rather
+     than repeated per rule — these three declarations were identical in all of them. */
+  .spe-photo-wash,
+  .spe-competition-wash,
+  .spe-academic-photo {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* The full-width bands lay a flat navy wash over the photo, using the same rgba(0, 20, 60, …)
+     MainLayout puts over the page banner, so every band on the site reads as one treatment.
+     The tint's alpha is the number to tune.
 
      `cover` alone gives both crop behaviours, which is why there is no media query here: from
-     md up the band carries the image's own 4.03:1 aspect ratio, so cover fills it edge to edge
-     with nothing cropped. Below md the band is sized by its content instead and is far squarer,
-     so the same cover crops the sides rather than letterboxing. */
+     md up a band carries the image's own aspect ratio, so cover fills it edge to edge with
+     nothing cropped. Below md the band is sized by its content instead and is far squarer, so
+     the same cover crops the sides rather than letterboxing. */
+
+  /* Behind the "Why Join Us" heading on the home page. `opacity` sets how much photo shows
+     through the cobalt panel behind it. The heading is a sibling of this element rather than a
+     child, so neither number touches its contrast. */
   .spe-photo-wash {
     background-image:
       linear-gradient(rgba(0, 20, 60, 0.4), rgba(0, 20, 60, 0.4)),
       url("/images/background-1588.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     opacity: 0.7;
   }
 
-  /* Photo in the centre column of the Volunteering block. Sits inside a white card at full
-     strength, so no tint. The background-color shows through until assets/volunteering.jpg is
-     added, which keeps the row's shape rather than leaving a gap. */
-  .spe-volunteering-photo {
-    background-color: #e2e8f0;
-    background-image: url("/images/volunteering-1280.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-
-  /* Photo at the top of the Careers feature card. Sits inside a white card at full strength,
-     so no tint. The background-color shows through until assets/careers.jpg is added, which
-     keeps the card's shape rather than leaving a gap. */
-  .spe-careers-photo {
-    background-color: #e2e8f0;
-    background-image: url("/images/careers-1280.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-
-  /* Photo beside the "Technical & Academic Development" copy. No tint — it sits in a white
-     card at full strength, unlike the cobalt bands. The background-color shows through until
-     assets/academic.jpg is added, so a missing file reads as a plain tile rather than a gap. */
-  .spe-academic-photo {
-    background-color: #e2e8f0;
-    background-image: url("/images/academic-1280.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-
-  /* Photo band behind the "Competitions & Academic Recognition" cards. Same construction as
-     .spe-photo-wash: a navy layer over the photo, matching the rgba(0, 20, 60, …) MainLayout
-     puts over the page banner, so every photo band on the site reads as one treatment.
-
-     Tinted harder than the home-page band (0.55 vs 0.4) because translucent cards sit directly
-     on top here and need a calmer backdrop to stay readable. Until the master is added the
-     photo layer 404s and the tint alone renders, which just looks like a deeper cobalt panel —
-     no broken image. */
+  /* Behind the "Competitions & Academic Recognition" cards. Tinted harder than the home band
+     (0.55 vs 0.4) because translucent cards sit directly on top here and need a calmer
+     backdrop to stay readable. */
   .spe-competition-wash {
     background-image:
       linear-gradient(rgba(0, 20, 60, 0.55), rgba(0, 20, 60, 0.55)),
       url("/images/competition-1280.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
   }
+
+  /* Beside the "Technical & Academic Development" copy. No tint — it sits in a white card at
+     full strength, unlike the cobalt bands. The background-color holds the tile's shape if the
+     image is ever missing, so it reads as a plain panel rather than a gap. */
+  .spe-academic-photo {
+    background-color: #e2e8f0;
+    background-image: url("/images/academic-1280.webp");
+  }
+
+  /* ---------- Motion: scroll reveal and embed placeholders ---------- */
 
   /* Scroll-reveal, driven entirely by wwwroot/js/ui.js — no Blazor JS interop.
      Gated on .js (set by an inline script in App.razor) so that with JavaScript
@@ -204,13 +254,22 @@
     min-height: 400px;
   }
 
-  /* A blockquote still waiting to be turned into an embed (see instagram-embed.js). */
+  /* A blockquote still waiting to be turned into an embed (see the instagram section of
+     wwwroot/js/ui.js). Centres the fallback link over the shimmer. */
   .ig-lazy {
-    @apply block w-full;
+    @apply flex w-full items-center justify-center;
     min-height: 400px;
     background: linear-gradient(100deg, #f1f5f9 30%, #e2e8f0 50%, #f1f5f9 70%);
     background-size: 200% 100%;
     animation: ig-lazy-shimmer 1.4s ease-in-out infinite;
+  }
+
+  /* The link inside a not-yet-embedded post. Instagram's embed.js replaces the blockquote's
+     contents when it processes the post, so this disappears on its own once the real embed
+     arrives — and stays if the embed never loads, which is the point: the reader always has a
+     way through to the post. */
+  .spe-ig-fallback {
+    @apply rounded-lg border border-slate-300 bg-white/80 px-4 py-2 text-sm font-semibold text-spe-cobalt shadow-sm transition-colors hover:bg-white hover:text-spe-endeavor;
   }
 
   @keyframes ig-lazy-shimmer {

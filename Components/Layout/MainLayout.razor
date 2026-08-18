@@ -1,7 +1,9 @@
 @inherits LayoutComponentBase
 
-@* Decorative background — empty alt so screen readers skip it. It is the largest paint on
-   every page, hence the explicit dimensions, srcset and high fetch priority. *@
+@* ---------- Page background ---------- *@
+
+@* Decorative — empty alt so screen readers skip it. It is the largest paint on every page,
+   hence the explicit dimensions, srcset and high fetch priority. *@
 <div class="fixed inset-0 -z-10">
     <img src="/images/banner-1280.webp"
          srcset="/images/banner-640.webp 640w, /images/banner-1280.webp 1280w, /images/banner-1920.webp 1920w"
@@ -11,145 +13,134 @@
 </div>
 
 <div class="min-h-screen flex flex-col">
+
+    @* ---------- Header and page body ---------- *@
+
     <SiteHeader />
 
     <main class="flex-1">
         @Body
     </main>
 
-    <!-- footer section -->
-
     <footer class="mt-20 bg-black text-white">
         <div class="mx-auto max-w-360 px-6 py-16 lg:px-20">
             <div class="grid grid-cols-1 gap-10 md:grid-cols-3">
-                <!-- SPE network section -->
+
+                @* ---------- Footer: Oil & Gas News ---------- *@
+
                 <div class="flex flex-col items-center">
-                    <h4
-                        class=" mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold  ">
-                        Oil & Gas News
-                    </h4>
-                    <ul class="list-disc space-y-3 text-sm text-white/70 ">
+                    <h4 class="spe-footer-heading">Oil & Gas News</h4>
+                    @* #UpdateLink — the three news links below. *@
+                    <ul class="list-disc space-y-3 text-sm text-white/70">
                         <li>
-                            @* #UpdateLinks — SPE Aberdeen Section news *@
-                            <a class="transition-colors hover:text-white" href="https://www.spe-aberdeen.org/news"
+                            <a class="spe-footer-link" href="https://www.spe-aberdeen.org/news"
                                target="_blank" rel="noopener noreferrer">SPE Aberdeen Section News</a>
                         </li>
                         <li>
-                            @* #UpdateLinks — SPE publications and insights *@
-                            <a class="transition-colors hover:text-white"
-                               href="https://www.spe.org/en/publications-and-insights/" target="_blank"
-                               rel="noopener noreferrer">SPE Resources</a>
+                            <a class="spe-footer-link" href="https://www.spe.org/en/publications-and-insights/"
+                               target="_blank" rel="noopener noreferrer">SPE Resources</a>
                         </li>
                         <li>
-                            @* #UpdateLinks — Journal of Petroleum Technology *@
-                            <a class="transition-colors hover:text-white" href="https://jpt.spe.org/" target="_blank"
-                               rel="noopener noreferrer">JPT</a>
+                            <a class="spe-footer-link" href="https://jpt.spe.org/"
+                               target="_blank" rel="noopener noreferrer">JPT</a>
                         </li>
                     </ul>
                 </div>
-                <!-- Useful links section -->
+
+                @* ---------- Footer: Useful Links ---------- *@
+
                 <div class="flex flex-col items-center">
-                    <h4
-                        class="mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold ">
-                        Useful Links
-                    </h4>
-                    @* Five placeholders. To fill one in, replace the href and the label text —
-                       add target="_blank" rel="noopener noreferrer" if it points off-site.
-                       Delete any <li> you don't end up needing. *@
+                    <h4 class="spe-footer-heading">Useful Links</h4>
+                    @* #UpdateLink — the three links below. To change one, edit its href and its
+                       label text. To add another, copy a whole <li>; to drop one, delete its <li>.
+                       Keep target="_blank" rel="noopener noreferrer" on anything off-site. *@
                     <ul class="space-y-3 text-sm text-white/70">
                         <li>
-                            @* #UpdateLinks — useful link 1 *@
-                            <a class="transition-colors hover:text-white" href="https://connect.spe.org/home" target="_blank" rel="noopener noreferrer">SPE Connect</a>
+                            <a class="spe-footer-link" href="https://connect.spe.org/home"
+                               target="_blank" rel="noopener noreferrer">SPE Connect</a>
                         </li>
                         <li>
-                            @* #UpdateLinks — useful link 2 *@
-                            <a class="transition-colors hover:text-white" href="https://www.energy4me.org/" target="_blank" rel="noopener noreferrer">Energy4me</a>
+                            <a class="spe-footer-link" href="https://www.energy4me.org/"
+                               target="_blank" rel="noopener noreferrer">Energy4me</a>
                         </li>
                         <li>
-                            @* #UpdateLinks — useful link 3 *@
-                            <a class="transition-colors hover:text-white" href="https://www.linkedin.com/company/spe-young-members/posts/" target="_blank" rel="noopener noreferrer">Young Professionals</a>
+                            <a class="spe-footer-link" href="https://www.linkedin.com/company/spe-young-members/posts/"
+                               target="_blank" rel="noopener noreferrer">Young Professionals</a>
                         </li>
-
                     </ul>
                 </div>
 
-                    <!-- Contact Us section -->
-                    <div class="flex flex-col items-center">
-                        <h4
-                            class="mb-5 border-b border-spe-gold pb-2 font-heading text-xl font-bold uppercase tracking-[0.2em] text-spe-gold">
-                            Contact Us
-                        </h4>
-                        <div class="flex flex-row gap-4">
-                            @* #UpdateLinks — chapter contact address *@
-                            <a href="mailto:spe@ausa.org.uk" aria-label="Email the chapter">
-                                <Icon Name="envelope" Class="h-8 w-8" />
-                            </a>
-                            @* #UpdateLinks — Instagram *@
-                            <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
-                               target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                                <Icon Name="instagram" Class="h-8 w-8" />
-                            </a>
-                            @* #UpdateLinks — LinkedIn *@
-                            <a href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true" target="_blank"
-                               rel="noopener noreferrer" aria-label="LinkedIn">
-                                <Icon Name="linkedin" Class="h-8 w-8" />
-                            </a>
-                            <AuthorizeView>
-                                <Authorized Context="memberLinks">
-                                    @* #UpdateLinks — WhatsApp group invite *@
-                                    <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" target="_blank"
-                                       rel="noopener noreferrer" aria-label="WhatsApp group">
-                                        <Icon Name="whatsapp" Class="h-8 w-8" />
-                                    </a>
-                                </Authorized>
-                            </AuthorizeView>
-                            @* #UpdateLinks — source repository *@
-                            <AuthorizeView Roles="TeamLeader">
-                                <Authorized Context="repoLink">
-                                    <a href="https://github.com/zainwaffi/SPE_website" target="_blank"
-                                       rel="noopener noreferrer" aria-label="Source repository">
-                                        <Icon Name="github" Class="h-8 w-8" />
-                                    </a>
-                                </Authorized>
-                            </AuthorizeView>
-                        </div>
-                        @* #UpdateLinks — AUSA society sign-up *@
-                        <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer"
-                           class="spe-primary-btn mt-6 inline-block">
-                            Join Our University Society
+                @* ---------- Footer: Contact Us ---------- *@
+
+                <div class="flex flex-col items-center">
+                    <h4 class="spe-footer-heading">Contact Us</h4>
+                    @* #UpdateLink — chapter contact address, social accounts, and the society
+                       sign-up button at the bottom of this block. The WhatsApp invite is shown
+                       to signed-in members only; the repository link to Team Leaders only. *@
+                    <div class="flex flex-row gap-4">
+                        <a href="mailto:spe@ausa.org.uk" aria-label="Email the chapter">
+                            <Icon Name="envelope" Class="h-8 w-8" />
                         </a>
+                        <a href="https://www.instagram.com/spe_aberdeen?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                           target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                            <Icon Name="instagram" Class="h-8 w-8" />
+                        </a>
+                        <a href="https://www.linkedin.com/company/speabdnuni/?viewAsMember=true" target="_blank"
+                           rel="noopener noreferrer" aria-label="LinkedIn">
+                            <Icon Name="linkedin" Class="h-8 w-8" />
+                        </a>
+                        <AuthorizeView>
+                            <Authorized Context="memberLinks">
+                                <a href="https://chat.whatsapp.com/JmBsysaef0jLvk5EY5WhAh" target="_blank"
+                                   rel="noopener noreferrer" aria-label="WhatsApp group">
+                                    <Icon Name="whatsapp" Class="h-8 w-8" />
+                                </a>
+                            </Authorized>
+                        </AuthorizeView>
+                        <AuthorizeView Roles="TeamLeader">
+                            <Authorized Context="repoLink">
+                                <a href="https://github.com/zainwaffi/SPE_website" target="_blank"
+                                   rel="noopener noreferrer" aria-label="Source repository">
+                                    <Icon Name="github" Class="h-8 w-8" />
+                                </a>
+                            </Authorized>
+                        </AuthorizeView>
                     </div>
+                    <a href="https://www.ausa.org.uk/organisation/speabdn/" target="_blank" rel="noopener noreferrer"
+                       class="spe-primary-btn mt-6 inline-block">
+                        Join Our University Society
+                    </a>
                 </div>
             </div>
+        </div>
 
-            <!-- copyright bar -->
+        @* ---------- Footer: copyright ---------- *@
 
-            <div class="mx-auto max-w-360 px-6 py-6 lg:px-20">
-                <p class="text-xs text-white/60">
-                    Copyright @CopyrightYears, SPE University of Aberdeen Student Chapter. All rights reserved.
-                </p>
-                <p class="text-xs text-white/40">
-                    Trademarks and materials belonging to the Society of Petroleum Engineers and other third parties
-                    remain the property of their respective owners and are used with permission.
-                </p>
-            </div>
+        <div class="mx-auto max-w-360 px-6 py-6 lg:px-20">
+            <p class="text-xs text-white/60">
+                Copyright @CopyrightYears, SPE University of Aberdeen Student Chapter. All rights reserved.
+            </p>
+            <p class="text-xs text-white/40">
+                Trademarks and materials belonging to the Society of Petroleum Engineers and other third parties
+                remain the property of their respective owners and are used with permission.
+            </p>
+        </div>
+    </footer>
+</div>
 
-        </footer>
-    </div>
+@* ---------- Unhandled-error banner ---------- *@
 
-    <!--Footer section end-->
-
-    <div id="blazor-error-ui"
-         class="hidden fixed bottom-4 right-4 bg-red-50 border border-red-300 text-red-800 p-4 rounded-lg shadow-lg z-50"
-         data-nosnippet>
-        An unhandled error has occurred.
-        <a href="." class="underline ml-2">Reload</a>
-    </div>
+@* Shown by Blazor itself when a circuit throws; hidden until then. *@
+<div id="blazor-error-ui"
+     class="hidden fixed bottom-4 right-4 bg-red-50 border border-red-300 text-red-800 p-4 rounded-lg shadow-lg z-50"
+     data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="underline ml-2">Reload</a>
+</div>
 
 @code {
-    // Date range reflects that website content was written across different years.
-
-    // Updates: Update the founding year to the year the website was launched.
+    // #UpdateLink — the year the site launched. The copyright line reads "2026" on its own
+    // until the current year moves past it, then becomes a range.
     private const int FoundingYear = 2026;
 
     private static string CopyrightYears =>

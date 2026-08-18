@@ -6,6 +6,8 @@
 <PageTitle>Tutorials — SPE Chapter</PageTitle>
 
 <div class="spe-page-shell md:max-w-300">
+    @* ---------- Heading ---------- *@
+
     <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
             <p class="spe-page-kicker">Tutorials & Courses</p>
@@ -18,6 +20,8 @@
             </Authorized>
         </AuthorizeView>
     </div>
+
+    @* ---------- New tutorial form (Team Leader only) ---------- *@
 
     @if (showForm)
     {
@@ -102,6 +106,8 @@
             </div>
         </section>
     }
+
+    @* ---------- Tutorial list ---------- *@
 
     @if (!loaded)
     {

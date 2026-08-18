@@ -55,6 +55,7 @@ public class AdminService(
         user.StrikeCount++;
         await db.SaveChangesAsync();
 
+        // #UpdateLink — wording of the strike-added email (subject line, then the body).
         var notification = await SendNotificationAsync(
             user,
             "Strike Notice — SPE Chapter",
@@ -82,6 +83,7 @@ public class AdminService(
         user.StrikeCount--;
         await db.SaveChangesAsync();
 
+        // #UpdateLink — wording of the strike-removed email (subject line, then the body).
         var notification = await SendNotificationAsync(
             user,
             "Strike Removed — SPE Chapter",
@@ -125,6 +127,7 @@ public class AdminService(
         if (user is null)
             return (task, EmailResult.Failure("Member not found, so no notification was sent."));
 
+        // #UpdateLink — wording of the task-assigned email (subject line, then the body).
         var notification = await SendNotificationAsync(
             user,
             $"New Task Assigned: {title} — SPE Chapter",

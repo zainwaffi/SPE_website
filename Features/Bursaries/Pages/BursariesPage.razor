@@ -7,7 +7,12 @@
    Static SSR: the content is fixed copy with no state or event handlers, so this must not
    open a SignalR circuit (see AGENTS.md). *@
 
-<PageTitle>Scholarships and Bursaries — SPE Chapter</PageTitle>
+@* #UpdateLink — tab title, the description used in search results and link previews,
+   and the preview image. *@
+<PageMeta Title="Scholarships and Bursaries — SPE Chapter"
+          Description="Funding for students on energy and engineering degrees: the SPE Aberdeen student bursary, free student membership, and the graduate dues discount."
+          Image="/images/bursaries-1280.webp"
+          ImageAlt="Students and staff from the SPE student chapter at a lecture on the energy transition." />
 
 @* Cobalt band matching the home page's "Why Join Us" and the Technical & Academic Development
    panel. Copy lives in the @@code block so the markup stays one card loop. *@
@@ -21,6 +26,9 @@
                 related to energy and engineering.
             </p>
         </div>
+
+        @* #UpdateLink — the group photo below: replace assets/bursaries.jpg and re-run
+           `npm run build:images`, then update the alt text to describe the new picture. *@
 
         @* Chapter group photo. This is content rather than decoration — it shows who the funding
            is for — so it is an <img> with alt text instead of one of the .spe-*-photo background
@@ -75,7 +83,9 @@
 </FadeUp>
 
 @code {
-    // #UpdateContent: scholarship and bursary copy. Edit here rather than in the markup above.
+    /* ---------- Page content ---------- */
+
+    // #UpdateLink — scholarship and bursary copy. Edit here rather than in the markup above.
     private static readonly SupportOption[] SupportOptions =
     [
         new("trophy", "SPE Aberdeen Student Bursary Programme",

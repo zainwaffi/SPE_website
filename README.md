@@ -4,297 +4,60 @@ The web portal for the Society of Petroleum Engineers student chapter at the Uni
 Aberdeen. It is two things at once: a public shopfront for the chapter, and a private
 workspace for the committee that runs it.
 
-For a technical breakdown of every model, page, and service, see [SUMMARY.md](SUMMARY.md).
+Built with **Blazor Server (.NET 10)**, **PostgreSQL** via Entity Framework Core, and
+**Tailwind CSS v4**.
+
+- Full technical breakdown of every model, page and service: **[SUMMARY.md](SUMMARY.md)**
+- Known gaps and the deployment plan: **[PLAN.md](PLAN.md)**
+
+> **⚠️ Credentials.** `appsettings.json` is a template with no secrets in it and is untracked.
+> Real values come from user-secrets locally and environment variables in production — see
+> Configuration below. The **original** credentials are still in git history from earlier
+> commits, which is harmless only because both have been rotated. Do not put a password back
+> into this file.
 
 ---
 
-## Who it is for
+## Who can see what
 
-**Prospective students and the public.** Anyone can browse the home page and the events
-listing — upcoming events with dates, locations, and Instagram posts, plus past events with
-star ratings and comments. No account needed. This is the recruiting surface.
+Access runs on three ASP.NET Identity roles, seeded automatically at startup. They do **not**
+inherit from one another — every committee-level check names both roles explicitly, which is
+what makes the tiers cumulative in practice.
 
-**SPE members.** Anyone who signs in gets the members-only content: the opportunities board
-(jobs and internships from energy companies, with full detail pages and application links)
-and the courses library (curated YouTube learning videos). Sign-in is verified against real
-SPE membership, so this content stays inside the society.
-
-**The committee.** Committee members get a working area on top of that: their own profile
-with strike status, their assigned tasks with the ability to mark them complete or failed,
-and a tutorials hub of standard-operating-procedure videos. They can also publish and remove
-events, opportunities, and courses.
-
-**The chapter leadership.** Team Leaders run the admin area: create and edit member records,
-change roles and committee titles, issue and remove strikes, assign tasks with deadlines
-through either a member table or a calendar view, and delete accounts. Members are emailed
-automatically when they receive a strike, have one removed, or are assigned a task.
-
----
-
-## Identity roles and authorization
-
-Access is controlled by **three ASP.NET Identity roles**, seeded automatically on startup:
-
-| Role | Who holds it | Can access |
+| Role | Who holds it | Gets |
 |---|---|---|
-| *(anonymous)* | Any visitor | Home, Events (view and rate) |
-| `Member` | Any verified SPE member | The above, plus Opportunities and Courses |
-| `CommitteeMember` | Chapter officers | The above, plus Profile, Tasks, Tutorials, and create/delete rights on events, opportunities, and courses |
+| *(anonymous)* | Any visitor | Home, Events, Scholarships, the written parts of Opportunities and Courses |
+| `Member` | Any verified SPE member | The above, plus the opportunity board and the video library |
+| `CommitteeMember` | Chapter officers | The above, plus Profile, Tasks, Tutorials, and publish/delete rights |
 | `TeamLeader` | Chapter leadership | Everything, plus the Member Dashboard and Task Calendar |
 
-Identity roles do **not** inherit from one another. The tiers above are cumulative only
-because every committee-level check names both roles explicitly
-(`Roles="CommitteeMember,TeamLeader"`), so a Team Leader passes on its own. Holding
-`TeamLeader` alone is enough for the whole site; the bootstrap account is granted both roles
-as belt-and-braces, not because it is required.
-
-### Committee titles are not permissions
-
-Alongside Identity roles, each member has a free-form **committee title** — "President",
-"Vice President", "Treasurer", and so on. This is a **display label only**. It grants no
-access whatsoever. Someone titled "President" whose Identity role is `Member` has no admin
-rights. All access decisions are made on the three Identity roles above.
-
-### How roles are assigned
-
-Login is **password-less**. A user enters their email, and the app verifies it against the
-external **OpenWater** SPE membership directory. If OpenWater has no record, sign-in is
-refused and the user is offered a link to join SPE.
-
-On a member's **first** login, they are given `CommitteeMember` if OpenWater reports them as a
-student chapter officer, otherwise `Member`. On every login after that, existing roles are
-left alone — so role changes made by a Team Leader in the admin panel are never overwritten by
-a later login. Promoting someone to `TeamLeader` is a manual action in the Member Dashboard.
-
-### Where it is enforced
-
-Four layers, described in full in [SUMMARY.md](SUMMARY.md#3-authorization-system):
-
-1. **Router** — `AuthorizeRouteView` in `Components/Routes.razor`. This is what makes page
-   attributes take effect; a plain `RouteView` ignores them silently.
-2. **Page** — `@attribute [Authorize(Roles = "…")]` on each `.razor` page.
-3. **Markup** — `<AuthorizeView>` hides buttons and nav links from users who cannot use them.
-4. **Service** — `AdminService` re-checks the acting user's role before role changes.
+A member's **committee title** ("President", "Treasurer", …) is a display label only. It
+grants nothing. Login is password-less: the email is verified against SPE's OpenWater
+membership system, which decides the role.
 
 ---
 
-## Tech stack
+## Running it locally
 
-| Layer | Technology |
-|---|---|
-| Runtime | .NET 10 (`net10.0`) |
-| Web framework | ASP.NET Core, Blazor Web App — **Interactive Server** render mode |
-| UI transport | SignalR (Blazor Server circuits) |
-| Database | PostgreSQL |
-| ORM | Entity Framework Core 10 with `Npgsql.EntityFrameworkCore.PostgreSQL` |
-| Authentication | ASP.NET Core Identity (cookie), email-only sign-in against the OpenWater API |
-| Styling | Tailwind CSS v4, compiled by the Tailwind CLI |
-| Markdown | Markdig (opportunity descriptions) |
-| Email | MailKit over SMTP |
-| Icons / fonts | Font Awesome 4.7, Google Fonts (Montserrat, Open Sans, Roboto Mono) |
-| Front-end tooling | Node.js + npm (Tailwind CLI only — no bundler, no SPA framework) |
-
-There is no JavaScript framework. The only custom JS is two small files: a lazy-loader for
-Instagram embeds and a scroll-reveal animation helper.
-
-## External services
-
-| Service | Used for | Failure behaviour |
-|---|---|---|
-| **OpenWater** (`openwater-os.secure-platform.com`) | Verifying SPE membership at login and pulling profile data | Login fails for everyone except the bootstrap admin |
-| **PostgreSQL** (currently hosted on Supabase) | All application data, including Identity tables | App fails to start — migrations run on startup |
-| **SMTP** (currently Gmail) | Strike and task notification emails | Logged and reported in the UI; the underlying action still succeeds |
-| **Instagram embed API** | Rendering event posts | Embed slots stay blank; the rest of the page is unaffected |
-
----
-
-## Project layout
-
-```text
-Features/               One folder per business capability (vertical slices)
-  Authentication/         Email sign-in via the OpenWater directory
-  Courses/                Learning-video library (sign-in required)
-  Events/                 Event listings, ratings, and management
-  MemberProfile/          Member profile page
-  Opportunities/          Jobs and internships board
-  PresidentAdmin/         Member dashboard, strikes, task assignment, calendar
-  Tasks/                  Personal task tracking
-  Tutorials/              Committee SOP video hub
-Data/                   AppDbContext and the ApplicationUser Identity model
-Shared/                 Cross-cutting services and models (email)
-Components/             App shell, layouts, router, shared components
-Styles/input.css        Tailwind source and SPE design tokens
-Migrations/             EF Core migration history
-wwwroot/                Static assets, compiled CSS, custom JS
-```
-
-Each feature folder keeps its own `Models/`, `Pages/`, and `Services/` together. Features do
-not reference each other — they share only `Data/` and `Shared/`.
-
----
-
-## Updating the chapter's links
-
-Every outward-facing link the committee owns — social media, the contact address, SPE and AUSA
-pages — is marked in the source with a `#UpdateLinks` comment on the line above it. To find
-them all:
+Prerequisites: the **.NET 10 SDK**, **Node.js**, and a **PostgreSQL** database.
 
 ```bash
-grep -rn "#UpdateLinks" Components/ Features/
-```
+npm install                                   # Tailwind CLI + the image optimiser
 
-Your editor's project-wide search for `#UpdateLinks` works just as well. Each marker names what
-the link is for, so you can change the URL without reading the surrounding markup:
-
-```razor
-@* #UpdateLinks — Instagram *@
-<a href="https://www.instagram.com/spe_aberdeen?…" target="_blank" rel="noopener noreferrer">
-```
-
-They currently live in three files:
-
-| File | Links |
-|---|---|
-| `Components/Layout/MainLayout.razor` | Footer: **Useful Links ×5 (all blank)**, SPE Aberdeen news, SPE publications, JPT, contact email, Instagram, LinkedIn, WhatsApp, source repo, AUSA sign-up |
-| `Components/Pages/Home.razor` | SPE membership sign-up, SPE homepage, SPE awards stories |
-| `Features/Events/Pages/EventsPage.razor` | Contact email, LinkedIn, collaboration enquiries, and the four calendar-subscription URLs (in the `@code` block, as `//` comments) |
-
-### Calendar subscription links
-
-The "Add SPE Event Calendar" modal offers four routes to the same calendar — Apple, Google,
-Outlook, and a raw `.ics` URL to paste anywhere else. They are four separate `#UpdateLinks`
-constants in `EventsPage.razor`, not derived from one another, because each is that platform's
-own subscribe entry point. **If the calendar address changes, all four need editing.**
-
-They point at the chapter's shared Google Calendar (`spe@ausa.org.uk`) — **not** at the feed
-this app builds from its own Events table at `/events/calendar.ics`. That endpoint still works
-and is still served, but nothing links to it, so an event added through the admin UI does not
-reach subscribers unless it is also added to the Google Calendar.
-
-### The "Useful Links" footer column
-
-The middle footer column is five **empty placeholders**, waiting to be filled in. Each is a
-`<li>` with a `#UpdateLinks` marker; to activate one, change the `href` and the label text:
-
-```razor
-<li>
-    @* #UpdateLinks — useful link 1 *@
-    <a class="transition-colors hover:text-white" href="#">Useful link 1</a>
-</li>
-```
-
-becomes
-
-```razor
-<li>
-    @* #UpdateLinks — SPE student chapter handbook *@
-    <a class="transition-colors hover:text-white" href="https://www.spe.org/…"
-       target="_blank" rel="noopener noreferrer">Student Chapter Handbook</a>
-</li>
-```
-
-Delete any `<li>` you don't need — the column has no fixed length. Until they are filled in,
-the placeholders **are visible to the public** and their `href="#"` does nothing when clicked.
-
-Two things to know when editing any of these:
-
-- **Keep `target="_blank" rel="noopener noreferrer"`** on external links. Without `rel`, the
-  page you link to can reach back into this one through `window.opener`.
-- **Internal links are not marked.** Paths like `/events` and `/profile` are routes defined by
-  the `@page` directive on each page, not content — changing one means renaming the route.
-
-> **Known gap:** the "Collaboration enquiries" link in `EventsPage.razor` has an empty
-> `href=""` and currently goes nowhere. It is marked with `#UpdateLinks`; give it a real
-> destination or remove the list item.
-
-When you add a new outward-facing link, add a `#UpdateLinks` comment above it so it shows up in
-the same search.
-
----
-
-## Writing content with Markdown
-
-Two things are written in Markdown by the committee:
-
-- **Tutorial articles** — when a tutorial's format is *Written article* rather than *YouTube video*
-- **Opportunity postings** — the body of a job or internship listing
-
-Both are rendered by `Shared/MarkdownRenderer.cs`. New to Markdown? The
-[Markdown cheat sheet](https://www.markdownguide.org/cheat-sheet/) is the quickest reference.
-
-### Supported syntax
-
-| What you write | What you get |
-|---|---|
-| `# Heading` … `#### Heading` | Headings, four levels |
-| `**bold**` · `*italic*` · `***both***` | **bold** · *italic* · ***both*** |
-| `- item` or `* item` | Bullet list (indent two spaces to nest) |
-| `1. item` | Numbered list |
-| `a. item` · `i. item` | Lettered and roman-numeral lists |
-| `[text](https://example.com)` | Link |
-| `https://example.com` on its own | Turned into a link automatically |
-| `[text](mailto:someone@example.com)` | Email link |
-| `[text](/tutorials)` | Link to another page on this site |
-| `![description](https://example.com/photo.png)` | Image |
-| `> quoted text` | Block quote |
-| `` `code` `` | Inline code |
-| ` ```csharp ` … ` ``` ` | Fenced code block, optionally with a language |
-| `\| a \| b \|` with a `\|---\|---\|` row under it | Table |
-| `---` on its own line | Horizontal rule |
-| `~~struck through~~` | ~~struck through~~ |
-| `==highlighted==` | Highlighted text |
-| `H~2~O` · `x^2^` | Subscript and superscript |
-| `++inserted++` | Underlined/inserted text |
-| Two spaces at the end of a line | Line break within a paragraph |
-
-A blank line starts a new paragraph. A single newline does not — put two spaces at the end of
-a line if you want a break without a new paragraph.
-
-### Not supported
-
-Task lists (`- [ ] item`), footnotes, definition lists, LaTeX maths, and Mermaid diagrams are
-**not** enabled. They will show as plain text rather than rendering.
-
-**Raw HTML is deliberately disabled.** Typing `<b>bold</b>` prints the tags rather than
-applying them, and `javascript:` links are stripped. This is a security measure, not an
-oversight: article authors are trusted committee members, but without it a committee member
-could plant a script in an article and hijack a Team Leader's session the next time they
-opened it. Use the Markdown syntax above instead.
-
-To change what is supported, edit the pipeline in `Shared/MarkdownRenderer.cs` — and update
-the tables above to match. Note that Markdig's `UseAdvancedExtensions()` must **not** be used:
-it enables generic attributes, which would let an author attach an `onclick` handler to any
-element and reopen the hole described above.
-
----
-
-## Running locally
-
-### Prerequisites
-
-- .NET 10 SDK
-- Node.js and npm
-- A PostgreSQL database (local or hosted)
-
-### Steps
-
-```bash
-# 1. Install the Tailwind CLI
-npm install
-
-# 2. Configure secrets (see below) — do not skip this
-dotnet user-secrets init
+# Credentials live outside the repo. Note the colon separator — environment variables use __
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=…;Database=…;Username=…;Password=…"
+dotnet user-secrets set "EmailSettings:Password" "…"        # optional; email is skipped if blank
 
-# 3. Run. Migrations are applied automatically on startup.
-dotnet run
+dotnet run                                    # migrations run automatically on startup
 ```
 
-The app starts on <http://localhost:5169> (and <https://localhost:7256> with the `https`
-profile). Tailwind compiles automatically as part of `dotnet build` via an MSBuild target, so
-step 1 is all the CSS setup needed.
+The `<UserSecretsId>` is already in the csproj, so `init` is not needed. Secrets are stored per
+machine at `%APPDATA%\Microsoft\UserSecrets\<id>\secrets.json` and are not shared — each
+committee member runs the two `set` commands once on their own machine.
 
-While working on styles, run the watcher in a second terminal:
+The site comes up on <http://localhost:5169>. Tailwind rebuilds as part of `dotnet build`, so
+there is no separate CSS step — but while working on styles it is quicker to run the watcher
+in a second terminal:
 
 ```bash
 npm run watch:css
@@ -302,97 +65,138 @@ npm run watch:css
 
 ---
 
+## Where things live
+
+```
+Components/           Shared shell — App, Routes, MainLayout, SiteHeader, Home
+  Shared/             Reusable pieces: Icon, FadeUp, Markdown, PageMeta, DesktopOnly, SortToggleButton
+Features/             One folder per feature, with Pages/ Models/ Services/ and, where a page
+                      needs a circuit for only part of itself, Components/
+  Authentication/     Password-less login against SPE OpenWater
+  Bursaries/          Scholarships page (static copy)
+  Courses/            Public intro + members-only video library
+  Events/             Events listing, sign-ups, ratings, attendee check-in
+  MemberProfile/      A committee member's own profile and strikes
+  Opportunities/      Public volunteering/careers copy + members-only job board
+  PresidentAdmin/     Member dashboard, task calendar, attendance export
+  Tasks/              Task list and assigned-task views
+  Tutorials/          Internal SOP video library
+Data/                 AppDbContext and the Identity user model
+Shared/               Cross-feature helpers: UkTime, YouTubeUrl, MarkdownRenderer, EmailService
+Styles/input.css      The only hand-written CSS. Compiles to wwwroot/tailwind.css
+assets/               Image masters. Never served — the optimiser reads from here
+wwwroot/              Served files: compiled CSS, JS, and optimised WebP images
+scripts/              optimize-images.mjs
+Migrations/           EF Core migrations, applied automatically at startup
+```
+
+Every `.razor`, `.cs` and `.css` file is divided into labelled sections that follow the order
+things appear on the page:
+
+```
+@* ---------- Volunteering ---------- *@      in markup
+/* ---------- Volunteering ---------- */      in C# and CSS
+```
+
+---
+
+## Editing the content
+
+### Find what you need with `#UpdateLink`
+
+Anything a non-developer would realistically want to change — external URLs, contact
+addresses, image paths, statistics, button labels, hard-coded body copy — is tagged with a
+single marker. Search the project for:
+
+```
+#UpdateLink
+```
+
+VS Code: `Ctrl+Shift+F`, type `#UpdateLink`. There are around 44 of them, and each one names
+what it covers. A marker sitting above a block covers everything in that block, so you will
+not find one on every individual line.
+
+Most page copy is **not** in the markup. Text that repeats as cards or tiles lives in arrays
+in the `@code` block at the bottom of the page — edit it there and the markup follows.
+
+### Page titles and link previews
+
+Each public page passes its own title, search description and preview image to `<PageMeta>` at
+the top of the file — that is what a link shows when it is pasted into Instagram, WhatsApp or
+LinkedIn. That block is tagged `#UpdateLink`. Keep descriptions to roughly 150 characters; past
+that, search results and previews truncate.
+
+`/robots.txt` and `/sitemap.xml` are generated by the app from the incoming request, so they
+need no editing when the domain changes. The list of public routes they advertise lives in
+`Program.cs`, also tagged `#UpdateLink` — add to it when you add a public page.
+
+### Swapping a photo
+
+1. Drop the new picture into `assets/` under the **same filename** as the one it replaces.
+2. Run `npm run build:images`.
+3. If it is an `<img>` rather than a background, update its `alt` text to describe the new
+   picture.
+
+The optimiser resizes and re-encodes every master into WebP in `wwwroot/images/`. It skips
+anything already up to date, so re-running it is cheap. To add a new image, copy an existing
+entry in the `jobs` list in `scripts/optimize-images.mjs`.
+
+### Tutorials and opportunity postings
+
+These are written in **Markdown** by committee members through the site itself, not in code.
+Supported: headings, **bold**, *italic*, `code`, lists, links, tables, blockquotes,
+strikethrough. Raw HTML is deliberately stripped, and links are restricted to
+`http`/`https`/`mailto`/`tel` — a pasted `javascript:` link is neutralised rather than
+rendered.
+
+---
+
 ## Configuration
 
-Two settings groups are required. **Do not put real values in `appsettings.json`** — use user
-secrets in development and environment variables in production.
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=<host>;Port=5432;Database=<db>;Username=<user>;Password=<pw>;SSL Mode=Require;Trust Server Certificate=true"
-  },
-  "EmailSettings": {
-    "SmtpHost": "<smtp-host>",
-    "SmtpPort": 587,
-    "Username": "<smtp-user>",
-    "Password": "<smtp-password>",
-    "From": "<sender-address>"
-  }
-}
-```
-
-As environment variables, nested keys use a double underscore:
+Two groups of settings are required. **Do not put real values in `appsettings.json`** — use
+user secrets locally and environment variables in production. Nested keys use a double
+underscore as environment variables:
 
 ```bash
-ConnectionStrings__DefaultConnection="Host=…"
+ConnectionStrings__DefaultConnection="Host=…;Database=…;Username=…;Password=…;SSL Mode=Require"
 EmailSettings__SmtpHost="smtp.gmail.com"
+EmailSettings__SmtpPort="587"
+EmailSettings__Username="…"
 EmailSettings__Password="…"
+EmailSettings__From="…"
+EmailSettings__FromName="SPE Aberdeen Student Chapter"
+EmailSettings__ReplyTo=""          # optional; falls back to From
 ```
 
-If `EmailSettings` is left blank the app still runs — `EmailService` logs a warning and
-reports the email as unsent, while strikes and task assignments still save correctly.
+If `EmailSettings` is left blank the app still runs. `EmailService` reports the email as
+unsent and strikes and task assignments still save correctly.
 
-> **⚠️ Security notice.** The `appsettings.json` currently in this repository contains a live
-> database password and a live Gmail app password in plain text. Anyone with repository access
-> has full control of the production database. **Rotate both credentials and move them out of
-> source control** before this repo is shared, made public, or handed to a new committee. See
-> [SUMMARY.md](SUMMARY.md#7-known-issues-and-rough-edges).
+### The bootstrap administrator
 
-### Bootstrap administrator
-
-A Team Leader account is seeded on every startup, and the same address is hardcoded in
-`OpenWaterAuthService` as a fallback that can sign in even when OpenWater has no record for
-it. Change both to a chapter-owned address when the current holder hands over:
+One Team Leader account is seeded on every startup so the site can never lock itself out of
+its own admin. The same address is also hardcoded as a fallback that can sign in even when
+OpenWater has no record for it. When the current holder hands over, change **both** (each is
+tagged `#UpdateLink`):
 
 - `Program.cs` — the `adminEmail` constant
 - `Features/Authentication/Services/OpenWaterAuthService.cs` — the `FullAccessEmail` constant
 
 ---
 
-## Deployment
+## Deploying
 
-The app is a standard ASP.NET Core server application. It needs a host that can run a
-long-lived .NET process — **not** static hosting, because Blazor Server keeps an open SignalR
-connection per user.
-
-### Build
+This is a long-running ASP.NET Core server app, not a static site — Blazor Server holds an
+open SignalR connection per visitor, so static hosts will not work.
 
 ```bash
-npm install
-npm run build:css
+npm install && npm run build:css
 dotnet publish -c Release -o ./publish
 ```
 
-Deploy the contents of `./publish` and start it with `dotnet SPE_website.dll`.
+Deploy `./publish` and start it with `dotnet SPE_website.dll`. The host needs WebSockets
+enabled, HTTPS, `ASPNETCORE_ENVIRONMENT=Production`, and sticky sessions if you ever run more
+than one instance. Migrations apply themselves on startup, so a fresh empty database is
+enough.
 
-### Host requirements
-
-- **WebSockets must be enabled.** Blazor Server needs them; without WebSockets it falls back
-  to long polling, which is noticeably slower and less reliable.
-- **Sticky sessions** if running more than one instance — a circuit is bound to the instance
-  that created it.
-- **HTTPS**, since `UseHttpsRedirection` and `UseHsts` are enabled outside development.
-- Set `ASPNETCORE_ENVIRONMENT=Production`.
-
-### Database migrations
-
-Migrations are applied automatically at startup by `db.Database.MigrateAsync()`, so no manual
-step is needed on deploy. To add one during development:
-
-```bash
-dotnet ef migrations add <Name>
-dotnet ef database update
-```
-
-Startup also seeds the `TeamLeader`, `CommitteeMember`, and `Member` roles and the bootstrap
-admin account, so a fresh empty database is enough to get a working deployment.
-
-### Deployment checklist
-
-- [ ] Connection string set via environment variables, not `appsettings.json`
-- [ ] SMTP credentials set via environment variables
-- [ ] Committed credentials rotated and removed from source control
-- [ ] Bootstrap admin email changed to a chapter-owned address
-- [ ] WebSockets enabled on the host
-- [ ] HTTPS certificate in place
+Step-by-step instructions, hosting options and a pre-flight checklist are in
+**[PLAN.md](PLAN.md)**.

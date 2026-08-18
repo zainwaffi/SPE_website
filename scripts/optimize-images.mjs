@@ -19,6 +19,9 @@ const assets = path.join(root, "assets");
 const wwwroot = path.join(root, "wwwroot");
 
 /** @type {{src: string, out: string, width: number, height?: number, format?: "webp"|"png", quality?: number, position?: string}[]} */
+// #UpdateLink — every served image on the site is produced here. To swap a photo, replace
+// the master in assets/ under the same filename and re-run `npm run build:images`; only edit
+// a job when you are adding a new image or changing the size it is rendered at.
 const jobs = [
     // Full-bleed page background (MainLayout). Three widths behind a srcset.
     { src: "banner.jpg", out: "images/banner-640.webp", width: 640, quality: 72 },
@@ -39,41 +42,22 @@ const jobs = [
     // for a photograph, which is most of that size.
     { src: "background.png", out: "images/background-1588.webp", width: 1588, quality: 80 },
 
-    // Photo in the Volunteering block's centre column (.spe-volunteering-photo). Rendered in a
-    // half-width aspect-4/3 box. Drop the master in as assets/volunteering.jpg.
-    { src: "volunteering.jpg", out: "images/volunteering-1280.webp", width: 1280, quality: 78 },
-
-    // Photo at the top of the Careers feature card (.spe-careers-photo). Rendered in a
-    // max-w-sm aspect-video box, so 1280 covers it on a high-DPI screen.
-    // Drop the master in as assets/careers.jpg.
-    { src: "careers.jpg", out: "images/careers-1280.webp", width: 1280, quality: 78 },
-
     // Photo beside the "Technical & Academic Development" copy (.spe-academic-photo). Rendered
     // in a half-width aspect-4/3 box, so 1280 covers it on a high-DPI screen.
-    // Drop the master in as assets/academic.jpg.
     { src: "academic.jpg", out: "images/academic-1280.webp", width: 1280, quality: 78 },
 
     // Photo behind the "Competitions & Academic Recognition" band (.spe-competition-wash).
-    // Drop the master in as assets/competition.jpg; until then this job logs a SKIP and the
-    // band renders as the navy tint alone.
     { src: "competition.jpg", out: "images/competition-1280.webp", width: 1280, quality: 76 },
 
     // Group photo under the "Financial Support" intro on the Scholarships page. A ~4.2:1 strip
     // spanning the full band (max 1200 px), so two widths behind a srcset — a single 1280 file
     // would be barely above 1x there and visibly soft on a high-DPI screen.
-    // Drop the master in as assets/bursaries.jpg.
     { src: "bursaries.jpg", out: "images/bursaries-1280.webp", width: 1280, quality: 78 },
     { src: "bursaries.jpg", out: "images/bursaries-1920.webp", width: 1920, quality: 76 },
 
-    // Group photo dividing the Volunteering and Careers blocks on the Opportunities page. A
-    // ~3.4:1 strip spanning the full band (max 1200 px), so two widths behind a srcset. This is
-    // a separate crop from volunteering-1280 above, which the home page uses in a 4:3 tile.
-    { src: "volunteering.jpg", out: "images/volunteering-strip-1280.webp", width: 1280, height: 373, quality: 78, position: "centre" },
-    { src: "volunteering.jpg", out: "images/volunteering-strip-1920.webp", width: 1920, height: 560, quality: 76, position: "centre" },
-
     // Photo at the top of the Careers card on the Opportunities page. A ~2.2:1 strip in a
     // ~370 px column, so 800 covers it on a high-DPI screen. Cropped rather than letterboxed;
-    // "attention" keeps the busiest region. Shares the master with the .spe-careers-photo band.
+    // "attention" keeps the busiest region.
     { src: "careers.jpg", out: "images/careers-800.webp", width: 800, height: 360, quality: 78 },
 
     // Favicons must stay PNG — WebP favicons are still unevenly supported.

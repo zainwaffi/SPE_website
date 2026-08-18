@@ -1,13 +1,12 @@
 @page "/events"
-@page "/events/upcoming"
-@page "/events/past"
 @rendermode InteractiveServer
 @attribute [AllowAnonymous]
-@implements IAsyncDisposable
 @inject EventService EventSvc
-@inject IJSRuntime JS
 
-<PageTitle>Events — SPE Chapter</PageTitle>
+@* #UpdateLink — tab title, the description used in search results and link previews,
+   and the preview image. *@
+<PageMeta Title="Events — SPE Chapter"
+          Description="Upcoming talks, site visits and workshops from the SPE University of Aberdeen student chapter, plus highlights and ratings from past events." />
 
 @* Instagram is only embedded here, so the connection warm-up belongs on this page rather
    than in App.razor where every route paid for it. *@
@@ -17,6 +16,9 @@
 </HeadContent>
 
 <div class="spe-page-shell  bg-white/20 backdrop-blur-none md:max-w-300">
+    @* ---------- Page heading ---------- *@
+
+    @* #UpdateLink — page intro copy. *@
     <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="spe-page-title text-white text-3xl">Events</h1>
@@ -30,6 +32,8 @@
         </AuthorizeView>
     </div>
 
+    @* ---------- Calendar subscribe / external events links ---------- *@
+
     <div class="mb-6 flex flex-wrap items-center gap-3">
         <button type="button" @onclick="() => showCalendarOptions = true"
                 class="inline-flex items-center gap-2 rounded-lg border border-white/40 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/25">
@@ -37,13 +41,15 @@
             Add SPE Event Calendar
         </button>
 
-        @* #Updates: point this at the SPE Aberdeen Section events page when the URL is confirmed. *@
+        @* #UpdateLink — SPE Aberdeen Section events page. *@
         <a href="https://www.spe-aberdeen.org/events" target="_blank" rel="noopener noreferrer"
-           class="inline-flex items-center gap-2 rounded-lg border border-white/30 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+           class="spe-ghost-btn px-4">
             <Icon Name="globe" Class="h-4 w-4" />
             Find more events from Aberdeen Section
         </a>
     </div>
+
+    @* ---------- Search and category filters ---------- *@
 
     @* Search bar across the full width, category chips on the row beneath it. Chips toggle
        independently and can be combined; with none selected every category shows, so there is
@@ -76,10 +82,12 @@
         </div>
     </div>
 
+    @* ---------- New event form (committee only) ---------- *@
+
     @if (showForm)
     {
         <section class="spe-card mb-8 border-slate-200/70 bg-white p-6">
-            <h2 class="mb-4 text-xl font-bold text-white font-heading">New Event</h2>
+            <h2 class="mb-4 font-heading text-xl font-bold text-spe-cobalt">New Event</h2>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600">Date</p>
@@ -201,13 +209,15 @@
         </section>
     }
 
+    @* ---------- Upcoming events ---------- *@
+
     @if (upcomingEvents is null || pastEvents is null)
     {
         <p class="py-20 text-center text-slate-500">Loading events...</p>
     }
     else
     {
-        <section>
+        <section id="upcoming">
             <h2 class="mb-4 text-2xl font-bold text-white font-heading">Upcoming Events</h2>
             @if (!FilteredUpcomingEvents.Any())
             {
@@ -227,7 +237,10 @@
                             {
                                 <div class="ig-embed-slot flex justify-center overflow-hidden bg-slate-50">
                                     <blockquote class="ig-lazy" data-instgrm-permalink="@evt.InstagramEmbedUrl"
-                                                data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;"></blockquote>
+                                                data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;">
+                                        <a href="@evt.InstagramEmbedUrl" target="_blank" rel="noopener noreferrer"
+                                           class="spe-ig-fallback">View this post on Instagram</a>
+                                    </blockquote>
                                 </div>
                             }
                             else if (!string.IsNullOrEmpty(evt.ImageUrl))
@@ -358,8 +371,8 @@
 
         <hr class="my-12 border-slate-200" />
 
-<!-- Past Events Section -->
-        <section>
+        @* ---------- Past events ---------- *@
+        <section id="past">
             <h2 class="mb-4 text-2xl font-bold text-white font-heading">Past Events</h2>
             @if (!FilteredPastEvents.Any())
             {
@@ -378,7 +391,11 @@
                             @if (!string.IsNullOrEmpty(evt.InstagramEmbedUrl))
                             {
                                 <div class="ig-embed-slot flex justify-center overflow-hidden bg-slate-50">
-                                    <blockquote class="ig-lazy" data-instgrm-permalink="@evt.InstagramEmbedUrl" data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;"></blockquote>
+                                    <blockquote class="ig-lazy" data-instgrm-permalink="@evt.InstagramEmbedUrl"
+                                                data-instgrm-version="14" style="width:100%; min-width:236px; margin:0;">
+                                        <a href="@evt.InstagramEmbedUrl" target="_blank" rel="noopener noreferrer"
+                                           class="spe-ig-fallback">View this post on Instagram</a>
+                                    </blockquote>
                                 </div>
                             }
                             else
@@ -499,9 +516,10 @@
         </section>
     }
 
-    @* Calendar subscription chooser.
+    @* ---------- Calendar subscription modal ---------- *@
 
-       A modal rather than three buttons in the header or a dropdown: subscribing is a
+    @* A modal rather than three buttons in the header or a dropdown: subscribing is a
+
        once-ever action that needs a platform choice, a line explaining it's an ongoing
        subscription rather than a one-off import, and a raw-URL fallback for desktop Outlook
        and anything else. None of that fits comfortably in a header row or a popover. *@
@@ -548,7 +566,7 @@
 
                 @* Fallback for the desktop Outlook app, university calendars, and anything else
                    that wants the raw feed. onfocus/select is plain HTML — no JS interop needed.
-                   All four URLs are #UpdateLinks constants in the @@code block below. *@
+                   All four calendar URLs are #UpdateLink constants in the @@code block below. *@
                 <div class="mt-6 border-t border-slate-200 pt-5">
                     <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500" for="calendar-feed-url">
                         Or use the calendar link
@@ -568,23 +586,31 @@
         </div>
     }
 
-    @* "Collab with us" — same column treatment as the Quick Links block in the site footer.
-       #Updates: hrefs are intentionally blank until the collaboration links are decided. *@
+    @* ---------- Collab with us ---------- *@
+
+    @* Same column treatment as the Useful Links block in the site footer.
+       #UpdateLink — heading and copy. There is deliberately no link here yet; the contact
+       route has not been decided. *@
     <section class="mt-16 border-t border-white/20 pt-10">
         <div class="flex flex-col items-center">
-            <h4 class="mb-5 border-b border-spe-gold pb-2 font-heading text-sm font-bold uppercase tracking-[0.2em] text-spe-gold">
+            <h4 class="spe-footer-heading text-sm">
                 Collab With Us
             </h4>
             <p class="mb-6 max-w-md text-center text-sm text-white/70">
-                Partnering on an event, sponsoring the chapter, or speaking to our members? Get in touch.
+                Partnering on an event, sponsoring the chapter, or speaking to our members? <a href="mailto:spe@ausa.org.uk" target="_blank">Get in touch.</a>
             </p>
         </div>
     </section>
 </div>
 
 @code {
+    /* ---------- Loaded events ---------- */
+
     private List<Event>? upcomingEvents;
     private List<Event>? pastEvents;
+
+    /* ---------- New event form and its date picker ---------- */
+
     private bool showForm;
     private string newTitle = "";
     private string newLocation = "";
@@ -597,10 +623,11 @@
     private bool isYearPickerOpen;
     private int yearPickerStart = UkTime.Today.Year - 6;
     private string? formError;
-    private bool shouldProcessInstagramEmbeds;
     private static readonly string[] weekDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     private int firstDayOffset => (int)new DateTime(calendarMonth.Year, calendarMonth.Month, 1).DayOfWeek;
     private int daysInMonth => DateTime.DaysInMonth(calendarMonth.Year, calendarMonth.Month);
+
+    /* ---------- Post-event ratings ---------- */
 
     private int? ratingPanelEventId;
     private int pendingStars = 5;
@@ -609,7 +636,7 @@
     [CascadingParameter]
     private Task<AuthenticationState>? AuthStateTask { get; set; }
 
-    private bool showCalendarOptions;
+    /* ---------- Search and category filters ---------- */
 
     private static readonly EventCategory[] AllCategories = Enum.GetValues<EventCategory>();
 
@@ -621,7 +648,10 @@
         if (!selectedCategories.Add(category)) selectedCategories.Remove(category);
     }
 
-    // ---- Calendar subscription links -------------------------------------------------
+    /* ---------- Calendar subscription links ---------- */
+
+    private bool showCalendarOptions;
+
     //
     // These point at the chapter's shared Google Calendar (spe@ausa.org.uk), NOT at the feed
     // this app generates from the Events table at /events/calendar.ics. That endpoint is still
@@ -632,7 +662,7 @@
     // are not derived from one another. If the calendar address changes, all four need editing.
 
     /// <summary>Raw iCalendar URL, offered as the copy-and-paste fallback.</summary>
-    // #UpdateLinks — chapter calendar: raw .ics feed
+    // #UpdateLink — chapter calendar: raw .ics feed
     private const string CalendarFeedUrl =
         "https://calendar.google.com/calendar/ical/spe%40ausa.org.uk/public/basic.ics";
 
@@ -640,20 +670,22 @@
     /// webcal:// is what makes Apple Calendar (and several others) offer to *subscribe* rather
     /// than import a one-off snapshot. Same address, different scheme.
     /// </summary>
-    // #UpdateLinks — chapter calendar: iPhone & Mac (Apple Calendar)
+    // #UpdateLink — chapter calendar: iPhone & Mac (Apple Calendar)
     private const string AppleCalendarUrl =
         "webcal://calendar.google.com/calendar/ical/spe%40ausa.org.uk/public/basic.ics";
 
-    // #UpdateLinks — chapter calendar: Android (Google Calendar)
+    // #UpdateLink — chapter calendar: Android (Google Calendar)
     private const string GoogleCalendarUrl =
         "https://calendar.google.com/calendar/u/0/r?cid=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2Fspe%2540ausa.org.uk%2Fpublic%2Fbasic.ics";
 
-    // #UpdateLinks — chapter calendar: Outlook on the web
+    // #UpdateLink — chapter calendar: Outlook on the web
     private const string OutlookCalendarUrl =
         "https://outlook.office.com/calendar/0/addfromweb?url=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2Fspe%2540ausa.org.uk%2Fpublic%2Fbasic.ics&name=SPE%20AUSA%20Events";
 
-    // Attendance sign-up state. currentUserId is null for anonymous visitors, who see a
-    // "sign in to attend" link instead of the form.
+    /* ---------- Attendance sign-up ---------- */
+
+    // currentUserId is null for anonymous visitors, who see a "sign in to attend" link
+    // instead of the form.
     private string? currentUserId;
     
     private HashSet<int> registeredEventIds = [];
@@ -662,6 +694,8 @@
     private string signUpName = "";
     private string signUpUniversity = "";
     private string? signUpError;
+
+    /* ---------- Filtering ---------- */
 
     private IEnumerable<Event> FilteredUpcomingEvents =>
         upcomingEvents?.Where(Matches) ?? Enumerable.Empty<Event>();
@@ -675,43 +709,12 @@
     private bool MatchesCategory(Event evt) =>
         selectedCategories.Count == 0 || selectedCategories.Contains(evt.Category);
 
+    /* ---------- Lifecycle ---------- */
+
     protected override async Task OnInitializedAsync()
     {
         currentUserId = await AuthStateTask.GetUserIdAsync();
         await LoadEventsAsync();
-    }
-
-    // Imported on demand rather than loaded globally, so pages without embeds never fetch it.
-    private IJSObjectReference? instagramModule;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!shouldProcessInstagramEmbeds)
-        {
-            return;
-        }
-
-        shouldProcessInstagramEmbeds = false;
-        instagramModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/instagram-embed.js");
-        await instagramModule.InvokeVoidAsync("processInstagramEmbeds");
-    }
-
-    /// <summary>
-    /// Disconnects the module's IntersectionObserver on navigation away, so it doesn't
-    /// outlive the page. JSDisconnectedException is expected when the circuit is already gone.
-    /// </summary>
-    public async ValueTask DisposeAsync()
-    {
-        if (instagramModule is null) return;
-
-        try
-        {
-            await instagramModule.InvokeVoidAsync("dispose");
-            await instagramModule.DisposeAsync();
-        }
-        catch (JSDisconnectedException)
-        {
-        }
     }
 
     private async Task LoadEventsAsync()
@@ -723,9 +726,9 @@
         {
             registeredEventIds = await EventSvc.GetRegisteredEventIdsAsync(currentUserId);
         }
-
-        shouldProcessInstagramEmbeds = true;
     }
+
+    /* ---------- Date picker controls ---------- */
 
     private void PrevCalendarMonth()
     {
@@ -758,6 +761,8 @@
         selectedEventDate = date.Date;
         formError = null;
     }
+
+    /* ---------- Create, rate, sign up, delete ---------- */
 
     private async Task SaveEvent()
     {

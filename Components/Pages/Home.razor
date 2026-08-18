@@ -1,14 +1,20 @@
 @page "/"
 @attribute [AllowAnonymous]
-@using SPE_website.Components.Shared
 
 @* Static SSR: this page has no event handlers and no mutable state, so it needs no circuit.
    The scroll reveals come from wwwroot/js/ui.js, not JS interop. *@
 
-<PageTitle>SPE Chapter — Home</PageTitle>
+@* #UpdateLink — tab title, the description used in search results and link previews,
+   and the preview image. *@
+<PageMeta Title="SPE Chapter — Home"
+          Description="The Society of Petroleum Engineers student chapter at the University of Aberdeen: events, scholarships, volunteering and a route into the energy industry."
+          Image="/images/student-chapter.webp"
+          ImageAlt="Members of the SPE University of Aberdeen student chapter." />
 
-<!-- hero section -->
+@* ---------- Hero ---------- *@
 
+@* #UpdateLink — hero kicker, headline, mission statement, and both buttons (label and,
+   for "Join SPE", its destination). *@
 <FadeUp class="relative flex min-h-150 items-center justify-center overflow-hidden px-6 text-center">
     <div class="absolute inset-0 bg-gradient-to-br from-spe-cobalt/60 via-spe-cobalt/20 to-transparent"></div>
     <div class="relative z-10 mx-auto max-w-3xl">
@@ -30,7 +36,6 @@
 
             <AuthorizeView>
                 <NotAuthorized>
-                    @* #UpdateLinks — SPE membership sign-up *@
                     <a href="https://www.spe.org/en/join/" target="_blank" rel="noopener noreferrer"
                        class="spe-gold-btn px-7 py-3">
                         Join SPE
@@ -41,12 +46,14 @@
     </div>
 </FadeUp>
 
-<!-- about us section -->
+@* ---------- About Us ---------- *@
 
 <FadeUp class="spe-page-shell md:max-w-300">
     <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
         <div>
-            <h1 class="spe-page-kicker">—About Us—</h1>
+            @* #UpdateLink — About Us heading, both paragraphs, and both buttons (label and, for
+               "Join Now", its destination). *@
+            <p class="spe-page-kicker">—About Us—</p>
             <h2 class="mb-6 font-heading text-3xl font-extrabold text-black md:text-4xl">
                 the world's largest community dedicated to the oil, gas, and energy industry
             </h2>
@@ -64,7 +71,6 @@
             <div class="flex flex-wrap gap-3">
                 <AuthorizeView>
                     <NotAuthorized>
-                        @* #UpdateLinks — SPE homepage *@
                         <a href="https://www.spe.org/" target="_blank" rel="noopener noreferrer" class="spe-primary-btn">Join Now</a>
                     </NotAuthorized>
                 </AuthorizeView>
@@ -76,6 +82,7 @@
                 <img src="/images/student-chapter.webp" alt="Petroleum engineers" class="h-full w-full object-cover"
                      width="800" height="600" loading="lazy" decoding="async" />
             </div>
+            @* #UpdateLink — the chapter-count figure and its caption. *@
             <div class="absolute -bottom-6 -left-6 rounded-xl bg-spe-cobalt p-5 shadow-xl">
                 <p class="font-heading text-3xl font-extrabold text-white">360+</p>
                 <p class="mt-1 text-xs text-white/80">Student Chapter Around the World</p>
@@ -84,7 +91,7 @@
     </div>
 </FadeUp>
 
-<!-- why join us section -->
+@* ---------- Why Join Us ---------- *@
 
 <FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
     <div class="px-6 lg:px-8">
@@ -96,7 +103,8 @@
         <div class="relative mb-12 flex min-h-40 items-center justify-center overflow-hidden rounded-xl px-4 py-10 md:aspect-1588/394 md:py-0">
             <div aria-hidden="true" class="spe-photo-wash pointer-events-none absolute inset-0"></div>
             <div class="relative text-center">
-                <h1 class="spe-page-kicker text-spe-gold">—Why Join Us—</h1>
+                @* #UpdateLink — section headings. The company buttons come from Companies below. *@
+                <p class="spe-page-kicker text-spe-gold">—Why Join Us—</p>
                 <h2 class="mb-4 font-heading text-3xl font-extrabold text-white">Featured Guest Speakers & Hosts from</h2>
                 <div class="flex flex-wrap justify-center gap-3">
                     @foreach (var company in Companies)
@@ -122,11 +130,12 @@
     </div>
 </FadeUp>
 
-<!-- our team section -->
+@* ---------- Our Team ---------- *@
 
 <FadeUp class="spe-page-shell md:max-w-300">
     <div class="mb-12 text-center">
-        <h1 class="spe-page-kicker">—Our Team—</h1>
+        @* #UpdateLink — section headings. The cards come from TeamMembers below. *@
+        <p class="spe-page-kicker">—Our Team—</p>
         <h2 class="font-heading text-3xl font-extrabold text-black">Meet the Committee</h2>
     </div>
     <div class="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-4">
@@ -149,13 +158,14 @@
     </div>
 </FadeUp>
 
-<!-- Chapter Achievements section -->
+@* ---------- Chapter Achievements ---------- *@
 
 <FadeUp class="mx-4 mb-0 mt-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
     <div class="px-6 lg:px-8">
         <div class="mb-10 flex items-end justify-between gap-4">
             <div>
-                <h1 class="spe-page-kicker text-spe-gold">—Chapter Achievements—</h1>
+                @* #UpdateLink — section headings. The list comes from Achievements below. *@
+                <p class="spe-page-kicker text-spe-gold">—Chapter Achievements—</p>
                 <h2 class="font-heading text-2xl font-extrabold text-white">Awards And Recognitions</h2>
             </div>
         </div>
@@ -170,9 +180,9 @@
                 </div>
             }
         </article>
+        @* #UpdateLink — closing line, button label and its destination. *@
         <div class="mt-6 text-center">
             <p class="mb-3 text-sm text-white/80">Learn more about SPE chapters' achievements and awards.</p>
-            @* #UpdateLinks — SPE awards stories *@
             <a href="https://www.spe.org/en/awards/nominator-and-recipient-stories/" target="_blank"
                rel="noopener noreferrer" class="spe-primary-btn">Find Out More</a>
         </div>
@@ -181,7 +191,9 @@
 
 @code {
 
-    // #UpdateLinks: Companies and contributors
+    /* ---------- Page content ---------- */
+
+    // #UpdateLink — Companies and contributors
     private static readonly Company[] Companies =
     [
         new("BP", "https://www.linkedin.com/company/bp/"),
@@ -191,7 +203,7 @@
         new("Hydrasun", "https://www.linkedin.com/company/hydrasun/")
     ];
 
-    // #UpdateContent: Membership benefits shown in the "Why Join Us" cards
+    // #UpdateLink — Membership benefits shown in the "Why Join Us" cards
     private static readonly Benefit[] Benefits =
     [
         new("gear", "Technical Excellence",
@@ -202,7 +214,7 @@
             "Gain visibility into internships, graduate roles, mentorship, and speaker-led learning pathways.")
     ];
 
-    // #UpdateContent: Team members pictures, info, and LinkedIn profiles.
+    // #UpdateLink — Team members pictures, info, and LinkedIn profiles.
     // The fourth value is the member's LinkedIn URL — paste it between the quotes to make
     // their icon live. Left empty for now, which renders the icon as a dead link.
     // Image paths are all-lowercase on purpose — they 404 on Linux hosting otherwise.
@@ -219,7 +231,7 @@
         new("Dr. Hossein Hamidi", "Faculty Advisor", "/members/hamidi.webp", "")
     ];
 
-    // #UpdateContent: Achievements and awards
+    // #UpdateLink — Achievements and awards
     private static readonly string[] Achievements =
     [
         "Gold Standard Chapter 2018",

@@ -1,0 +1,163 @@
+@rendermode InteractiveServer
+@inject CourseService CourseSvc
+
+@* The members-only video library: search, the committee's add/delete controls, and the
+   YouTube cards.
+
+   This is the only part of the Courses page that needs a SignalR circuit, so it is a component
+   rather than markup on the page. The page itself is static SSR — the intro and the
+   competitions band are fixed copy — so a guest, who sees a sign-in prompt here instead of the
+   library, opens no circuit at all.
+
+   The caller is responsible for only rendering this for signed-in users; it does not repeat
+   that check. *@
+
+    <div class="spe-page-shell md:max-w-300">
+        <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <p class="spe-page-kicker">Chapter Library</p>
+                <h2 class="spe-page-title">Workshops & Courses</h2>
+                <p class="mt-2 text-sm text-slate-600">Explore our courses and workshops done by our student chapter
+                </p>
+            </div>
+            <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                <Authorized>
+                    <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add Video</button>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+
+        <div class="mb-6">
+            <input class="w-full spe-input" placeholder="Search courses by title or description..."
+                   @bind="searchQuery" @bind:event="oninput" />
+        </div>
+
+        @if (showForm)
+        {
+            <section class="spe-card mb-8 border-slate-200 p-6">
+                <h2 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Course Video</h2>
+                <div class="grid grid-cols-1 gap-4">
+                    <input class="spe-input" placeholder="Video title" @bind="newTitle" />
+                    <input class="spe-input" placeholder="YouTube URL (watch, youtu.be, Shorts or embed)"
+                           @bind="newYoutubeUrl" />
+                    <textarea class="spe-input" rows="3" placeholder="Course description"
+                              @bind="newDescription"></textarea>
+                </div>
+                @if (!string.IsNullOrEmpty(formError))
+                {
+                    <p class="mt-3 text-sm text-red-600">@formError</p>
+                }
+                <div class="mt-4 flex gap-3">
+                    <button @onclick="SaveCourse" class="spe-primary-btn">Save</button>
+                    <button @onclick="CloseForm"
+                            class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                </div>
+            </section>
+        }
+
+        @if (courses is null)
+        {
+            <p class="py-20 text-center text-slate-500">Loading courses...</p>
+        }
+        else if (!FilteredCourses.Any())
+        {
+            <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
+                <p class="text-xl text-slate-400">No courses match your search.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                @foreach (var course in FilteredCourses)
+                {
+                    <article @key="course.Id"
+                             class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
+                        <div class="aspect-video">
+                            <iframe src="@course.YoutubeEmbedUrl" class="h-full w-full" frameborder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen></iframe>
+                        </div>
+                        <div class="p-5">
+                            <h3 class="mb-1 text-lg font-bold text-black font-heading">@course.Title</h3>
+                            <p class="text-sm text-slate-600">@course.Description</p>
+                            <AuthorizeView Roles="CommitteeMember,TeamLeader">
+                                <Authorized>
+                                    <button @onclick="() => DeleteCourse(course.Id)"
+                                            class="mt-3 text-xs font-medium text-red-400 transition-colors hover:text-red-600">
+                                        Delete
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+
+@code {
+    /* ---------- Library state ---------- */
+
+    private List<Course>? courses;
+    private bool showForm;
+    private string newTitle = "";
+    private string newDescription = "";
+    private string newYoutubeUrl = "";
+    private string? formError;
+    private string searchQuery = "";
+
+    private IEnumerable<Course> FilteredCourses =>
+        courses?.Where(course =>
+            string.IsNullOrWhiteSpace(searchQuery) ||
+            course.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+            course.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+        ?? Enumerable.Empty<Course>();
+
+    /* ---------- Load, create, delete ---------- */
+
+    protected override async Task OnInitializedAsync() => await LoadCourses();
+
+    private async Task LoadCourses() => courses = await CourseSvc.GetAllAsync();
+
+    private async Task SaveCourse()
+    {
+        formError = null;
+        if (string.IsNullOrWhiteSpace(newTitle) || string.IsNullOrWhiteSpace(newYoutubeUrl))
+        {
+            formError = "Title and YouTube URL are required.";
+            return;
+        }
+
+        var embedUrl = YouTubeUrl.ToEmbedUrl(newYoutubeUrl);
+        if (embedUrl is null)
+        {
+            formError = "Please provide a valid YouTube URL.";
+            return;
+        }
+
+        await CourseSvc.CreateAsync(new Course
+        {
+            Title = newTitle,
+            Description = newDescription,
+            YoutubeEmbedUrl = embedUrl
+        });
+
+        CloseForm();
+        await LoadCourses();
+    }
+
+    private async Task DeleteCourse(int id)
+    {
+        await CourseSvc.DeleteAsync(id);
+        await LoadCourses();
+    }
+
+    private void CloseForm()
+    {
+        showForm = false;
+        formError = null;
+        newTitle = "";
+        newDescription = "";
+        newYoutubeUrl = "";
+    }
+}

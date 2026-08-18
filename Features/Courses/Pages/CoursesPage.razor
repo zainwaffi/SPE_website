@@ -1,9 +1,17 @@
 @page "/courses"
-@rendermode InteractiveServer
 @attribute [AllowAnonymous]
-@inject CourseService CourseSvc
+@using SPE_website.Features.Courses.Components
 
-<PageTitle>Technical &amp; Academic Development — SPE Chapter</PageTitle>
+@* Static SSR. The intro and the competitions band are fixed copy, so they need no SignalR
+   circuit — the video library brings its own (see Components/CourseLibrary.razor). A guest
+   reading this page now opens no circuit at all. *@
+
+@* #UpdateLink — tab title, the description used in search results and link previews,
+   and the preview image. *@
+<PageMeta Title="Technical &amp; Academic Development — SPE Chapter"
+          Description="Technical sections, competitions such as PetroBowl and the SPE Student Paper Contest, and a members-only library of chapter learning videos." />
+
+@* ---------- Intro: Technical & Academic Development ---------- *@
 
 @* Copy beside a photo. Two columns from lg up; below that the grid collapses to one column and
    the text centres under the image — hence text-center / lg:text-left on the column and the
@@ -11,6 +19,8 @@
 <FadeUp class="spe-page-shell md:max-w-300">
     <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
         <div class="text-center lg:text-left">
+            @* #UpdateLink — intro heading, body copy, the technical-sections link and the
+               discipline chips below it. *@
             <p class="spe-page-kicker">—Member Benefits—</p>
             <h1 class="spe-page-title mb-5">Technical &amp; Academic Development</h1>
 
@@ -61,32 +71,7 @@
         </div>
     </FadeUp>
 
-    @* Same treatment as the "Collab With Us" block on the events page: a centred column with a
-   gold rule under a letterspaced uppercase heading. Sized up from that block's text-sm to
-   text-lg, since this is body copy rather than a contact list. *@
-
-    @*
-<FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/60 px-6 py-14 backdrop-blur md:mx-auto md:max-w-300 lg:px-10">
-    <div class="flex flex-col items-center">
-        <h2
-            class="mb-6 border-b border-spe-gold pb-2 text-center font-heading text-lg font-bold uppercase tracking-[0.2em]
-text-spe-gold">
-            Industry Engagement &amp; Community
-        </h2>
-        <p class="max-w-3xl text-center text-lg leading-relaxed text-white/85">
-            Classroom theory is complemented by direct engagement with active industry
-            practitioners. Through the Ambassador Lecturer Program, visiting young professionals
-            and technical experts deliver guest lectures and real-world case studies directly on
-            campus.
-        </p>
-        <p class="mt-4 max-w-3xl text-center text-lg leading-relaxed text-white/85">
-            Backing these campus activities is the SPE Connect digital community, giving you an
-            open forum to discuss research, ask technical questions, and collaborate with over
-            127,000 professional members and 50,000+ student peers worldwide.
-        </p>
-    </div>
-</FadeUp>
-*@
+    @* ---------- Competitions & Academic Recognition ---------- *@
 
     @* Photo-backed band. The cards sit in a left-hand column over the image on desktop and stack
    centred once there is no room beside it — hence items-center / md:items-start rather than a
@@ -121,90 +106,11 @@ text-spe-gold">
 
     @* The SPE benefits panel above is public; the chapter's own video library is not. Guests get
    a sign-in prompt in its place rather than an empty search box over nothing. *@
+    @* ---------- Learning library (members only) ---------- *@
+
     <AuthorizeView>
         <Authorized Context="library">
-            <div class="spe-page-shell md:max-w-300">
-                <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <p class="spe-page-kicker">Chapter Library</p>
-                        <h2 class="spe-page-title">Workshops & Courses</h2>
-                        <p class="mt-2 text-sm text-slate-600">Explore our courses and workshops done by our student chapter
-                        </p>
-                    </div>
-                    <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                        <Authorized>
-                            <button @onclick="() => showForm = true" class="spe-gold-btn">+ Add Video</button>
-                        </Authorized>
-                    </AuthorizeView>
-                </div>
-
-                <div class="mb-6">
-                    <input class="w-full spe-input" placeholder="Search courses by title or description..."
-                           @bind="searchQuery" @bind:event="oninput" />
-                </div>
-
-                @if (showForm)
-                {
-                    <section class="spe-card mb-8 border-slate-200 p-6">
-                        <h2 class="mb-4 text-xl font-semibold text-spe-cobalt font-heading">New Course Video</h2>
-                        <div class="grid grid-cols-1 gap-4">
-                            <input class="spe-input" placeholder="Video title" @bind="newTitle" />
-                            <input class="spe-input" placeholder="YouTube URL (watch, youtu.be, Shorts or embed)"
-                                   @bind="newYoutubeUrl" />
-                            <textarea class="spe-input" rows="3" placeholder="Course description"
-                                      @bind="newDescription"></textarea>
-                        </div>
-                        @if (!string.IsNullOrEmpty(formError))
-                        {
-                            <p class="mt-3 text-sm text-red-600">@formError</p>
-                        }
-                        <div class="mt-4 flex gap-3">
-                            <button @onclick="SaveCourse" class="spe-primary-btn">Save</button>
-                            <button @onclick="CloseForm"
-                                    class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
-                        </div>
-                    </section>
-                }
-
-                @if (courses is null)
-                {
-                    <p class="py-20 text-center text-slate-500">Loading courses...</p>
-                }
-                else if (!FilteredCourses.Any())
-                {
-                    <div class="rounded-xl border border-slate-200 bg-white py-20 text-center">
-                        <p class="text-xl text-slate-400">No courses match your search.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        @foreach (var course in FilteredCourses)
-                        {
-                            <article @key="course.Id"
-                                     class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
-                                <div class="aspect-video">
-                                    <iframe src="@course.YoutubeEmbedUrl" class="h-full w-full" frameborder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowfullscreen></iframe>
-                                </div>
-                                <div class="p-5">
-                                    <h3 class="mb-1 text-lg font-bold text-black font-heading">@course.Title</h3>
-                                    <p class="text-sm text-slate-600">@course.Description</p>
-                                    <AuthorizeView Roles="CommitteeMember,TeamLeader">
-                                        <Authorized>
-                                            <button @onclick="() => DeleteCourse(course.Id)"
-                                                    class="mt-3 text-xs font-medium text-red-400 transition-colors hover:text-red-600">
-                                                Delete
-                                            </button>
-                                        </Authorized>
-                                    </AuthorizeView>
-                                </div>
-                            </article>
-                        }
-                    </div>
-                }
-            </div>
+            <CourseLibrary />
         </Authorized>
         <NotAuthorized Context="guest">
             <div class="spe-page-shell md:max-w-300">
@@ -225,95 +131,20 @@ text-spe-gold">
     </AuthorizeView>
 
 @code {
+    /* ---------- Competition cards ---------- */
 
-  
+    // #UpdateLink — the competition cards: title, description and destination.
     private static readonly Competition[] Competitions =
         [
-            // #UpdateLinks — PetroBowl: replace "#" with the SPE competition page
             new("PetroBowl® Competition",
             "The PetroBowl brings together SPE student chapters for a high-intensity showdown on oil and gas expertise. Following past successes, the University of Aberdeen petroleum engineering team continues to prove itself as a top-tier competitor in Europe.",
             "https://www.spe.org/en/students/petrobowl/"),
 
-        // #UpdateLinks — SPE Student Paper Contest: replace "#" with the SPE contest page
         new("SPE Student Paper Contest",
             "Present your academic research or thesis papers to industry judges at regional and international levels.",
             "https://www.spe.org/en/students/contest/")
         ];
 
-
     /// <summary>A card in the photo band. No icon — the panel is carried by the background image.</summary>
     private sealed record Competition(string Title, string Description, string Url);
-
-    private List<Course>? courses;
-    private bool showForm;
-    private string newTitle = "";
-    private string newDescription = "";
-    private string newYoutubeUrl = "";
-    private string? formError;
-    private string searchQuery = "";
-
-    private IEnumerable<Course> FilteredCourses =>
-        courses?.Where(course =>
-            string.IsNullOrWhiteSpace(searchQuery) ||
-            course.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
-            course.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
-        ?? Enumerable.Empty<Course>();
-
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthStateTask { get; set; }
-
-    /// <summary>
-    /// Guests see only the public benefits panel, so they never trigger the course query —
-    /// this mirrors the &lt;AuthorizeView&gt; in the markup rather than loading rows nobody renders.
-    /// </summary>
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = AuthStateTask is null ? null : await AuthStateTask;
-        if (authState?.User.Identity?.IsAuthenticated == true)
-            await LoadCourses();
-    }
-
-    private async Task LoadCourses() => courses = await CourseSvc.GetAllAsync();
-
-    private async Task SaveCourse()
-    {
-        formError = null;
-        if (string.IsNullOrWhiteSpace(newTitle) || string.IsNullOrWhiteSpace(newYoutubeUrl))
-        {
-            formError = "Title and YouTube URL are required.";
-            return;
-        }
-
-        var embedUrl = YouTubeUrl.ToEmbedUrl(newYoutubeUrl);
-        if (embedUrl is null)
-        {
-            formError = "Please provide a valid YouTube URL.";
-            return;
-        }
-
-        await CourseSvc.CreateAsync(new Course
-        {
-            Title = newTitle,
-            Description = newDescription,
-            YoutubeEmbedUrl = embedUrl
-        });
-
-        CloseForm();
-        await LoadCourses();
-    }
-
-    private async Task DeleteCourse(int id)
-    {
-        await CourseSvc.DeleteAsync(id);
-        await LoadCourses();
-    }
-
-    private void CloseForm()
-    {
-        showForm = false;
-        formError = null;
-        newTitle = "";
-        newDescription = "";
-        newYoutubeUrl = "";
-    }
 }

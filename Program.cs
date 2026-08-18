@@ -14,6 +14,8 @@ using SPE_website.Features.Tutorials.Services;
 using SPE_website.Shared.Models;
 using SPE_website.Shared.Services;
 
+/* ---------- Host and data access ---------- */
+
 var builder = WebApplication.CreateBuilder(args);
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -32,6 +34,8 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 builder.Services.AddScoped<AppDbContext>(sp =>
     sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
+/* ---------- Identity and authentication ---------- */
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -49,6 +53,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
+/* ---------- Feature services ---------- */
+
 builder.Services.AddScoped<EventService>();
 builder.Services.AddScoped<EventCalendarService>();
 builder.Services.AddScoped<OpportunityService>();
@@ -60,6 +66,8 @@ builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<AttendanceExportService>();
 builder.Services.AddScoped<EmailService>();
+
+/* ---------- Request pipeline ---------- */
 
 var app = builder.Build();
 
@@ -84,12 +92,62 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 
+/* ---------- Endpoints ---------- */
 
 app.MapPost("/logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
     return TypedResults.LocalRedirect("/");
 }).DisableAntiforgery();
+
+// /events/upcoming and /events/past used to be extra @page routes on the events page that
+// rendered content identical to /events — duplicate URLs with no filtering behind them. The
+// page is now the single route, and these redirect permanently to the matching section so any
+// link that already exists still lands in the right place.
+app.MapGet("/events/upcoming", () => Results.Redirect("/events#upcoming", permanent: true)).AllowAnonymous();
+app.MapGet("/events/past", () => Results.Redirect("/events#past", permanent: true)).AllowAnonymous();
+
+// Crawler files, generated from the request rather than written as static files in wwwroot, so
+// they carry the right absolute URLs on localhost, on a staging host, and on the live domain
+// without anyone remembering to edit a hard-coded address into them.
+//
+// #UpdateLink — the public route list below. Add an entry when a new public page is added; the
+// members-only routes are deliberately absent.
+static string[] PublicRoutes() => ["/", "/events", "/Scholarships", "/opportunities", "/courses"];
+
+app.MapGet("/robots.txt", (HttpContext http) =>
+{
+    // The members-only areas sit behind [Authorize], so a crawler only ever reaches the login
+    // redirect. Disallowing them keeps that redirect out of search results as well.
+    var body = $"""
+        User-agent: *
+        Disallow: /admin/
+        Disallow: /profile
+        Disallow: /tasks
+        Disallow: /tutorials
+        Disallow: /login
+
+        Sitemap: {http.Request.Scheme}://{http.Request.Host}/sitemap.xml
+        """;
+
+    return Results.Text(body, "text/plain", System.Text.Encoding.UTF8);
+}).AllowAnonymous();
+
+app.MapGet("/sitemap.xml", (HttpContext http) =>
+{
+    var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+    var urls = string.Concat(PublicRoutes().Select(route =>
+        $"  <url><loc>{baseUrl}{route}</loc></url>\n"));
+
+    var body = $"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        {urls}</urlset>
+        """;
+
+    return Results.Text(body, "application/xml", System.Text.Encoding.UTF8);
+}).AllowAnonymous();
+
 
 // Public iCalendar subscription feed. Deliberately anonymous: calendar apps poll this URL on a
 // schedule with no way to sign in, so requiring auth would break subscriptions outright. It
@@ -120,7 +178,8 @@ app.MapGet("/admin/export/attendance.xlsx", async (AttendanceExportService expor
 .RequireAuthorization(policy => policy.RequireRole("TeamLeader"));
 
 
-// Identity Role
+/* ---------- Startup: migrations, roles, seeded admin ---------- */
+
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -133,29 +192,24 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
-    // #Updates: Seeded a Team Leader account (email can be changed from member management).\
-    // the seeded account does not necessarily have to be SPE member, it can be any email for debugging or giving acess in order not to lock of the app
+    // #UpdateLink — the seeded Team Leader account. It does not have to be an SPE member: any
+    // address works, and it exists so the app can never be locked out of its own admin. The
+    // email can also be changed later from member management.
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     const string adminEmail = "zainaldinsabr@gmail.com";
-    var admin = await userManager.FindByEmailAsync(adminEmail);
-    var created = false;
-    if (admin is null)
-    {
-        admin = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            FullName = "SPE Team Leader",   // seeded Team leader Name (President)
-            IsStudentChapterOfficer = true
-        };
-        created = true;
-    }
+    const string adminName = "SPE Team Leader";
 
+    var admin = await userManager.FindByEmailAsync(adminEmail);
+    var created = admin is null;
+    admin ??= new ApplicationUser();
+
+    // Reapplied on every start, not just on creation, so editing the constants above is enough
+    // to move the seeded account rather than leaving a stale one behind.
     admin.UserName = adminEmail;
     admin.Email = adminEmail;
-    admin.FullName = "SPE Team Leader";
+    admin.FullName = adminName;
     admin.IsStudentChapterOfficer = true;
-    admin.OpenWaterMemberId = admin.OpenWaterMemberId ?? "seeded";
+    admin.OpenWaterMemberId ??= "seeded";
 
     var saveResult = created
         ? await userManager.CreateAsync(admin)

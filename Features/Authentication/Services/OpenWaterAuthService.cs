@@ -15,6 +15,10 @@ public class OpenWaterAuthService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager)
 {
+    /* ---------- Configuration constants ---------- */
+
+    // #UpdateLink — the OpenWater lookup URL, the bootstrap admin address, and the join-SPE
+    // link below. The admin address must be kept in step with adminEmail in Program.cs.
     private const string PrefillUrlTemplate = "https://openwater-os.secure-platform.com/societypetroleumengineers/prefill?emailOrUserId={0}";
 
     /// <summary>

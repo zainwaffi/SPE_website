@@ -7,6 +7,17 @@
 (() => {
     "use strict";
 
+    // ---------------------------------------------------------------- helpers
+
+    // Matches inside `root` plus `root` itself, because a MutationObserver hands us the added
+    // node directly and querySelectorAll never returns its own root.
+    function collect(root, selector) {
+        if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_NODE) return [];
+        const found = [...root.querySelectorAll(selector)];
+        if (root.matches?.(selector)) found.unshift(root);
+        return found;
+    }
+
     // ---------------------------------------------------------------- scroll reveal
 
     // One observer for the whole document, rather than one per element. Elements are
@@ -26,10 +37,7 @@
     }
 
     function registerReveals(root) {
-        const candidates = root.querySelectorAll?.(".fade-up:not(.is-visible)");
-        if (!candidates) return;
-
-        for (const element of candidates) {
+        for (const element of collect(root, ".fade-up:not(.is-visible)")) {
             // Without IntersectionObserver, show everything immediately rather than
             // leaving the page stuck at opacity 0.
             if (!revealObserver) {
@@ -111,10 +119,90 @@
         if (event.key === "Escape") closeAllDisclosures(null);
     });
 
+    // ---------------------------------------------------------------- instagram embeds
+
+    // Instagram's embed.js turns every element carrying the `instagram-media` class into an
+    // iframe as soon as Embeds.process() runs. On a page with many events that means dozens of
+    // simultaneous requests to instagram.com, nearly all for posts far below the fold.
+    //
+    // So the blockquotes render WITHOUT that class (see `ig-lazy` in EventsPage), and we add
+    // it — and load embed.js at all — only once a post is close to entering the viewport.
+    //
+    // This lives here, in the same plain-DOM script as everything else, rather than in a
+    // module imported over Blazor JS interop. That import used to wait for the SignalR circuit
+    // to connect and for the page's first interactive render before a single post could start
+    // loading. Now the first post begins as soon as the markup is parsed, and posts still
+    // appear if the circuit is slow or never connects at all.
+
+    const IG_LAZY_SELECTOR = "blockquote.ig-lazy";
+    const IG_SCRIPT_ID = "instagram-embed-script";
+    const IG_SCRIPT_SRC = "https://www.instagram.com/embed.js";
+
+    let igScriptRequested = false;
+
+    // Start fetching a little before the post scrolls into view, so it has usually finished
+    // rendering by the time the reader reaches it.
+    const embedObserver = "IntersectionObserver" in window
+        ? new IntersectionObserver(onEmbedIntersect, { rootMargin: "300px 0px" })
+        : null;
+
+    function onEmbedIntersect(entries) {
+        for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            embedObserver.unobserve(entry.target);
+            activateEmbed(entry.target);
+        }
+    }
+
+    function runEmbedProcess() {
+        window.instgrm?.Embeds?.process();
+    }
+
+    function loadEmbedScript() {
+        if (igScriptRequested || document.getElementById(IG_SCRIPT_ID)) return;
+        igScriptRequested = true;
+
+        const script = document.createElement("script");
+        script.id = IG_SCRIPT_ID;
+        script.async = true;
+        script.src = IG_SCRIPT_SRC;
+        // Posts activated before the script arrives are picked up by this first pass, because
+        // process() sweeps every unprocessed .instagram-media on the page.
+        script.onload = runEmbedProcess;
+        document.body.appendChild(script);
+    }
+
+    function activateEmbed(element) {
+        element.classList.remove("ig-lazy");
+        element.classList.add("instagram-media");
+
+        if (igScriptRequested || document.getElementById(IG_SCRIPT_ID)) runEmbedProcess();
+        else loadEmbedScript();
+    }
+
+    function registerEmbeds(root) {
+        for (const element of collect(root, IG_LAZY_SELECTOR)) {
+            // Without IntersectionObserver, load everything at once rather than show nothing.
+            if (!embedObserver) {
+                activateEmbed(element);
+                continue;
+            }
+            embedObserver.observe(element);
+        }
+    }
+
+    // Filtering the events list removes cards. Dropping the observer's reference to them keeps
+    // it from pinning detached nodes in memory for the life of the page.
+    function releaseEmbeds(root) {
+        if (!embedObserver) return;
+        for (const element of collect(root, IG_LAZY_SELECTOR)) embedObserver.unobserve(element);
+    }
+
     // ---------------------------------------------------------------- wiring
 
-    function scan() {
-        registerReveals(document);
+    function scan(root) {
+        registerReveals(root);
+        registerEmbeds(root);
     }
 
     // Mark the document as script-capable. The .fade-up hidden state is gated on this in
@@ -122,9 +210,9 @@
     document.documentElement.classList.add("js");
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", scan, { once: true });
+        document.addEventListener("DOMContentLoaded", () => scan(document), { once: true });
     } else {
-        scan();
+        scan(document);
     }
 
     // Blazor's enhanced navigation patches the DOM in place rather than reloading, so
@@ -132,11 +220,8 @@
     // anything an interactive component renders later.
     new MutationObserver((mutations) => {
         for (const mutation of mutations) {
-            for (const node of mutation.addedNodes) {
-                if (node.nodeType !== Node.ELEMENT_NODE) continue;
-                if (node.classList.contains("fade-up")) registerReveals(node.parentNode ?? document);
-                registerReveals(node);
-            }
+            for (const node of mutation.addedNodes) scan(node);
+            for (const node of mutation.removedNodes) releaseEmbeds(node);
         }
     }).observe(document.documentElement, { childList: true, subtree: true });
 })();
