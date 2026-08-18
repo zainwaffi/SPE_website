@@ -5,25 +5,34 @@
    the intent survives anyone adding a fallback authorization policy later.
 
    Static SSR: the content is fixed copy with no state or event handlers, so this must not
-   open a SignalR circuit (see AGENTS.md). *@
+   open a SignalR circuit.
+
+   Scope: scholarships and bursaries only. Membership dues waivers and the graduate dues
+   discount used to sit here too — they are membership pricing, not funding for study, and were
+   removed so this page answers one question. *@
 
 @* #UpdateLink — tab title, the description used in search results and link previews,
    and the preview image. *@
 <PageMeta Title="Scholarships and Bursaries — SPE Chapter"
-          Description="Funding for students on energy and engineering degrees: the SPE Aberdeen student bursary, free student membership, and the graduate dues discount."
+          Description="Funding for students on energy and engineering degrees: the SPE Aberdeen student bursary of £500–£5,000, and the SPE Foundation's international scholarships and fellowships."
           Image="/images/bursaries-1280.webp"
           ImageAlt="Students and staff from the SPE student chapter at a lecture on the energy transition." />
 
 @* Cobalt band matching the home page's "Why Join Us" and the Technical & Academic Development
-   panel. Copy lives in the @@code block so the markup stays one card loop. *@
+   panel. Copy lives in the @@code block so the markup stays a set of loops. *@
 <FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
     <div class="px-6 lg:px-8">
+
+        @* ---------- Heading ---------- *@
+
+        @* #UpdateLink — page heading and intro copy. *@
         <div class="mb-10 text-center">
             <p class="spe-page-kicker text-spe-gold">—Scholarships &amp; Bursaries—</p>
             <h1 class="mb-3 font-heading text-3xl font-extrabold text-white">Financial Support</h1>
             <p class="mx-auto max-w-2xl text-sm text-white/75">
                 SPE is committed to lowering financial barriers for students pursuing degrees
-                related to energy and engineering.
+                related to energy and engineering. There is money available locally through our
+                own section, and internationally through the SPE Foundation.
             </p>
         </div>
 
@@ -40,85 +49,200 @@
              alt="Students and staff from the SPE student chapter at a University of Dundee lecture on the energy transition."
              class="mb-10 w-full rounded-xl shadow-lg ring-1 ring-white/15" />
 
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-            @foreach (var support in SupportOptions)
-            {
-                <article @key="support.Title" class="flex flex-col rounded-xl bg-white/10 p-6">
-                    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-spe-gold text-black">
-                        <Icon Name="@support.Icon" Class="h-6 w-6" />
-                    </div>
-                    <h2 class="mb-3 font-heading text-lg font-bold text-white">@support.Title</h2>
+        @* ---------- The local bursary ---------- *@
 
-                    <dl class="space-y-3">
-                        @foreach (var (label, text) in support.Details)
-                        {
-                            <div @key="label">
-                                <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">@label</dt>
-                                <dd class="mt-0.5 text-sm leading-relaxed text-white/75">@text</dd>
-                            </div>
-                        }
-                    </dl>
+        @* Given its own panel rather than a card in the grid: it is the one award our students
+           are most likely to win, and the only one with an application process we can describe
+           end to end. *@
+        <section class="mb-12 rounded-xl bg-white/10 p-6 lg:p-8">
+            <div class="mb-6 flex items-start gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-spe-gold text-black">
+                    <Icon Name="trophy" Class="h-6 w-6" />
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">Closest to home</p>
+                    <h2 class="font-heading text-xl font-bold text-white">SPE Aberdeen Student Bursary Programme</h2>
+                </div>
+            </div>
 
-                    @* The bursary is the only option with dated stages, so the timeline renders
-                       only when there is one rather than as an empty block on the other cards. *@
-                    @if (support.Timeline.Length > 0)
+            @* #UpdateLink — bursary award range and the running total awarded. Both come from
+               spe-aberdeen.org/student-bursaries and are worth re-checking each year. *@
+            <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="rounded-lg bg-white/10 p-4">
+                    <p class="font-heading text-2xl font-extrabold text-spe-gold">£500 – £5,000</p>
+                    <p class="mt-1 text-xs text-white/70">Awarded per successful applicant</p>
+                </div>
+                <div class="rounded-lg bg-white/10 p-4">
+                    <p class="font-heading text-2xl font-extrabold text-spe-gold">£200,000+</p>
+                    <p class="mt-1 text-xs text-white/70">Given to students across Scotland in the past decade</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <dl class="space-y-4">
+                    @foreach (var (label, text) in BursaryFacts)
                     {
-                        <div class="mt-4 border-t border-white/15 pt-4">
-                            <p class="mb-2 text-[11px] font-bold uppercase tracking-wider text-spe-gold">Timeline</p>
-                            <ul class="space-y-2">
-                                @foreach (var (stage, when) in support.Timeline)
-                                {
-                                    <li @key="stage" class="flex items-baseline justify-between gap-3 text-sm">
-                                        <span class="text-white/75">@stage</span>
-                                        <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">@when</span>
-                                    </li>
-                                }
-                            </ul>
+                        <div @key="label">
+                            <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">@label</dt>
+                            <dd class="mt-0.5 text-sm leading-relaxed text-white/75">@text</dd>
                         </div>
                     }
-                </article>
-            }
-        </div>
+                </dl>
+
+                <div>
+                    <p class="mb-2 text-[11px] font-bold uppercase tracking-wider text-spe-gold">Timeline</p>
+                    <ul class="mb-6 space-y-2">
+                        @foreach (var (stage, when) in BursaryTimeline)
+                        {
+                            <li @key="stage" class="flex items-baseline justify-between gap-3 text-sm">
+                                <span class="text-white/75">@stage</span>
+                                <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">@when</span>
+                            </li>
+                        }
+                    </ul>
+
+                    @* #UpdateLink — bursary links and the section's contact address. The
+                       application form is a Word file whose URL changes every year, so this
+                       points at the page that always carries the current one rather than at the
+                       file itself. *@
+                    <div class="flex flex-wrap gap-3">
+                        <a href="https://www.spe-aberdeen.org/student-bursaries" target="_blank"
+                           rel="noopener noreferrer" class="spe-gold-btn">
+                            Apply on spe-aberdeen.org
+                        </a>
+                        <a href="https://www.spe-aberdeen.org/student-bursaries/2025-26-results" target="_blank"
+                           rel="noopener noreferrer" class="spe-ghost-btn px-5">
+                            <Icon Name="users" Class="h-4 w-4" />
+                            See who won last year
+                        </a>
+                    </div>
+
+                    <p class="mt-4 text-xs leading-relaxed text-white/60">
+                        Questions about the section bursary go to Diane Wood at
+                        <a href="mailto:aberdeen.manager@spe-uk.org"
+                           class="font-semibold text-white underline underline-offset-2 hover:text-spe-gold">aberdeen.manager@spe-uk.org</a>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- SPE Foundation awards ---------- *@
+
+        <section>
+            <div class="mb-6">
+                <h2 class="font-heading text-xl font-bold text-white">SPE Foundation scholarships and fellowships</h2>
+                <p class="mt-2 max-w-3xl text-sm text-white/75">
+                    Awarded internationally rather than by our section, so you apply to SPE directly.
+                    Eligibility varies — check each one, as some are limited to a region or to a
+                    particular stage of study.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                @foreach (var award in FoundationAwards)
+                {
+                    <a @key="award.Title" href="@award.Url" target="_blank" rel="noopener noreferrer"
+                       class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
+                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
+                            <Icon Name="@award.Icon" Class="h-5 w-5" />
+                        </div>
+                        <h3 class="mb-1.5 font-heading text-base font-bold text-white">@award.Title</h3>
+                        <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">@award.Who</p>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
+                            Read the criteria
+                            <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                    </a>
+                }
+            </div>
+        </section>
+
+        @* ---------- Where else to look ---------- *@
+
+        @* #UpdateLink — the three onward links below and the SPE scholarships contact address. *@
+        <section class="mt-10 border-t border-white/15 pt-8">
+            <h2 class="mb-4 font-heading text-base font-bold text-white">Still looking?</h2>
+            <div class="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+                <a href="https://www.spe.org/en/scholarships/additional-scholarships/" target="_blank"
+                   rel="noopener noreferrer"
+                   class="font-semibold text-spe-gold underline underline-offset-4 hover:text-white">
+                    Funding from other organisations
+                </a>
+                <a href="https://www.spe.org/en/scholarships/faqs/" target="_blank" rel="noopener noreferrer"
+                   class="font-semibold text-spe-gold underline underline-offset-4 hover:text-white">
+                    Scholarship FAQs
+                </a>
+                <a href="https://www.spe-aberdeen.org/student-careers-hub" target="_blank" rel="noopener noreferrer"
+                   class="font-semibold text-spe-gold underline underline-offset-4 hover:text-white">
+                    SPE Aberdeen student careers hub
+                </a>
+            </div>
+            <p class="mt-4 text-xs text-white/60">
+                SPE Foundation awards are handled by
+                <a href="mailto:scholarships@spe.org"
+                   class="font-semibold text-white underline underline-offset-2 hover:text-spe-gold">scholarships@spe.org</a>,
+                not by this chapter.
+            </p>
+        </section>
     </div>
 </FadeUp>
 
 @code {
-    /* ---------- Page content ---------- */
+    /* ---------- SPE Aberdeen bursary ---------- */
 
-    // #UpdateLink — scholarship and bursary copy. Edit here rather than in the markup above.
-    private static readonly SupportOption[] SupportOptions =
+    // #UpdateLink — bursary eligibility and application copy. Source of truth is
+    // https://www.spe-aberdeen.org/student-bursaries — re-read it when the cycle reopens.
+    private static readonly (string Label, string Text)[] BursaryFacts =
     [
-        new("trophy", "SPE Aberdeen Student Bursary Programme",
-        [
-            ("Overview", "An annual funding initiative managed by the Student Development Committee, supporting students studying energy-related disciplines within the section."),
-            ("Eligible institutions", "University of Aberdeen, Robert Gordon University (RGU), University of Dundee, and Heriot-Watt University.")
-        ],
-        [
-            ("Programme announced", "November"),
-            ("Applications reviewed", "December – January"),
-            ("Winners announced", "February / March")
-        ]),
-
-        new("tag", "100% Free Student Membership",
-        [
-            ("Cost", "Student membership dues are completely waived through the SPE Student Dues Program, sponsored by Chevron."),
-            ("Eligibility", "Open to all students enrolled in at least 30% of a full-time academic workload on a petroleum- or energy-related curriculum.")
-        ], []),
-
-        new("arrow-right", "Graduate Transition Dues Discount",
-        [
-            ("Year 1 post-graduation", "Dues are 100% waived for graduating SPE student members entering professional membership."),
-            ("Year 2 post-graduation", "Dues remain significantly discounted, supporting your early-career transition.")
-        ], [])
+        ("Who runs it", "The SPE Aberdeen Section. Applications are reviewed by the Student Development Committee, and the Board gives final approval."),
+        ("Eligible institutions", "University of Aberdeen, Robert Gordon University (RGU), Heriot-Watt University, and the University of Dundee."),
+        ("Who can apply", "Undergraduates, full-time postgraduates and PhD students currently enrolled on a course directly relevant to the energy industry."),
+        ("What they look for", "Academic merit, a demonstrated commitment to working in the energy sector, SPE membership, and active involvement in SPE."),
+        ("How to apply", "Download the application form from the SPE Aberdeen site, complete it digitally, and email it with your answers to the additional questions. Do not attach anything else."),
+        ("Shortlisting", "Shortlisted candidates present to a judging panel, in person or remotely, before awards are confirmed.")
     ];
 
-    /// <summary>
-    /// One funding route. <paramref name="Timeline"/> is empty for anything without dated stages,
-    /// which is what hides the timeline block on those cards.
-    /// </summary>
-    private sealed record SupportOption(
-        string Icon,
-        string Title,
-        (string Label, string Text)[] Details,
-        (string Stage, string When)[] Timeline);
+    // #UpdateLink — the bursary cycle runs to roughly these months each year. Replace with the
+    // exact dates once SPE Aberdeen publishes them for the current cycle.
+    private static readonly (string Stage, string When)[] BursaryTimeline =
+    [
+        ("Applications open", "Early November"),
+        ("Deadline", "Mid-December"),
+        ("Judging", "January"),
+        ("Winners announced", "February")
+    ];
+
+    /* ---------- SPE Foundation awards ---------- */
+
+    // #UpdateLink — the international awards listed at https://www.spe.org/en/scholarships/.
+    // Titles and eligibility summaries are ours; the links go to SPE's own criteria pages.
+    private static readonly Award[] FoundationAwards =
+    [
+        new("graduation-cap", "Gus Archie Scholarship",
+            "For an outstanding student entering university to read for an undergraduate degree in petroleum engineering.",
+            "https://www.spe.org/en/scholarships/archie/"),
+
+        new("book", "Nico van Wingen Graduate Fellowship",
+            "For graduate students in petroleum engineering, supporting study at master's and doctoral level.",
+            "https://www.spe.org/en/scholarships/vanwingen/"),
+
+        new("star", "Donald G. Russell Scholarship",
+            "For undergraduates studying at universities in the United States.",
+            "https://www.spe.org/en/scholarships/russell/"),
+
+        new("presentation", "Henry DeWitt Smith Fellowship",
+            "A named SPE Foundation fellowship — check SPE's criteria page for the current terms.",
+            "https://www.spe.org/en/scholarships/smith/"),
+
+        new("globe", "Imomoh Scholarship",
+            "For students from the SPE Africa Region.",
+            "https://www.spe.org/en/scholarships/imomoh/"),
+
+        new("users", "SPE Section Scholarships",
+            "Awarded by local sections worldwide, ours included. Value varies, and some cover travel, books or software rather than fees.",
+            "https://www.spe.org/en/scholarships/section-scholarships/")
+    ];
+
+    /// <summary>One SPE Foundation award, rendered as a card linking to SPE's own criteria page.</summary>
+    private sealed record Award(string Icon, string Title, string Who, string Url);
 }
