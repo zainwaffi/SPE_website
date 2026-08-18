@@ -116,8 +116,10 @@ VS Code: `Ctrl+Shift+F`, type `#UpdateLink`. There are around 44 of them, and ea
 what it covers. A marker sitting above a block covers everything in that block, so you will
 not find one on every individual line.
 
-Most page copy is **not** in the markup. Text that repeats as cards or tiles lives in arrays
-in the `@code` block at the bottom of the page — edit it there and the markup follows.
+Where the copy lives varies by page. Scholarships is written entirely in the markup — what you
+see in the HTML is what renders. On Home and Opportunities, text that repeats as cards or tiles
+lives in arrays in the `@code` block at the bottom of the page instead; edit it there and the
+markup follows. Either way the `#UpdateLink` marker sits next to the thing you want to change.
 
 ### Page titles and link previews
 

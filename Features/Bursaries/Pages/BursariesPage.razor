@@ -19,7 +19,8 @@
           ImageAlt="Students and staff from the SPE student chapter at a lecture on the energy transition." />
 
 @* Cobalt band matching the home page's "Why Join Us" and the Technical & Academic Development
-   panel. Copy lives in the @@code block so the markup stays a set of loops. *@
+   panel. All copy is written directly in the markup below — this page has no @@code block, so
+   editing the text means editing the HTML you can see. *@
 <FadeUp class="mx-4 my-6 rounded-2xl bg-spe-cobalt/90 py-16 backdrop-blur md:mx-auto md:max-w-300">
     <div class="px-6 lg:px-8">
 
@@ -60,7 +61,7 @@
                     <Icon Name="trophy" Class="h-6 w-6" />
                 </div>
                 <div>
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">Closest to home</p>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">Our Section Bursary</p>
                     <h2 class="font-heading text-xl font-bold text-white">SPE Aberdeen Student Bursary Programme</h2>
                 </div>
             </div>
@@ -69,7 +70,7 @@
                spe-aberdeen.org/student-bursaries and are worth re-checking each year. *@
             <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="rounded-lg bg-white/10 p-4">
-                    <p class="font-heading text-2xl font-extrabold text-spe-gold">£500 – £5,000</p>
+                    <p class="font-heading text-2xl font-extrabold text-spe-gold">£500 - £5,000</p>
                     <p class="mt-1 text-xs text-white/70">Awarded per successful applicant</p>
                 </div>
                 <div class="rounded-lg bg-white/10 p-4">
@@ -78,27 +79,83 @@
                 </div>
             </div>
 
+            @* #UpdateLink — bursary eligibility and application copy. Source of truth is
+               https://www.spe-aberdeen.org/student-bursaries — re-read it when the cycle reopens. *@
             <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
                 <dl class="space-y-4">
-                    @foreach (var (label, text) in BursaryFacts)
-                    {
-                        <div @key="label">
-                            <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">@label</dt>
-                            <dd class="mt-0.5 text-sm leading-relaxed text-white/75">@text</dd>
-                        </div>
-                    }
+                    <div>
+                        <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">Who runs it</dt>
+                        <dd class="mt-0.5 text-sm leading-relaxed text-white/75">
+                            The SPE Aberdeen Section. Applications are reviewed by the Student
+                            Development Committee, and the Board gives final approval.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">Eligible institutions</dt>
+                        @* A flex row rather than inline spans carrying .spe-gold-btn. Vertical
+                           padding on an inline element does not grow the line box, so the pills
+                           overlapped the line above and clipped. Flex items are block-level, so
+                           the padding counts, and `gap` spaces them without relying on the
+                           whitespace between tags. *@
+                        <dd class="mt-1.5 flex flex-wrap gap-1.5">
+                            <span class="rounded-md bg-spe-gold px-2.5 py-1 font-heading text-xs font-bold text-black">University of Aberdeen</span>
+                            <span class="rounded-md bg-spe-gold px-2.5 py-1 font-heading text-xs font-bold text-black">Robert Gordon University (RGU)</span>
+                            <span class="rounded-md bg-spe-gold px-2.5 py-1 font-heading text-xs font-bold text-black">Heriot-Watt University</span>
+                            <span class="rounded-md bg-spe-gold px-2.5 py-1 font-heading text-xs font-bold text-black">University of Dundee</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">Who can apply</dt>
+                        <dd class="mt-0.5 text-sm leading-relaxed text-white/75">
+                            Undergraduates, full-time postgraduates and PhD students currently
+                            enrolled on a course directly relevant to the energy industry.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">What they look for</dt>
+                        <dd class="mt-0.5 text-sm leading-relaxed text-white/75">
+                            Academic merit, a demonstrated commitment to working in the energy
+                            sector, SPE membership, and active involvement in SPE.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">How to apply</dt>
+                        <dd class="mt-0.5 text-sm leading-relaxed text-white/75">
+                            Download the application form from the SPE Aberdeen site, complete it
+                            digitally, and email it with your answers to the additional questions.
+                            Do not attach anything else.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] font-bold uppercase tracking-wider text-spe-gold">Shortlisting</dt>
+                        <dd class="mt-0.5 text-sm leading-relaxed text-white/75">
+                            Shortlisted candidates present to a judging panel, in person or
+                            remotely, before awards are confirmed.
+                        </dd>
+                    </div>
                 </dl>
 
                 <div>
+                    @* #UpdateLink — the cycle runs to roughly these months each year. Replace with
+                       the exact dates once SPE Aberdeen publishes them for the current cycle. *@
                     <p class="mb-2 text-[11px] font-bold uppercase tracking-wider text-spe-gold">Timeline</p>
                     <ul class="mb-6 space-y-2">
-                        @foreach (var (stage, when) in BursaryTimeline)
-                        {
-                            <li @key="stage" class="flex items-baseline justify-between gap-3 text-sm">
-                                <span class="text-white/75">@stage</span>
-                                <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">@when</span>
-                            </li>
-                        }
+                        <li class="flex items-baseline justify-between gap-3 text-sm">
+                            <span class="text-white/75">Applications open</span>
+                            <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">Early November</span>
+                        </li>
+                        <li class="flex items-baseline justify-between gap-3 text-sm">
+                            <span class="text-white/75">Deadline</span>
+                            <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">Mid-December</span>
+                        </li>
+                        <li class="flex items-baseline justify-between gap-3 text-sm">
+                            <span class="text-white/75">Judging</span>
+                            <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">January</span>
+                        </li>
+                        <li class="flex items-baseline justify-between gap-3 text-sm">
+                            <span class="text-white/75">Winners announced</span>
+                            <span class="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">February</span>
+                        </li>
                     </ul>
 
                     @* #UpdateLink — bursary links and the section's contact address. The
@@ -138,22 +195,102 @@
                 </p>
             </div>
 
+            @* #UpdateLink — the awards below. Each links to SPE's own criteria page; the one-line
+               summaries are ours. To add another, copy a whole <a> block. *@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                @foreach (var award in FoundationAwards)
-                {
-                    <a @key="award.Title" href="@award.Url" target="_blank" rel="noopener noreferrer"
-                       class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
-                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
-                            <Icon Name="@award.Icon" Class="h-5 w-5" />
-                        </div>
-                        <h3 class="mb-1.5 font-heading text-base font-bold text-white">@award.Title</h3>
-                        <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">@award.Who</p>
-                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
-                            Read the criteria
-                            <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                        </span>
-                    </a>
-                }
+                <a href="https://www.spe.org/en/scholarships/archie/" target="_blank" rel="noopener noreferrer"
+                   class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
+                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="graduation-cap" Class="h-5 w-5" />
+                    </div>
+                    <h3 class="mb-1.5 font-heading text-base font-bold text-white">Gus Archie Scholarship</h3>
+                    <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">
+                        For an outstanding student entering university to read for an undergraduate
+                        degree in petroleum engineering.
+                    </p>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
+                        Read the criteria
+                        <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                </a>
+
+                <a href="https://www.spe.org/en/scholarships/vanwingen/" target="_blank" rel="noopener noreferrer"
+                   class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
+                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="book" Class="h-5 w-5" />
+                    </div>
+                    <h3 class="mb-1.5 font-heading text-base font-bold text-white">Nico van Wingen Graduate Fellowship</h3>
+                    <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">
+                        For graduate students in petroleum engineering, supporting study at
+                        master's and doctoral level.
+                    </p>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
+                        Read the criteria
+                        <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                </a>
+
+                <a href="https://www.spe.org/en/scholarships/russell/" target="_blank" rel="noopener noreferrer"
+                   class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
+                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="star" Class="h-5 w-5" />
+                    </div>
+                    <h3 class="mb-1.5 font-heading text-base font-bold text-white">Donald G. Russell Scholarship</h3>
+                    <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">
+                        For undergraduates studying at universities in the United States.
+                    </p>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
+                        Read the criteria
+                        <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                </a>
+
+                <a href="https://www.spe.org/en/scholarships/smith/" target="_blank" rel="noopener noreferrer"
+                   class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
+                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="presentation" Class="h-5 w-5" />
+                    </div>
+                    <h3 class="mb-1.5 font-heading text-base font-bold text-white">Henry DeWitt Smith Fellowship</h3>
+                    <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">
+                        A named SPE Foundation fellowship — check SPE's criteria page for the
+                        current terms.
+                    </p>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
+                        Read the criteria
+                        <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                </a>
+
+                <a href="https://www.spe.org/en/scholarships/imomoh/" target="_blank" rel="noopener noreferrer"
+                   class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
+                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="globe" Class="h-5 w-5" />
+                    </div>
+                    <h3 class="mb-1.5 font-heading text-base font-bold text-white">Imomoh Scholarship</h3>
+                    <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">
+                        For students from the SPE Africa Region.
+                    </p>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
+                        Read the criteria
+                        <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                </a>
+
+                <a href="https://www.spe.org/en/scholarships/section-scholarships/" target="_blank" rel="noopener noreferrer"
+                   class="group flex flex-col rounded-xl bg-white/10 p-5 transition-colors hover:bg-white/15">
+                    <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-spe-gold text-black">
+                        <Icon Name="users" Class="h-5 w-5" />
+                    </div>
+                    <h3 class="mb-1.5 font-heading text-base font-bold text-white">SPE Section Scholarships</h3>
+                    <p class="mb-3 flex-1 text-sm leading-relaxed text-white/75">
+                        Awarded by local sections worldwide, ours included. Value varies, and some
+                        cover travel, books or software rather than fees.
+                    </p>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-spe-gold">
+                        Read the criteria
+                        <Icon Name="arrow-right" Class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                </a>
             </div>
         </section>
 
@@ -186,63 +323,3 @@
         </section>
     </div>
 </FadeUp>
-
-@code {
-    /* ---------- SPE Aberdeen bursary ---------- */
-
-    // #UpdateLink — bursary eligibility and application copy. Source of truth is
-    // https://www.spe-aberdeen.org/student-bursaries — re-read it when the cycle reopens.
-    private static readonly (string Label, string Text)[] BursaryFacts =
-    [
-        ("Who runs it", "The SPE Aberdeen Section. Applications are reviewed by the Student Development Committee, and the Board gives final approval."),
-        ("Eligible institutions", "University of Aberdeen, Robert Gordon University (RGU), Heriot-Watt University, and the University of Dundee."),
-        ("Who can apply", "Undergraduates, full-time postgraduates and PhD students currently enrolled on a course directly relevant to the energy industry."),
-        ("What they look for", "Academic merit, a demonstrated commitment to working in the energy sector, SPE membership, and active involvement in SPE."),
-        ("How to apply", "Download the application form from the SPE Aberdeen site, complete it digitally, and email it with your answers to the additional questions. Do not attach anything else."),
-        ("Shortlisting", "Shortlisted candidates present to a judging panel, in person or remotely, before awards are confirmed.")
-    ];
-
-    // #UpdateLink — the bursary cycle runs to roughly these months each year. Replace with the
-    // exact dates once SPE Aberdeen publishes them for the current cycle.
-    private static readonly (string Stage, string When)[] BursaryTimeline =
-    [
-        ("Applications open", "Early November"),
-        ("Deadline", "Mid-December"),
-        ("Judging", "January"),
-        ("Winners announced", "February")
-    ];
-
-    /* ---------- SPE Foundation awards ---------- */
-
-    // #UpdateLink — the international awards listed at https://www.spe.org/en/scholarships/.
-    // Titles and eligibility summaries are ours; the links go to SPE's own criteria pages.
-    private static readonly Award[] FoundationAwards =
-    [
-        new("graduation-cap", "Gus Archie Scholarship",
-            "For an outstanding student entering university to read for an undergraduate degree in petroleum engineering.",
-            "https://www.spe.org/en/scholarships/archie/"),
-
-        new("book", "Nico van Wingen Graduate Fellowship",
-            "For graduate students in petroleum engineering, supporting study at master's and doctoral level.",
-            "https://www.spe.org/en/scholarships/vanwingen/"),
-
-        new("star", "Donald G. Russell Scholarship",
-            "For undergraduates studying at universities in the United States.",
-            "https://www.spe.org/en/scholarships/russell/"),
-
-        new("presentation", "Henry DeWitt Smith Fellowship",
-            "A named SPE Foundation fellowship — check SPE's criteria page for the current terms.",
-            "https://www.spe.org/en/scholarships/smith/"),
-
-        new("globe", "Imomoh Scholarship",
-            "For students from the SPE Africa Region.",
-            "https://www.spe.org/en/scholarships/imomoh/"),
-
-        new("users", "SPE Section Scholarships",
-            "Awarded by local sections worldwide, ours included. Value varies, and some cover travel, books or software rather than fees.",
-            "https://www.spe.org/en/scholarships/section-scholarships/")
-    ];
-
-    /// <summary>One SPE Foundation award, rendered as a card linking to SPE's own criteria page.</summary>
-    private sealed record Award(string Icon, string Title, string Who, string Url);
-}
