@@ -192,36 +192,42 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
-    // #UpdateLink — the seeded Team Leader account. It does not have to be an SPE member: any
-    // address works, and it exists so the app can never be locked out of its own admin. The
-    // email can also be changed later from member management.
+    // #UpdateLink — the seeded Team Leader accounts. They do not have to be SPE members: any
+    // address works, and they exist so the app can never be locked out of its own admin. The
+    // emails can also be changed later from member management.
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    const string adminEmail = "zainaldinsabr@gmail.com";
-    const string adminName = "SPE Team Leader";
-
-    var admin = await userManager.FindByEmailAsync(adminEmail);
-    var created = admin is null;
-    admin ??= new ApplicationUser();
-
-    // Reapplied on every start, not just on creation, so editing the constants above is enough
-    // to move the seeded account rather than leaving a stale one behind.
-    admin.UserName = adminEmail;
-    admin.Email = adminEmail;
-    admin.FullName = adminName;
-    admin.IsStudentChapterOfficer = true;
-    admin.OpenWaterMemberId ??= "seeded";
-
-    var saveResult = created
-        ? await userManager.CreateAsync(admin)
-        : await userManager.UpdateAsync(admin);
-
-    if (saveResult.Succeeded)
+    var seededAdmins = new[]
     {
-        if (!await userManager.IsInRoleAsync(admin, "TeamLeader"))
-            await userManager.AddToRoleAsync(admin, "TeamLeader");
+        (Email: "zainaldinsabr@gmail.com", Name: "SPE Team Leader"),
+        (Email: "spe@ausa.org.uk", Name: "SPE Aberdeen Student Chapter"),
+    };
 
-        if (!await userManager.IsInRoleAsync(admin, "CommitteeMember"))
-            await userManager.AddToRoleAsync(admin, "CommitteeMember");
+    foreach (var (adminEmail, adminName) in seededAdmins)
+    {
+        var admin = await userManager.FindByEmailAsync(adminEmail);
+        var created = admin is null;
+        admin ??= new ApplicationUser();
+
+        // Reapplied on every start, not just on creation, so editing the list above is enough
+        // to move a seeded account rather than leaving a stale one behind.
+        admin.UserName = adminEmail;
+        admin.Email = adminEmail;
+        admin.FullName = adminName;
+        admin.IsStudentChapterOfficer = true;
+        admin.OpenWaterMemberId ??= "seeded";
+
+        var saveResult = created
+            ? await userManager.CreateAsync(admin)
+            : await userManager.UpdateAsync(admin);
+
+        if (saveResult.Succeeded)
+        {
+            if (!await userManager.IsInRoleAsync(admin, "TeamLeader"))
+                await userManager.AddToRoleAsync(admin, "TeamLeader");
+
+            if (!await userManager.IsInRoleAsync(admin, "CommitteeMember"))
+                await userManager.AddToRoleAsync(admin, "CommitteeMember");
+        }
     }
 }
 

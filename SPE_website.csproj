@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <UserSecretsId>28c69674-4798-4e15-b846-a8a48a396e78</UserSecretsId>
+    <!-- `dotnet publish` writes into ./publish, whose copied wwwroot assets would otherwise
+         be globbed back in as build inputs and fail with BLAZOR106. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
