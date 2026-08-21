@@ -199,7 +199,7 @@ using (var scope = app.Services.CreateScope())
     var seededAdmins = new[]
     {
         (Email: "zainaldinsabr@gmail.com", Name: "SPE Team Leader"),
-        (Email: "spe@ausa.org.uk", Name: "SPE Aberdeen Student Chapter"),
+        // (Email: "spe@ausa.org.uk", Name: "SPE Aberdeen Student Chapter"),
     };
 
     foreach (var (adminEmail, adminName) in seededAdmins)
