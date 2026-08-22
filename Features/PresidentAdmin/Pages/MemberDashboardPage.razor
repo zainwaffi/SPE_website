@@ -55,7 +55,7 @@
         </div>
     }
 
-    @* ---------- Member table ---------- *@
+    @* ---------- Member search and table ---------- *@
 
     @if (members is null)
     {
@@ -69,113 +69,132 @@
     }
     else
     {
-        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
-                    <tr>
-                        <th class="px-6 py-4 text-left font-semibold">Member</th>
-                        <th class="px-6 py-4 text-left font-semibold">Role</th>
-                        <th class="px-6 py-4 text-center font-semibold">Tasks</th>
-                        <th class="px-6 py-4 text-center font-semibold">Strikes</th>
-                        <th class="px-6 py-4 text-center font-semibold">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @foreach (var member in members)
-                    {
-                        var tasks = CountTasks(member);
-                        <tr @key="member.Id" class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-spe-blue flex items-center justify-center text-white font-bold text-sm shrink-0">
-                                        @(member.FullName.Length > 0 ? char.ToUpperInvariant(member.FullName[0]).ToString() : "?")
+        var visibleMembers = members.Where(MatchesSearch).ToList();
+
+        @* One box over the loaded list — the admin table is a single page of members, so
+           filtering in memory beats a round trip per keystroke. *@
+        <div class="mb-6">
+            <input class="w-full bg-white spe-input"
+                   placeholder="Search members by name or email..."
+                   @bind="searchQuery" @bind:event="oninput" />
+        </div>
+
+        @if (visibleMembers.Count == 0)
+        {
+            <div class="text-center py-20 bg-white rounded-xl border border-slate-200">
+                <p class="text-slate-400 text-xl">No members match your search.</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 text-left font-semibold">Member</th>
+                            <th class="px-6 py-4 text-left font-semibold">Role</th>
+                            <th class="px-6 py-4 text-center font-semibold">Tasks</th>
+                            <th class="px-6 py-4 text-center font-semibold">Strikes</th>
+                            <th class="px-6 py-4 text-center font-semibold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var member in visibleMembers)
+                        {
+                            var tasks = CountTasks(member);
+                            <tr @key="member.Id" class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-full bg-spe-blue flex items-center justify-center text-white font-bold text-sm shrink-0">
+                                            @(member.FullName.Length > 0 ? char.ToUpperInvariant(member.FullName[0]).ToString() : "?")
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-slate-800">@member.FullName</p>
+                                            <p class="text-slate-400 text-xs">@member.Email</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="font-semibold text-slate-800">@member.FullName</p>
-                                        <p class="text-slate-400 text-xs">@member.Email</p>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if (string.IsNullOrWhiteSpace(member.CommitteeTitle))
+                                    {
+                                        <span class="text-slate-400 text-xs">None</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-block whitespace-nowrap bg-spe-blue/10 text-spe-blue text-xs font-semibold px-2.5 py-1 rounded-full">
+                                            @member.CommitteeTitle
+                                        </span>
+                                    }
+                                    @* Team allocation drives tutorial access, so it belongs on the
+                                       table rather than only behind the edit form. *@
+                                    @if (member.Teams.Count == 0)
+                                    {
+                                        <p class="mt-1.5 text-xs text-slate-400">No team</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="mt-1.5 flex flex-col gap-1">
+                                            @foreach (var membership in member.Teams.OrderBy(m => m.Team))
+                                            {
+                                                <span @key="membership.Team" class="inline-block whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                                    @membership.Team.DisplayName()
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex justify-center gap-3 text-xs">
+                                        <span class="text-amber-600 font-semibold">@tasks.Active active</span>
+                                        <span class="text-green-600 font-semibold">@tasks.Completed done</span>
+                                        <span class="text-red-500 font-semibold">@tasks.Failed failed</span>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if (string.IsNullOrWhiteSpace(member.CommitteeTitle))
-                                {
-                                    <span class="text-slate-400 text-xs">None</span>
-                                }
-                                else
-                                {
-                                    <span class="inline-block whitespace-nowrap bg-spe-blue/10 text-spe-blue text-xs font-semibold px-2.5 py-1 rounded-full">
-                                        @member.CommitteeTitle
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="text-xl font-extrabold @(member.StrikeCount >= 3 ? "text-red-500" : member.StrikeCount >= 1 ? "text-amber-500" : "text-green-500")">
+                                        @member.StrikeCount
                                     </span>
-                                }
-                                @* Team allocation drives tutorial access, so it belongs on the
-                                   table rather than only behind the edit form. *@
-                                @if (member.Teams.Count == 0)
-                                {
-                                    <p class="mt-1.5 text-xs text-slate-400">No team</p>
-                                }
-                                else
-                                {
-                                    <div class="mt-1.5 flex flex-col gap-1">
-                                        @foreach (var membership in member.Teams.OrderBy(m => m.Team))
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex justify-center gap-2">
+                                        <button @onclick="() => AddStrike(member)"
+                                                title="Add strike" aria-label="Add strike"
+                                                class="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                            <Icon Name="triangle-exclamation" Class="h-4 w-4" />
+                                        </button>
+                                        <button @onclick="() => RemoveStrike(member)"
+                                                disabled="@(member.StrikeCount == 0)"
+                                                title="@(member.StrikeCount == 0 ? "This member has no strikes to remove" : "Remove strike")"
+                                                aria-label="Remove strike"
+                                                class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-100">
+                                            <Icon Name="rotate" Class="h-4 w-4" />
+                                        </button>
+                                        <button @onclick="() => OpenAssignTask(member)"
+                                                title="Assign task" aria-label="Assign task"
+                                                class="text-xs bg-blue-100 text-spe-blue hover:bg-blue-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                            <Icon Name="list-check" Class="h-4 w-4" />
+                                        </button>
+                                        <button @onclick="() => OpenEditMember(member)"
+                                                title="Edit member" aria-label="Edit member"
+                                                class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                            <Icon Name="pen-to-square" Class="h-4 w-4" />
+                                        </button>
+                                        @if (member.Id != currentUserId)
                                         {
-                                            <span @key="membership.Team" class="inline-block whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                                                @membership.Team.DisplayName()
-                                            </span>
+                                            <button @onclick="() => deleteTarget = member"
+                                                    title="Remove member" aria-label="Remove member"
+                                                    class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
+                                                <Icon Name="user-minus" Class="h-4 w-4" />
+                                            </button>
                                         }
                                     </div>
-                                }
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="flex justify-center gap-3 text-xs">
-                                    <span class="text-amber-600 font-semibold">@tasks.Active active</span>
-                                    <span class="text-green-600 font-semibold">@tasks.Completed done</span>
-                                    <span class="text-red-500 font-semibold">@tasks.Failed failed</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-xl font-extrabold @(member.StrikeCount >= 3 ? "text-red-500" : member.StrikeCount >= 1 ? "text-amber-500" : "text-green-500")">
-                                    @member.StrikeCount
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="flex justify-center gap-2">
-                                    <button @onclick="() => AddStrike(member)"
-                                            title="Add strike" aria-label="Add strike"
-                                            class="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
-                                        <Icon Name="triangle-exclamation" Class="h-4 w-4" />
-                                    </button>
-                                    <button @onclick="() => RemoveStrike(member)"
-                                            disabled="@(member.StrikeCount == 0)"
-                                            title="@(member.StrikeCount == 0 ? "This member has no strikes to remove" : "Remove strike")"
-                                            aria-label="Remove strike"
-                                            class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-100">
-                                        <Icon Name="rotate" Class="h-4 w-4" />
-                                    </button>
-                                    <button @onclick="() => OpenAssignTask(member)"
-                                            title="Assign task" aria-label="Assign task"
-                                            class="text-xs bg-blue-100 text-spe-blue hover:bg-blue-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
-                                        <Icon Name="list-check" Class="h-4 w-4" />
-                                    </button>
-                                    <button @onclick="() => OpenEditMember(member)"
-                                            title="Edit member" aria-label="Edit member"
-                                            class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
-                                        <Icon Name="pen-to-square" Class="h-4 w-4" />
-                                    </button>
-                                    @if (member.Id != currentUserId)
-                                    {
-                                        <button @onclick="() => deleteTarget = member"
-                                                title="Remove member" aria-label="Remove member"
-                                                class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1.5 rounded-lg transition-colors font-semibold">
-                                            <Icon Name="user-minus" Class="h-4 w-4" />
-                                        </button>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     }
 </div>
 
@@ -317,6 +336,9 @@
     private List<ApplicationUser>? members;
     private string? currentUserId;
 
+    // Free-text filter over the loaded member list.
+    private string searchQuery = "";
+
     // Result of the last strike/task action, so the admin can see whether the member was actually emailed.
     private EmailResult? notification;
     private string notificationAction = "";
@@ -347,6 +369,18 @@
     {
         currentUserId = await AuthStateTask.GetUserIdAsync();
         members = await AdminSvc.GetAllMembersAsync();
+    }
+
+    /// <summary>Name and email both identify a member, so the one box matches either.</summary>
+    private bool MatchesSearch(ApplicationUser member)
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            return true;
+        }
+
+        return member.FullName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
+            || (member.Email?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 
     /// <summary>One pass over a member's tasks instead of three separate LINQ Count() calls per render.</summary>
