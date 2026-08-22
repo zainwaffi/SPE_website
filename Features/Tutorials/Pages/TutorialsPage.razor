@@ -140,7 +140,12 @@
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     @foreach (var t in group.Tutorials)
                     {
-                        <article @key="t.Id" class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
+                        @* A right-click inside the YouTube iframe belongs to YouTube and never
+                           reaches this handler; the card body around it is the way in. *@
+                        <article @key="t.Id"
+                                 @oncontextmenu="e => OpenMenu(e, t)"
+                                 @oncontextmenu:preventDefault="canManage"
+                                 class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
                             @if (t.Format == TutorialFormat.Video && !string.IsNullOrEmpty(t.YoutubeEmbedUrl))
                             {
                                 <div class="aspect-video">
@@ -155,7 +160,7 @@
                             {
                                 @* Articles have no thumbnail, so the banner doubles as the affordance
                                    that this one opens rather than plays. *@
-                                <a href="/tutorials/@t.Id"
+                                <a href="/tutorials/@t.Id" @oncontextmenu:stopPropagation="true"
                                    class="flex aspect-video items-center justify-center bg-gradient-to-br from-spe-cobalt to-spe-endeavor transition-opacity hover:opacity-90">
                                     <span class="flex flex-col items-center gap-2 text-white">
                                         <Icon Name="book" Class="h-8 w-8" />
@@ -175,25 +180,121 @@
 
                                 @if (t.Format == TutorialFormat.Article)
                                 {
-                                    <a href="/tutorials/@t.Id" class="mt-3 inline-block text-sm font-semibold text-spe-cobalt hover:underline">
+                                    @* Same reason as the banner above: "open in new tab" on a
+                                       tutorial is worth more than Update/Delete, which the rest
+                                       of the card still offers. *@
+                                    <a href="/tutorials/@t.Id" @oncontextmenu:stopPropagation="true"
+                                       class="mt-3 inline-block text-sm font-semibold text-spe-cobalt hover:underline">
                                         Read article
                                     </a>
                                 }
-
-                                <AuthorizeView Roles="TeamLeader">
-                                    <Authorized>
-                                        <button @onclick="() => DeleteTutorial(t.Id)"
-                                                class="mt-3 block text-xs font-medium text-red-400 transition-colors hover:text-red-600">
-                                            Delete
-                                        </button>
-                                    </Authorized>
-                                </AuthorizeView>
                             </div>
                         </article>
                     }
                 </div>
             </section>
         }
+    }
+
+    @* ---------- Team Leader: right-click menu, edit dialog, delete confirmation ---------- *@
+
+    @* The right-click menu is the only route to Update and Delete, and deleting always goes
+       through the confirmation below — the inline Delete link that used to sit on each card
+       removed a tutorial on a single stray click. Same audience as the Add Tutorial button:
+       Team Leaders, who author this content. *@
+
+    @if (menuTutorial is not null)
+    {
+        <ContextMenu X="menuX" Y="menuY" Label="@menuTutorial.Title"
+                     OnUpdate="StartEdit" OnDelete="StartDelete" OnClose="CloseMenu" />
+    }
+
+    @if (editTutorial is not null)
+    {
+        @* The fields repeat the add form above rather than sharing markup with it. Threading a
+           dozen two-way bindings through a shared component costs more than the repetition, and
+           the two forms are not the same shape anyway: this one is a dialog over a page the
+           editor was already reading, and it drops the add form's "pick every team" hint for a
+           set that is already chosen. *@
+        <div class="spe-modal-backdrop" @onclick="CancelEdit">
+            <div class="spe-modal-card max-w-2xl" @onclick:stopPropagation="true">
+                <h2 class="mb-6 font-heading text-xl font-bold text-spe-cobalt">Edit Tutorial</h2>
+
+                <div class="mb-5">
+                    <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600">Format</p>
+                    <div class="flex gap-2">
+                        @foreach (var format in Formats)
+                        {
+                            <button type="button" @key="format" @onclick="() => editFormat = format"
+                                    aria-pressed="@(editFormat == format)"
+                                    class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors @(editFormat == format
+                                            ? "border-spe-cobalt bg-spe-cobalt text-white"
+                                            : "border-slate-300 text-slate-600 hover:bg-slate-50")">
+                                <Icon Name="@(format == TutorialFormat.Video ? "globe" : "book")" Class="h-4 w-4" />
+                                @(format == TutorialFormat.Video ? "YouTube video" : "Written article")
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600">Teams</p>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var team in Data.Models.Teams.All)
+                        {
+                            <button type="button" @key="team" @onclick="() => ToggleEditTeam(team)"
+                                    aria-pressed="@editTeams.Contains(team)"
+                                    class="rounded-lg border px-4 py-2 text-sm font-semibold transition-colors @(editTeams.Contains(team)
+                                            ? "border-spe-cobalt bg-spe-cobalt text-white"
+                                            : "border-slate-300 text-slate-600 hover:bg-slate-50")">
+                                @team.DisplayName()
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <input class="spe-input" placeholder="Title" @bind="editTitle" />
+
+                    <textarea class="spe-input" rows="2"
+                              placeholder="Short summary shown on the card" @bind="editDescription"></textarea>
+
+                    @if (editFormat == TutorialFormat.Video)
+                    {
+                        <input class="spe-input"
+                               placeholder="YouTube URL (watch, youtu.be, Shorts or embed)" @bind="editYoutubeUrl" />
+                    }
+                    else
+                    {
+                        <div>
+                            <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="tutorial-edit-body">
+                                Article body
+                            </label>
+                            <textarea id="tutorial-edit-body" class="spe-input w-full font-mono text-sm" rows="12"
+                                      placeholder="@MarkdownPlaceholder" @bind="editArticleContent"></textarea>
+                        </div>
+                    }
+                </div>
+
+                @if (editError is not null)
+                {
+                    <p class="mt-3 text-sm text-red-500">@editError</p>
+                }
+
+                <div class="mt-6 flex gap-3">
+                    <button @onclick="SaveEdit" class="spe-primary-btn flex-1">Save changes</button>
+                    <button @onclick="CancelEdit"
+                            class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (deleteTutorial is not null)
+    {
+        <ConfirmDialog Title="Delete this tutorial?"
+                       Message="@($"“{deleteTutorial.Title}” will be removed for every team it is filed under. This cannot be undone.")"
+                       OnConfirm="ConfirmDelete" OnCancel="() => deleteTutorial = null" />
     }
 </div>
 
@@ -230,10 +331,35 @@
     private TutorialFormat newFormat = TutorialFormat.Video;
     private string? formError;
 
+    /* ---------- Team Leader: right-click update/delete ---------- */
+
+    private bool canManage;
+
+    private Tutorial? menuTutorial;
+    private double menuX, menuY;
+
+    private Tutorial? editTutorial;
+    private string editTitle = "";
+    private string editDescription = "";
+    private string editYoutubeUrl = "";
+    private string editArticleContent = "";
+    private readonly HashSet<Team> editTeams = [];
+    private TutorialFormat editFormat = TutorialFormat.Video;
+    private string? editError;
+
+    private Tutorial? deleteTutorial;
+
     protected override async Task OnInitializedAsync()
     {
         var authState = AuthStateTask is null ? null : await AuthStateTask;
-        seesAllTeams = authState?.User.IsInRole("TeamLeader") ?? false;
+
+        // Both are "is a Team Leader" today, but they answer different questions — one is about
+        // which tutorials are visible, the other about who may edit them — so the page keeps them
+        // apart rather than reading one flag for both.
+        var isTeamLeader = authState?.User.IsInRole("TeamLeader") ?? false;
+        seesAllTeams = isTeamLeader;
+        canManage = isTeamLeader;
+
         await LoadTutorials();
     }
 
@@ -326,8 +452,121 @@
         await LoadTutorials();
     }
 
-    private async Task DeleteTutorial(int id)
+    /* ---------- Team Leader: right-click update/delete ---------- */
+
+    /// <summary>
+    /// Opens the context menu over the card. Does nothing for a member without edit rights,
+    /// whose browser then keeps its own right-click menu — the markup pairs this with
+    /// <c>@@oncontextmenu:preventDefault="canManage"</c> so the two agree.
+    /// </summary>
+    private void OpenMenu(MouseEventArgs e, Tutorial tutorial)
     {
+        if (!canManage) return;
+
+        menuTutorial = tutorial;
+        (menuX, menuY) = (e.ClientX, e.ClientY);
+    }
+
+    private void CloseMenu() => menuTutorial = null;
+
+    private void StartEdit()
+    {
+        if (menuTutorial is null) return;
+
+        editTutorial = menuTutorial;
+        editTitle = editTutorial.Title;
+        editDescription = editTutorial.Description;
+        editFormat = editTutorial.Format;
+        editYoutubeUrl = editTutorial.YoutubeEmbedUrl;
+        editArticleContent = editTutorial.ArticleContent;
+
+        editTeams.Clear();
+        foreach (var filing in editTutorial.Teams) editTeams.Add(filing.Team);
+
+        editError = null;
+        CloseMenu();
+    }
+
+    private void ToggleEditTeam(Team team)
+    {
+        if (!editTeams.Remove(team)) editTeams.Add(team);
+    }
+
+    /// <summary>
+    /// Saves the edit. The validation deliberately matches <see cref="SaveTutorial"/> field for
+    /// field: an edit can leave a tutorial in any of the states the add form refuses to create —
+    /// untitled, unfiled, or switched to a format whose content was never filled in.
+    /// </summary>
+    private async Task SaveEdit()
+    {
+        if (editTutorial is null) return;
+
+        editError = null;
+
+        if (string.IsNullOrWhiteSpace(editTitle))
+        {
+            editError = "Give the tutorial a title.";
+            return;
+        }
+
+        if (editTeams.Count == 0)
+        {
+            editError = "Pick at least one team that should see this tutorial.";
+            return;
+        }
+
+        string embedUrl = "";
+        if (editFormat == TutorialFormat.Video)
+        {
+            if (string.IsNullOrWhiteSpace(editYoutubeUrl))
+            {
+                editError = "Add the YouTube link, or switch to a written article.";
+                return;
+            }
+
+            var normalised = YouTubeUrl.ToEmbedUrl(editYoutubeUrl);
+            if (normalised is null)
+            {
+                editError = "That doesn't look like a YouTube link. Paste the URL from the address bar or the Share button.";
+                return;
+            }
+
+            embedUrl = normalised;
+        }
+
+        if (editFormat == TutorialFormat.Article && string.IsNullOrWhiteSpace(editArticleContent))
+        {
+            editError = "Write the article body, or switch to a YouTube video.";
+            return;
+        }
+
+        await TutorialSvc.UpdateAsync(
+            editTutorial.Id, editTitle, editDescription, editFormat,
+            embedUrl, editArticleContent, editTeams);
+
+        editTutorial = null;
+        await LoadTutorials();
+    }
+
+    private void CancelEdit()
+    {
+        editTutorial = null;
+        editError = null;
+    }
+
+    private void StartDelete()
+    {
+        deleteTutorial = menuTutorial;
+        CloseMenu();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (deleteTutorial is null) return;
+
+        var id = deleteTutorial.Id;
+        deleteTutorial = null;
+
         await TutorialSvc.DeleteAsync(id);
         await LoadTutorials();
     }
