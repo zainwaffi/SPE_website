@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using SPE_website.Data.Models;
 using SPE_website.Features.Authentication.Models;
+using SPE_website.Shared.Models;
 
 namespace SPE_website.Features.Authentication.Services;
 
@@ -13,22 +14,20 @@ namespace SPE_website.Features.Authentication.Services;
 public class OpenWaterAuthService(
     IHttpClientFactory httpClientFactory,
     UserManager<ApplicationUser> userManager,
-    SignInManager<ApplicationUser> signInManager)
+    SignInManager<ApplicationUser> signInManager,
+    SeededAdmins seededAdmins)
 {
     /* ---------- Configuration constants ---------- */
 
-    // #UpdateLink — the OpenWater lookup URL, the bootstrap admin address, and the join-SPE
-    // link below. The admin address must be kept in step with adminEmail in Program.cs.
+    // #UpdateLink — the OpenWater lookup URL and the join-SPE link below.
+    //
+    // The bootstrap admin addresses are no longer here: they are the configured SeededAdmins,
+    // injected above. Those accounts are always granted full (President) access even when
+    // OpenWater has no record of them, which is what makes them a way back in if the external
+    // service is unreachable or the account is not registered there yet. Holding a second copy
+    // of the address here meant a comment had to ask the next person to keep the two in step.
     private const string PrefillUrlTemplate = "https://openwater-os.secure-platform.com/societypetroleumengineers/prefill?emailOrUserId={0}";
 
-    /// <summary>
-    /// Bootstrap admin email that is always granted full (President) access even if
-    /// no OpenWater record is found — used to recover access if the external service
-    /// is unreachable or the account isn't yet registered there.
-    /// </summary>
-
-    /// #UpdateLink — the OpenWater lookup URL, the bootstrap admin address, and the join-SPE
-    private const string FullAccessEmail = "zainaldinsabr@gmail.com";
     /// <summary>Public join-SPE link shown to users whose email isn't found in OpenWater.</summary>
     public const string JoinSpeUrl = "https://www.spe.org/en/join/";
 
@@ -40,7 +39,7 @@ public class OpenWaterAuthService(
     public async Task<(bool Succeeded, bool ShowJoinSpeOption, string? Error)> LoginWithEmailAsync(string email)
     {
         var normalizedEmail = email.Trim();
-        var isFullAccessEmail = string.Equals(normalizedEmail, FullAccessEmail, StringComparison.OrdinalIgnoreCase);
+        var isFullAccessEmail = seededAdmins.Includes(normalizedEmail);
         var profile = await GetMemberProfileAsync(normalizedEmail);
 
         if (profile is null)
@@ -126,7 +125,7 @@ public class OpenWaterAuthService(
     /// </summary>
     private async Task<IdentityResult> SyncRolesAsync(ApplicationUser user, bool isStudentOfficer, bool isNewUser)
     {
-        var isFullAccessEmail = string.Equals(user.Email, FullAccessEmail, StringComparison.OrdinalIgnoreCase);
+        var isFullAccessEmail = seededAdmins.Includes(user.Email);
 
         if (isFullAccessEmail)
         {

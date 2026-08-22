@@ -119,5 +119,34 @@ Defined in `Styles/input.css` via `@theme`:
 Triggered by:
 - Strike added → email to affected member
 - Task assigned → email to assigned member
+- Task completed → email to team leaders
+- Event updated → email to everyone signed up to attend it
 
 Config keys in `appsettings.json` under `"EmailSettings"`: `SmtpHost`, `SmtpPort`, `Username`, `Password`, `From`.
+
+`EmailService.SendAsync` sends to one person. `SendManyAsync` sends a personalised message to many
+over a **single** SMTP connection — use it for anything addressing a whole list, because
+`SendAsync` in a loop reconnects and re-authenticates per recipient and will stall the request
+that triggered it.
+
+## Seeded Admin Accounts
+
+The Team Leader accounts created (and re-applied) at every startup, so a deployment always has
+someone who can sign in and grant roles. They are also the only addresses that can log in when
+the external OpenWater directory has no record of them, which makes them the way back in if that
+service is down.
+
+Configured under `"SeededAdmins"` — **never hard-coded**, and read in exactly one place
+(`SeededAdmins`, registered in `Program.cs`) because both startup seeding and `OpenWaterAuthService`
+need the same answer:
+
+```bash
+# development
+dotnet user-secrets set "SeededAdmins:0:Email" "you@example.com"
+
+# deployment — the default provider reads `__` as `:`
+SeededAdmins__0__Email=you@example.com
+SeededAdmins__0__Name=SPE Team Leader
+```
+
+With none configured the app still starts, logs a warning, and seeds nobody.

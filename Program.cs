@@ -53,6 +53,15 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
+// Bootstrap admins are read once here rather than by each consumer: startup seeding creates the
+// accounts and OpenWaterAuthService lets them in without a membership record, and those two
+// previously held separate hard-coded copies of the same address.
+builder.Services.AddSingleton(new SeededAdmins(
+    [.. (builder.Configuration.GetSection("SeededAdmins").Get<SeededAdmin[]>() ?? [])
+        // An entry with no address is what an unset environment variable looks like. Identity
+        // would reject it anyway, so drop it rather than logging a failure that reads like a bug.
+        .Where(a => !string.IsNullOrWhiteSpace(a.Email))]));
+
 /* ---------- Feature services ---------- */
 
 builder.Services.AddScoped<EventService>();
@@ -192,24 +201,33 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
-    // #UpdateLink — the seeded Team Leader accounts. They do not have to be SPE members: any
-    // address works, and they exist so the app can never be locked out of its own admin. The
-    // emails can also be changed later from member management.
+    // The seeded Team Leader accounts, configured rather than hard-coded — see SeededAdmin for
+    // the user-secrets and environment-variable forms. They exist so the app can never be locked
+    // out of its own admin.
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var seededAdmins = new[]
-    {
-        (Email: "zainaldinsabr@gmail.com", Name: "SPE Team Leader"),
-        // (Email: "spe@ausa.org.uk", Name: "SPE Aberdeen Student Chapter"),
-    };
+    var seededAdmins = scope.ServiceProvider.GetRequiredService<SeededAdmins>().Accounts;
 
-    foreach (var (adminEmail, adminName) in seededAdmins)
+    if (seededAdmins.Count == 0)
     {
+        // Loud, because the failure is silent and delayed: the app starts perfectly well and only
+        // turns out to have nobody who can sign in and grant roles once someone tries.
+        app.Logger.LogWarning(
+            "No seeded Team Leader is configured, so a new deployment has no admin account. Set " +
+            "SeededAdmins__0__Email (and SeededAdmins__0__Name) in the environment, or " +
+            "\"SeededAdmins:0:Email\" in user secrets.");
+    }
+
+    foreach (var seeded in seededAdmins)
+    {
+        var adminEmail = seeded.Email.Trim();
+        var adminName = string.IsNullOrWhiteSpace(seeded.Name) ? "SPE Team Leader" : seeded.Name.Trim();
+
         var admin = await userManager.FindByEmailAsync(adminEmail);
         var created = admin is null;
         admin ??= new ApplicationUser();
 
-        // Reapplied on every start, not just on creation, so editing the list above is enough
-        // to move a seeded account rather than leaving a stale one behind.
+        // Reapplied on every start, not just on creation, so changing the configured address is
+        // enough to move a seeded account rather than leaving a stale one behind.
         admin.UserName = adminEmail;
         admin.Email = adminEmail;
         admin.FullName = adminName;
