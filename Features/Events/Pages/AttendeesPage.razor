@@ -27,18 +27,65 @@
     }
     else
     {
-        <p class="spe-page-kicker">Attendees</p>
-        <h1 class="spe-page-title">@chapterEvent.Title</h1>
-        <p class="mt-2 text-sm text-slate-600">
-            @chapterEvent.Date.ToString("dddd, d MMMM yyyy · h:mm tt")
-        </p>
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <p class="spe-page-kicker">Attendees</p>
+                <h1 class="spe-page-title">@chapterEvent.Title</h1>
+                <p class="mt-2 text-sm text-slate-600">
+                    @chapterEvent.Date.ToString("dddd, d MMMM yyyy · h:mm tt")
+                </p>
+            </div>
+            @if (!showAddForm)
+            {
+                <button @onclick="OpenAddForm" class="spe-gold-btn">+ Add attendee</button>
+            }
+        </div>
+
+        @* Above the empty-state check on purpose: an event whose first attendee is a walk-in
+           would otherwise show "nobody has signed up" with no way to add anyone. *@
+        @if (showAddForm)
+        {
+            <section class="spe-card mt-6 border-slate-200 p-6">
+                <h2 class="mb-1 font-heading text-lg font-bold text-spe-cobalt">Add attendee</h2>
+                <p class="mb-4 text-sm text-slate-600">
+                    For a walk-in, or a guest from outside the chapter who never signed up on the site.
+                    They are added unticked — check them in on the row once they arrive.
+                </p>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="attendee-name">Name</label>
+                        <input id="attendee-name" class="spe-input w-full" placeholder="Full name" @bind="newName" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="attendee-org">Company or university</label>
+                        <input id="attendee-org" class="spe-input w-full" placeholder="Where they are from" @bind="newOrganisation" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="attendee-email">Email</label>
+                        <input id="attendee-email" type="email" class="spe-input w-full" placeholder="Optional" @bind="newEmail" />
+                    </div>
+                </div>
+
+                @if (addError is not null)
+                {
+                    <p class="mt-3 text-sm text-red-600">@addError</p>
+                }
+
+                <div class="mt-4 flex gap-3">
+                    <button @onclick="AddAttendee" class="spe-primary-btn">Add to list</button>
+                    <button @onclick="CloseAddForm"
+                            class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                </div>
+            </section>
+        }
 
         @if (attendees.Count == 0)
         {
             <div class="mt-10 rounded-xl border border-slate-200 bg-white py-16 text-center">
-                <p class="text-xl text-slate-400">Nobody has signed up yet.</p>
+                <p class="text-xl text-slate-400">Nobody on the list yet.</p>
                 <p class="mt-2 text-sm text-slate-500">
-                    Members sign up from the events page; they'll appear here as they do.
+                    Members sign up from the events page and appear here as they do — or add
+                    someone yourself with the button above.
                 </p>
             </div>
         }
@@ -127,6 +174,14 @@
     private string searchQuery = "";
     private bool loading = true;
 
+    /* ---------- Adding an attendee by hand ---------- */
+
+    private bool showAddForm;
+    private string newName = "";
+    private string newOrganisation = "";
+    private string newEmail = "";
+    private string? addError;
+
     private int checkedInCount => attendees.Count(a => a.Attended);
 
     private int ProgressPercent =>
@@ -163,6 +218,49 @@
         {
             attendees[index] = attendee with { Attended = attended, CheckedInAt = checkedInAt };
         }
+    }
+
+    /* ---------- Adding an attendee by hand ---------- */
+
+    private void OpenAddForm()
+    {
+        showAddForm = true;
+        addError = null;
+    }
+
+    private async Task AddAttendee()
+    {
+        addError = null;
+
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            addError = "Give the attendee a name.";
+            return;
+        }
+
+        // Only a sanity check, not validation: the address is optional and is a contact note for
+        // the committee, so rejecting anything more here would cost more than it catches.
+        if (!string.IsNullOrWhiteSpace(newEmail) && !newEmail.Contains('@'))
+        {
+            addError = "That does not look like an email address.";
+            return;
+        }
+
+        if (!await EventSvc.AddAttendeeAsync(Id, newName, newOrganisation, newEmail))
+        {
+            addError = "This event no longer exists.";
+            return;
+        }
+
+        CloseAddForm();
+        attendees = await EventSvc.GetAttendeesAsync(Id);
+    }
+
+    private void CloseAddForm()
+    {
+        showAddForm = false;
+        addError = null;
+        newName = newOrganisation = newEmail = "";
     }
 
     private async Task SetAll(bool attended)

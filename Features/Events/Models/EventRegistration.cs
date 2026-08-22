@@ -23,8 +23,22 @@ public class EventRegistration
     public ApplicationUser? User { get; set; }
 
     public string FullName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Where they are from — their university for a member, or their company for a guest added
+    /// by hand. One field rather than two because it is one idea, and the attendance export has
+    /// a single column for it.
+    /// </summary>
     public string University { get; set; } = string.Empty;
+
     public string EventName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Contact address for an attendee the committee added by hand, who has no account to read
+    /// one from. Null for ordinary member sign-ups: their address lives on the Identity record
+    /// and is re-synced at every login, so copying it here would only let the two disagree.
+    /// </summary>
+    public string? Email { get; set; }
 
     public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
 

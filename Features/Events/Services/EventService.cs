@@ -1,7 +1,10 @@
+using System.Net;
 using Microsoft.EntityFrameworkCore;
 using SPE_website.Data;
 using SPE_website.Features.Events.Models;
 using SPE_website.Shared;
+using SPE_website.Shared.Models;
+using SPE_website.Shared.Services;
 
 namespace SPE_website.Features.Events.Services;
 
@@ -14,7 +17,10 @@ namespace SPE_website.Features.Events.Services;
 /// Takes a context factory rather than a scoped context: a Blazor Server circuit outlives
 /// any single operation, and sharing one context across overlapping renders throws.
 /// </summary>
-public class EventService(IDbContextFactory<AppDbContext> dbFactory)
+public class EventService(
+    IDbContextFactory<AppDbContext> dbFactory,
+    EmailService emailService,
+    ILogger<EventService> logger)
 {
     /// <summary>
     /// Grace period after an event's start time before it counts as past. Only the start time
@@ -57,35 +63,175 @@ public class EventService(IDbContextFactory<AppDbContext> dbFactory)
     }
 
     /// <summary>
-    /// Rewrites the editable fields of an existing event, for the committee's Update action.
-    /// Returns false if the event has since been deleted.
+    /// Rewrites the editable fields of an existing event, for the committee's Update action, and
+    /// tells anyone signed up to attend what changed.
     ///
     /// Takes the fields one by one rather than a whole <see cref="Event"/> so an edit cannot
     /// touch what the form does not offer: <see cref="Event.Ratings"/> and
     /// <see cref="Event.Registrations"/> stay attached, and <see cref="Event.CreatedAt"/> keeps
     /// its original value — handing in a detached instance would blank all three.
+    ///
+    /// The edit is always saved. The return value reports the attendee notification, and is
+    /// <c>null</c> when none was due at all — see <see cref="NotifyAttendeesAsync"/> for when
+    /// that is.
     /// </summary>
-    public async Task<bool> UpdateAsync(
+    public async Task<AttendeeNotification?> UpdateAsync(
         int id, string title, string location, string? instagramEmbedUrl, EventCategory category, DateTime date)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var evt = await db.Events.FindAsync(id);
-        if (evt is null) return false;
+        Event evt;
+        (string Title, DateTime Date, string Location) previous;
 
-        evt.Title = title;
-        evt.Location = location;
-        evt.InstagramEmbedUrl = instagramEmbedUrl;
-        evt.Category = category;
-        evt.Date = date;
+        // Scoped to a block, not the method: notifying is an SMTP conversation that can run for
+        // seconds, and there is no reason to hold a pooled database connection open across it.
+        await using (var db = await dbFactory.CreateDbContextAsync())
+        {
+            var found = await db.Events.FindAsync(id);
+            if (found is null) return null;
 
-        // Upcoming vs past is computed live from Date on every read (see GetUpcomingAndPastAsync),
-        // so this flag is display-only — but leaving it stale after a date edit would have the
-        // card contradict the section it is sitting in.
-        evt.IsUpcoming = date >= UkTime.Now - PastEventGrace;
+            // Captured before the overwrite so the notification can say what actually moved,
+            // rather than just that "something changed".
+            previous = (found.Title, found.Date, found.Location);
 
-        await db.SaveChangesAsync();
-        return true;
+            found.Title = title;
+            found.Location = location;
+            found.InstagramEmbedUrl = instagramEmbedUrl;
+            found.Category = category;
+            found.Date = date;
+
+            // Upcoming vs past is computed live from Date on every read (see
+            // GetUpcomingAndPastAsync), so this flag is display-only — but leaving it stale after
+            // a date edit would have the card contradict the section it is sitting in.
+            found.IsUpcoming = date >= UkTime.Now - PastEventGrace;
+
+            await db.SaveChangesAsync();
+            evt = found;
+        }
+
+        return await NotifyAttendeesAsync(evt, previous);
     }
+
+    /// <summary>
+    /// Emails everyone signed up for an event that its details have changed, listing what moved.
+    ///
+    /// Returns <c>null</c> — sending nothing — in three cases:
+    /// <list type="bullet">
+    /// <item>Nothing attendance-relevant changed. Only the title, date and location are compared:
+    /// a member decides whether to turn up on what it is, when, and where. Re-categorising an
+    /// event or adding its Instagram post afterwards changes neither, and mailing forty people
+    /// about it would train them to ignore the mail that does matter.</item>
+    /// <item>The event is over. Announcing a correction to something that already happened is
+    /// noise — though a past event moved to a future date is a reschedule, and does go out, which
+    /// is why both the old and the new date are checked.</item>
+    /// <item>Nobody is left to tell: no sign-ups, or nobody on the list has a usable address —
+    /// every member has turned notification emails off or deleted their account, and no
+    /// hand-added guest left one.</item>
+    /// </list>
+    /// </summary>
+    private async Task<AttendeeNotification?> NotifyAttendeesAsync(
+        Event evt, (string Title, DateTime Date, string Location) previous)
+    {
+        var changes = DescribeChanges(previous, evt);
+        if (changes.Count == 0) return null;
+
+        var cutoff = UkTime.Now - PastEventGrace;
+        if (evt.Date < cutoff && previous.Date < cutoff) return null;
+
+        // Two kinds of attendee are reachable, and they are reached differently:
+        //
+        //  - A member, through their live account. Preferred over the sign-up snapshot, which
+        //    exists to keep the attendance record historically accurate — the opposite of what is
+        //    wanted for contacting someone today — and skipped if they have turned notification
+        //    emails off in their profile.
+        //  - A guest the committee added by hand, through the address stored on the registration.
+        //    They have no account and so no preference to honour; they gave that address at the
+        //    door for exactly this.
+        //
+        // Anyone else — a deleted account, or a guest added without an address — has nowhere to
+        // be written to and drops out here.
+        List<AttendeeContact> attendees;
+        try
+        {
+            await using var db = await dbFactory.CreateDbContextAsync();
+            attendees = await db.EventRegistrations.AsNoTracking()
+                                .Where(r => r.EventId == evt.Id
+                                         && ((r.User != null && r.User.Email != null && r.User.EmailNotificationsEnabled)
+                                          || (r.User == null && r.Email != null)))
+                                .Select(r => new AttendeeContact(
+                                    r.User != null && r.User.Email != null ? r.User.Email : (r.Email ?? string.Empty),
+                                    r.User != null ? r.User.FullName : r.FullName))
+                                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not look up attendees to notify about event {EventId}", evt.Id);
+            return new AttendeeNotification(0, EmailResult.Failure(ex.Message));
+        }
+
+        if (attendees.Count == 0) return null;
+
+        // #UpdateLink — wording of the event-updated email sent to attendees.
+        var subject = $"Event Updated: {evt.Title} — SPE Chapter";
+        var changeList = string.Join("", changes.Select(c => $"<li>{c}</li>"));
+
+        var recipients = attendees
+            .Select(a => new MailRecipient(a.Email, a.Name, $"""
+                <p>Dear {Encode(a.Name)},</p>
+                <p>An event you signed up for has been updated: <strong>{Encode(evt.Title)}</strong></p>
+                <p>What changed:</p>
+                <ul>{changeList}</ul>
+                <p>The event is now on <strong>{evt.Date:dddd, MMMM d, yyyy}</strong> at
+                   <strong>{evt.Date:h:mm tt}</strong>.</p>
+                {LocationParagraph(evt.Location)}
+                <p>If you can no longer make it, you can withdraw your sign-up on the Events page
+                   of the chapter website.</p>
+                <p>— SPE University of Aberdeen Chapter</p>
+                """))
+            .ToList();
+
+        var result = await emailService.SendManyAsync(recipients, subject);
+        return new AttendeeNotification(recipients.Count, result);
+    }
+
+    /// <summary>
+    /// The attendance-relevant differences between an event's old and new details, as finished
+    /// sentences for the notification email. Empty when nothing a member would act on has moved.
+    /// </summary>
+    private static List<string> DescribeChanges((string Title, DateTime Date, string Location) before, Event after)
+    {
+        var changes = new List<string>();
+
+        if (!string.Equals(before.Title, after.Title, StringComparison.Ordinal))
+            changes.Add($"The event is now called <strong>{Encode(after.Title)}</strong> (was &ldquo;{Encode(before.Title)}&rdquo;).");
+
+        if (before.Date != after.Date)
+        {
+            changes.Add($"""
+                Date and time: <strong>{after.Date:dddd, MMMM d, yyyy 'at' h:mm tt}</strong>
+                (was {before.Date:dddd, MMMM d, yyyy 'at' h:mm tt}).
+                """);
+        }
+
+        if (!string.Equals(before.Location, after.Location, StringComparison.Ordinal))
+        {
+            changes.Add(string.IsNullOrWhiteSpace(after.Location)
+                ? "The location link has been removed — check the Events page for details."
+                : "The location has changed; the new one is linked below.");
+        }
+
+        return changes;
+    }
+
+    /// <summary>The "where" line of the notification, omitted entirely when no location is set.</summary>
+    private static string LocationParagraph(string? location) =>
+        string.IsNullOrWhiteSpace(location)
+            ? string.Empty
+            : $"""<p>Location: <a href="{Encode(location)}">View on the map</a></p>""";
+
+    /// <summary>Committee-supplied text (titles, links) goes into an HTML mail body, so it must be encoded.</summary>
+    private static string Encode(string? value) => WebUtility.HtmlEncode(value ?? string.Empty);
+
+    /// <summary>Where one attendee's notification goes, read from their live account.</summary>
+    private sealed record AttendeeContact(string Email, string Name);
 
     /// <summary>No-ops silently if the event no longer exists (idempotent delete).</summary>
     public async Task DeleteAsync(int id)
@@ -228,11 +374,51 @@ public class EventService(IDbContextFactory<AppDbContext> dbFactory)
                            r.Id,
                            r.FullName,
                            r.University,
-                           r.User != null ? r.User.Email : null,
+                           // The account is authoritative while it exists — it is re-synced at
+                           // every login. The stored address is the fallback for a guest added
+                           // by hand, and all that is left once an account is deleted.
+                           r.User != null ? r.User.Email : r.Email,
                            r.RegisteredAt,
                            r.Attended,
                            r.CheckedInAt))
                        .ToListAsync();
+    }
+
+    /// <summary>
+    /// Adds someone to an event's attendee list by hand — a walk-in at the door, or a guest from
+    /// outside the chapter who never signed up on the site. Returns false if the event no longer
+    /// exists.
+    ///
+    /// <see cref="EventRegistration.UserId"/> stays null: there is no account to attach, which is
+    /// why the address is stored on the registration itself. The unique index on
+    /// (EventId, UserId) does not constrain these rows — Postgres treats NULLs as distinct — so
+    /// two guests are always two rows, which is what a door list needs.
+    ///
+    /// They are added unticked rather than present: adding someone and checking them in are
+    /// separate decisions, and the checkbox for the second is right there on the row.
+    /// </summary>
+    public async Task<bool> AddAttendeeAsync(int eventId, string fullName, string organisation, string? email)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var eventName = await db.Events.AsNoTracking()
+                                .Where(e => e.Id == eventId)
+                                .Select(e => e.Title)
+                                .FirstOrDefaultAsync();
+        if (eventName is null) return false;
+
+        db.EventRegistrations.Add(new EventRegistration
+        {
+            EventId = eventId,
+            UserId = null,
+            EventName = eventName,
+            FullName = fullName.Trim(),
+            University = organisation.Trim(),
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim()
+        });
+
+        await db.SaveChangesAsync();
+        return true;
     }
 
     /// <summary>
@@ -273,6 +459,13 @@ public class EventService(IDbContextFactory<AppDbContext> dbFactory)
         return checkedInAt;
     }
 }
+
+/// <summary>
+/// Outcome of telling an event's attendees that it changed. <see cref="Recipients"/> is how many
+/// members the notification was addressed to, so the UI can say "12 attendees notified" rather
+/// than just that mail went out.
+/// </summary>
+public sealed record AttendeeNotification(int Recipients, EmailResult Result);
 
 /// <summary>One row of the attendees checklist.</summary>
 public sealed record Attendee(

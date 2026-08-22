@@ -32,6 +32,33 @@
         </AuthorizeView>
     </div>
 
+    @* Outcome of the last edit's attendee notification. Shown here rather than in the edit
+       dialog because the dialog closes on save — and a leader who has just moved an event needs
+       to know whether the people coming to it were actually told. *@
+    @if (attendeeNotice is not null)
+    {
+        <div class="mb-6 rounded-lg border px-4 py-3 text-sm @(attendeeNotice.Result.Sent ? "border-green-200 bg-green-50 text-green-800" : "border-amber-200 bg-amber-50 text-amber-800")">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="font-semibold">Event updated.</p>
+                    @if (attendeeNotice.Result.Sent)
+                    {
+                        <p>@attendeeNotice.Recipients @(attendeeNotice.Recipients == 1 ? "attendee has" : "attendees have") been notified by email.</p>
+                    }
+                    else
+                    {
+                        <p>
+                            @attendeeNotice.Recipients @(attendeeNotice.Recipients == 1 ? "attendee was" : "attendees were")
+                            <strong>not</strong> notified by email: @attendeeNotice.Result.Error
+                        </p>
+                    }
+                </div>
+                <button type="button" @onclick="() => attendeeNotice = null"
+                        class="shrink-0 text-xs font-semibold underline underline-offset-2">Dismiss</button>
+            </div>
+        </div>
+    }
+
     @* ---------- Calendar subscribe / external events links ---------- *@
 
     <div class="mb-6 flex flex-wrap items-center gap-3">
@@ -731,6 +758,10 @@
 
     private Event? deleteEvent;
 
+    // Result of the last edit's attendee notification, or null when none was due — see
+    // EventService.NotifyAttendeesAsync for when that is.
+    private AttendeeNotification? attendeeNotice;
+
     /* ---------- Post-event ratings ---------- */
 
     private int? ratingPanelEventId;
@@ -990,6 +1021,7 @@
         editDate = editEvent.Date.Date;
         editTime = TimeOnly.FromDateTime(editEvent.Date);
         editError = null;
+        attendeeNotice = null;
         CloseMenu();
     }
 
@@ -1004,7 +1036,7 @@
             return;
         }
 
-        await EventSvc.UpdateAsync(
+        attendeeNotice = await EventSvc.UpdateAsync(
             editEvent.Id,
             editTitle.Trim(),
             editLocation.Trim(),
