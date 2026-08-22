@@ -1,0 +1,197 @@
+@page "/events/register/{Token:guid}"
+@rendermode InteractiveServer
+@attribute [AllowAnonymous]
+@inject EventService EventSvc
+
+@* The guest sign-up page, reached only through the private link a committee member shares from
+   the attendees screen. Deliberately anonymous: the people it exists for — speakers, industry
+   guests, students from outside the chapter — have no account here, and making them create one
+   just to be counted at the door is the friction this link removes.
+
+   Holding the token IS the authorisation. It is unguessable, is never linked to from anywhere on
+   the site, is kept out of robots.txt and the sitemap, and can be withdrawn at any time by
+   regenerating it. *@
+
+<PageTitle>Sign up — @(chapterEvent?.Title ?? "Event")</PageTitle>
+
+<div class="spe-page-shell md:max-w-2xl">
+    @if (loading)
+    {
+        <p class="py-20 text-center text-slate-500">Loading...</p>
+    }
+    else if (chapterEvent is null)
+    {
+        <div class="py-20 text-center">
+            <h1 class="spe-page-title">This link is no longer valid</h1>
+            <p class="mt-2 text-sm text-slate-600">
+                The event may have been removed, or its sign-up link replaced with a new one. Email
+                <a class="font-semibold text-spe-cobalt hover:underline" href="mailto:spe@ausa.org.uk">spe@ausa.org.uk</a>
+                and we will send you a fresh one.
+            </p>
+        </div>
+    }
+    else
+    {
+        <p class="spe-page-kicker">You are invited</p>
+        <h1 class="spe-page-title">@chapterEvent.Title</h1>
+
+        <div class="mt-4 space-y-1 text-sm text-slate-600">
+            <p class="font-semibold text-slate-700">
+                @chapterEvent.Date.ToString("dddd, d MMMM yyyy · h:mm tt")
+            </p>
+            @if (!string.IsNullOrWhiteSpace(chapterEvent.Location))
+            {
+                <a href="@chapterEvent.Location" target="_blank" rel="noopener noreferrer"
+                   class="inline-flex items-center gap-1.5 text-spe-cobalt hover:underline">
+                    <Icon Name="location-dot" Class="h-4 w-4 shrink-0" />
+                    View location
+                </a>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(chapterEvent.Description))
+        {
+            <p class="mt-4 text-sm text-slate-600">@chapterEvent.Description</p>
+        }
+
+        @if (signedUp)
+        {
+            <section class="spe-card mt-8 border-green-200 bg-green-50/60 p-6 text-center">
+                <p class="font-heading text-lg font-bold text-green-800">You are on the list</p>
+                <p class="mt-2 text-sm text-green-900/80">
+                    We have added <strong>@submittedName</strong> to the attendee list. There is
+                    nothing else to do — just come along on the day.
+                </p>
+                <p class="mt-3 text-xs text-green-900/60">
+                    Need to change or cancel? Email
+                    <a class="font-semibold underline" href="mailto:spe@ausa.org.uk">spe@ausa.org.uk</a>.
+                </p>
+            </section>
+        }
+        else if (eventOver)
+        {
+            <section class="spe-card mt-8 border-slate-200 p-6 text-center">
+                <p class="font-heading text-lg font-bold text-slate-700">This event has already taken place</p>
+                <p class="mt-2 text-sm text-slate-600">
+                    Have a look at <a class="font-semibold text-spe-cobalt hover:underline" href="/events">our upcoming events</a> instead.
+                </p>
+            </section>
+        }
+        else
+        {
+            <section class="spe-card mt-8 border-slate-200 p-6">
+                <h2 class="mb-1 font-heading text-lg font-bold text-spe-cobalt">Confirm your place</h2>
+                <p class="mb-5 text-sm text-slate-600">
+                    No account needed — just tell us who to expect.
+                </p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="guest-name">
+                            Full name
+                        </label>
+                        <input id="guest-name" class="spe-input w-full" placeholder="Your full name" @bind="name" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="guest-org">
+                            Company or university
+                        </label>
+                        <input id="guest-org" class="spe-input w-full" placeholder="Where you are coming from" @bind="organisation" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="guest-email">
+                            Email
+                        </label>
+                        <input id="guest-email" type="email" class="spe-input w-full" placeholder="you@example.com" @bind="email" />
+                        <p class="mt-1 text-xs text-slate-500">
+                            Used only to reach you if the event details change.
+                        </p>
+                    </div>
+                </div>
+
+                @if (error is not null)
+                {
+                    <p class="mt-4 text-sm text-red-600">@error</p>
+                }
+
+                <button @onclick="Submit" disabled="@submitting" class="spe-primary-btn mt-5 w-full disabled:opacity-60">
+                    @(submitting ? "Signing you up..." : "Confirm my place")
+                </button>
+            </section>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid Token { get; set; }
+
+    private Event? chapterEvent;
+    private bool loading = true;
+
+    private string name = "";
+    private string organisation = "";
+    private string email = "";
+
+    private string? error;
+    private bool submitting;
+    private bool signedUp;
+    private bool eventOver;
+
+    /// <summary>Kept so the confirmation can greet them by name once the form is gone.</summary>
+    private string submittedName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        chapterEvent = await EventSvc.GetByShareTokenAsync(Token);
+        loading = false;
+    }
+
+    private async Task Submit()
+    {
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            error = "Please tell us your name.";
+            return;
+        }
+
+        // Required here, unlike on the committee's own attendee list: this is the only channel
+        // back to a guest who has no account, so an event that moves can still reach them.
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+        {
+            error = "Please give us an email address we can reach you on.";
+            return;
+        }
+
+        submitting = true;
+        try
+        {
+            var result = await EventSvc.RegisterGuestAsync(chapterEvent!.Id, name, organisation, email);
+
+            switch (result)
+            {
+                case GuestSignUpResult.SignedUp:
+                case GuestSignUpResult.AlreadySignedUp:
+                    // Both land on the confirmation on purpose: someone who opens the link twice
+                    // wants to know they have a place, not to be told off, and they do have one.
+                    submittedName = name.Trim();
+                    signedUp = true;
+                    break;
+
+                case GuestSignUpResult.EventOver:
+                    eventOver = true;
+                    break;
+
+                case GuestSignUpResult.LinkNotValid:
+                    chapterEvent = null;
+                    break;
+            }
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+}

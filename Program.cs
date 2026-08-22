@@ -128,6 +128,11 @@ app.MapGet("/robots.txt", (HttpContext http) =>
 {
     // The members-only areas sit behind [Authorize], so a crawler only ever reaches the login
     // redirect. Disallowing them keeps that redirect out of search results as well.
+    //
+    // /events/register/ is different: those pages are anonymous by design, and their whole
+    // protection is that the token in the URL is unguessable and unlinked. A crawler cannot
+    // guess one, but it could follow a link from wherever a guest pasted theirs, so the path is
+    // disallowed to keep a shared invitation out of search results.
     var body = $"""
         User-agent: *
         Disallow: /admin/
@@ -135,6 +140,7 @@ app.MapGet("/robots.txt", (HttpContext http) =>
         Disallow: /tasks
         Disallow: /tutorials
         Disallow: /login
+        Disallow: /events/register/
 
         Sitemap: {http.Request.Scheme}://{http.Request.Host}/sitemap.xml
         """;

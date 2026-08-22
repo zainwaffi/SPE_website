@@ -198,6 +198,38 @@
         for (const element of collect(root, IG_LAZY_SELECTOR)) embedObserver.unobserve(element);
     }
 
+    // ---------------------------------------------------------------- copy to clipboard
+
+    // A button marked [data-copy="<input id>"] copies that input's value. Plain DOM again, not
+    // Blazor interop — and pure convenience: the value always sits in a readonly input the user
+    // can select and copy by hand, so nothing is lost where the clipboard API is unavailable.
+    //
+    // The confirmation is written straight onto the button rather than raised back into Blazor,
+    // so what it says matches whether the write actually succeeded. Blazor owns this element and
+    // will overwrite the label on its next render of the page, which is fine: the label is
+    // transient either way.
+    document.addEventListener("click", async (event) => {
+        const button = event.target.closest?.("[data-copy]");
+        if (!button) return;
+
+        const source = document.getElementById(button.getAttribute("data-copy"));
+        if (!source) return;
+
+        try {
+            await navigator.clipboard.writeText(source.value);
+        } catch {
+            // No permission, or an insecure origin. Select the text so the next Ctrl+C works.
+            source.focus();
+            source.select();
+            return;
+        }
+
+        // Stashed on first use so repeated clicks restore the real label, not "Copied".
+        button.dataset.copyLabel ??= button.textContent.trim();
+        button.textContent = "Copied";
+        setTimeout(() => { button.textContent = button.dataset.copyLabel; }, 1500);
+    });
+
     // ---------------------------------------------------------------- wiring
 
     function scan(root) {

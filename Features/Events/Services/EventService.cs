@@ -142,12 +142,12 @@ public class EventService(
         //    exists to keep the attendance record historically accurate — the opposite of what is
         //    wanted for contacting someone today — and skipped if they have turned notification
         //    emails off in their profile.
-        //  - A guest the committee added by hand, through the address stored on the registration.
-        //    They have no account and so no preference to honour; they gave that address at the
-        //    door for exactly this.
+        //  - A guest who signed up through a shared link, through the address stored on the
+        //    registration. They have no account and so no preference to honour; they gave that
+        //    address when they took their place for exactly this.
         //
-        // Anyone else — a deleted account, or a guest added without an address — has nowhere to
-        // be written to and drops out here.
+        // Anyone else — a deleted account, or a guest row left without an address — has nowhere
+        // to be written to and drops out here.
         List<AttendeeContact> attendees;
         try
         {
@@ -375,8 +375,9 @@ public class EventService(
                            r.FullName,
                            r.University,
                            // The account is authoritative while it exists — it is re-synced at
-                           // every login. The stored address is the fallback for a guest added
-                           // by hand, and all that is left once an account is deleted.
+                           // every login. The stored address is the fallback for a guest who
+                           // signed up through a link, and all that is left once an account is
+                           // deleted.
                            r.User != null ? r.User.Email : r.Email,
                            r.RegisteredAt,
                            r.Attended,
@@ -384,41 +385,110 @@ public class EventService(
                        .ToListAsync();
     }
 
+    /* ---------- Guest sign-up link ---------- */
+
     /// <summary>
-    /// Adds someone to an event's attendee list by hand — a walk-in at the door, or a guest from
-    /// outside the chapter who never signed up on the site. Returns false if the event no longer
-    /// exists.
+    /// This event's guest sign-up token, minting one on first use. The committee shares the
+    /// resulting link with people outside the chapter, who sign themselves up through it
+    /// instead of being typed onto the list by hand.
     ///
-    /// <see cref="EventRegistration.UserId"/> stays null: there is no account to attach, which is
-    /// why the address is stored on the registration itself. The unique index on
-    /// (EventId, UserId) does not constrain these rows — Postgres treats NULLs as distinct — so
-    /// two guests are always two rows, which is what a door list needs.
-    ///
-    /// They are added unticked rather than present: adding someone and checking them in are
-    /// separate decisions, and the checkbox for the second is right there on the row.
+    /// Created lazily rather than at event creation so an event has no anonymous way in until
+    /// someone deliberately asks for the link. Returns null if the event no longer exists.
     /// </summary>
-    public async Task<bool> AddAttendeeAsync(int eventId, string fullName, string organisation, string? email)
+    public async Task<Guid?> GetOrCreateShareTokenAsync(int eventId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
 
-        var eventName = await db.Events.AsNoTracking()
-                                .Where(e => e.Id == eventId)
-                                .Select(e => e.Title)
-                                .FirstOrDefaultAsync();
-        if (eventName is null) return false;
+        var evt = await db.Events.FindAsync(eventId);
+        if (evt is null) return null;
+
+        if (evt.PublicRegistrationToken is { } existing) return existing;
+
+        evt.PublicRegistrationToken = Guid.NewGuid();
+        await db.SaveChangesAsync();
+        return evt.PublicRegistrationToken;
+    }
+
+    /// <summary>
+    /// Replaces the guest sign-up token, breaking every copy of the old link. The only way to
+    /// withdraw a link once it has been forwarded further than intended — sign-ups already made
+    /// through the old one are untouched, since they are attendees now, not links.
+    ///
+    /// Returns the new token, or null if the event no longer exists.
+    /// </summary>
+    public async Task<Guid?> RegenerateShareTokenAsync(int eventId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var evt = await db.Events.FindAsync(eventId);
+        if (evt is null) return null;
+
+        evt.PublicRegistrationToken = Guid.NewGuid();
+        await db.SaveChangesAsync();
+        return evt.PublicRegistrationToken;
+    }
+
+    /// <summary>
+    /// The event a guest sign-up link points at, for the anonymous registration page. Null when
+    /// the token matches nothing — a mistyped link, or one retired by
+    /// <see cref="RegenerateShareTokenAsync"/>.
+    /// </summary>
+    public async Task<Event?> GetByShareTokenAsync(Guid token)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Events.AsNoTracking()
+                       .FirstOrDefaultAsync(e => e.PublicRegistrationToken == token);
+    }
+
+    /// <summary>
+    /// Signs a guest up through a shared link. The token is the whole authorisation: holding it
+    /// is what proves the committee invited them, so nothing here reads the signed-in user.
+    ///
+    /// The row is an ordinary registration with <see cref="EventRegistration.UserId"/> left null
+    /// and the address stored on the registration itself, so it flows through the check-in list,
+    /// the attendance export and the event-changed notification with no special case anywhere.
+    /// </summary>
+    public async Task<GuestSignUpResult> RegisterGuestAsync(
+        int eventId, string fullName, string organisation, string email)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var evt = await db.Events.AsNoTracking()
+                          .Where(e => e.Id == eventId)
+                          .Select(e => new { e.Title, e.Date })
+                          .FirstOrDefaultAsync();
+        if (evt is null) return GuestSignUpResult.LinkNotValid;
+
+        // Same grace period the events page uses to decide "upcoming", so a link stays usable
+        // for latecomers right up to the point the event drops off the front of the site.
+        if (evt.Date < UkTime.Now - PastEventGrace) return GuestSignUpResult.EventOver;
+
+        var trimmedEmail = email.Trim();
+
+        // Best-effort, not a constraint: the unique index is on (EventId, UserId), and Postgres
+        // treats the null UserIds of guest rows as distinct, so nothing at the database level
+        // stops two. This catches what actually happens — someone opening the link twice, or
+        // being sent it twice — and a genuine race only leaves a duplicate on the door list,
+        // which the committee can see and ignore.
+        var already = await db.EventRegistrations
+                              .AnyAsync(r => r.EventId == eventId
+                                          && r.UserId == null
+                                          && r.Email != null
+                                          && r.Email.ToLower() == trimmedEmail.ToLower());
+        if (already) return GuestSignUpResult.AlreadySignedUp;
 
         db.EventRegistrations.Add(new EventRegistration
         {
             EventId = eventId,
             UserId = null,
-            EventName = eventName,
+            EventName = evt.Title,
             FullName = fullName.Trim(),
             University = organisation.Trim(),
-            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim()
+            Email = trimmedEmail
         });
 
         await db.SaveChangesAsync();
-        return true;
+        return GuestSignUpResult.SignedUp;
     }
 
     /// <summary>
@@ -466,6 +536,21 @@ public class EventService(
 /// than just that mail went out.
 /// </summary>
 public sealed record AttendeeNotification(int Recipients, EmailResult Result);
+
+/// <summary>Outcome of a guest signing themselves up through a shared link.</summary>
+public enum GuestSignUpResult
+{
+    SignedUp,
+
+    /// <summary>The link matches no event — mistyped, or retired by regenerating the token.</summary>
+    LinkNotValid,
+
+    /// <summary>The event has already happened, so there is nothing left to sign up for.</summary>
+    EventOver,
+
+    /// <summary>That address is already on this event's list.</summary>
+    AlreadySignedUp
+}
 
 /// <summary>One row of the attendees checklist.</summary>
 public sealed record Attendee(

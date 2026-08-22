@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "CommitteeMember,TeamLeader")]
 @inject EventService EventSvc
+@inject NavigationManager Nav
 
 @* Deliberately NOT wrapped in <DesktopOnly>: unlike the admin dashboard, this is the one
    admin-ish screen you genuinely want on a phone — ticking people off at the door. *@
@@ -35,48 +36,58 @@
                     @chapterEvent.Date.ToString("dddd, d MMMM yyyy · h:mm tt")
                 </p>
             </div>
-            @if (!showAddForm)
+            @if (!showShareLink)
             {
-                <button @onclick="OpenAddForm" class="spe-gold-btn">+ Add attendee</button>
+                <button @onclick="OpenShareLink" class="spe-gold-btn">Guest sign-up link</button>
             }
         </div>
 
-        @* Above the empty-state check on purpose: an event whose first attendee is a walk-in
-           would otherwise show "nobody has signed up" with no way to add anyone. *@
-        @if (showAddForm)
+        @* Above the empty-state check on purpose: an event with nobody on it yet is exactly
+           when the committee needs the link to send out. *@
+        @if (showShareLink)
         {
             <section class="spe-card mt-6 border-slate-200 p-6">
-                <h2 class="mb-1 font-heading text-lg font-bold text-spe-cobalt">Add attendee</h2>
+                <h2 class="mb-1 font-heading text-lg font-bold text-spe-cobalt">Guest sign-up link</h2>
                 <p class="mb-4 text-sm text-slate-600">
-                    For a walk-in, or a guest from outside the chapter who never signed up on the site.
-                    They are added unticked — check them in on the row once they arrive.
+                    Send this to anyone from outside the chapter — a speaker, an industry guest, a
+                    student from another university. They sign themselves up through it without an
+                    account and appear on this list. Keep it to the people you mean to invite:
+                    anyone holding the link can add themselves.
                 </p>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="attendee-name">Name</label>
-                        <input id="attendee-name" class="spe-input w-full" placeholder="Full name" @bind="newName" />
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="attendee-org">Company or university</label>
-                        <input id="attendee-org" class="spe-input w-full" placeholder="Where they are from" @bind="newOrganisation" />
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600" for="attendee-email">Email</label>
-                        <input id="attendee-email" type="email" class="spe-input w-full" placeholder="Optional" @bind="newEmail" />
-                    </div>
-                </div>
 
-                @if (addError is not null)
+                @if (shareLink is null)
                 {
-                    <p class="mt-3 text-sm text-red-600">@addError</p>
+                    <p class="text-sm text-slate-500">Preparing the link...</p>
                 }
+                else
+                {
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        @* Readonly rather than disabled, so the link can always be selected and
+                           copied by hand. The button is convenience on top of that, never the
+                           only way out — see the [data-copy] handler in ui.js. *@
+                        <input id="guest-link" class="spe-input w-full font-mono text-xs" readonly
+                               value="@shareLink" onclick="this.select()" />
+                        <button data-copy="guest-link" class="spe-primary-btn shrink-0">Copy link</button>
+                    </div>
 
-                <div class="mt-4 flex gap-3">
-                    <button @onclick="AddAttendee" class="spe-primary-btn">Add to list</button>
-                    <button @onclick="CloseAddForm"
-                            class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
-                </div>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button @onclick="CloseShareLink"
+                                class="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Done</button>
+                        <button @onclick="() => confirmingReplace = true"
+                                class="rounded-lg px-5 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50">
+                            Replace link
+                        </button>
+                    </div>
+                }
             </section>
+        }
+
+        @if (confirmingReplace)
+        {
+            <ConfirmDialog Title="Replace this link?"
+                           Message="Every copy of the current link stops working, including any already sent out. Guests who have already signed up stay on the list."
+                           ConfirmLabel="Replace"
+                           OnConfirm="ReplaceLink" OnCancel="() => confirmingReplace = false" />
         }
 
         @if (attendees.Count == 0)
@@ -84,8 +95,8 @@
             <div class="mt-10 rounded-xl border border-slate-200 bg-white py-16 text-center">
                 <p class="text-xl text-slate-400">Nobody on the list yet.</p>
                 <p class="mt-2 text-sm text-slate-500">
-                    Members sign up from the events page and appear here as they do — or add
-                    someone yourself with the button above.
+                    Members sign up from the events page and appear here as they do. For anyone
+                    outside the chapter, send them the guest sign-up link above.
                 </p>
             </div>
         }
@@ -174,13 +185,13 @@
     private string searchQuery = "";
     private bool loading = true;
 
-    /* ---------- Adding an attendee by hand ---------- */
+    /* ---------- Guest sign-up link ---------- */
 
-    private bool showAddForm;
-    private string newName = "";
-    private string newOrganisation = "";
-    private string newEmail = "";
-    private string? addError;
+    private bool showShareLink;
+    private bool confirmingReplace;
+
+    /// <summary>The absolute URL to hand out. Null until the token has been fetched or minted.</summary>
+    private string? shareLink;
 
     private int checkedInCount => attendees.Count(a => a.Attended);
 
@@ -220,47 +231,44 @@
         }
     }
 
-    /* ---------- Adding an attendee by hand ---------- */
+    /* ---------- Guest sign-up link ---------- */
 
-    private void OpenAddForm()
+    /// <summary>
+    /// Fetches the event's sign-up token, minting one the first time anyone asks, and builds the
+    /// absolute URL from the request's own host so the link is copy-pasteable as-is on localhost
+    /// and on the live domain alike.
+    /// </summary>
+    private async Task OpenShareLink()
     {
-        showAddForm = true;
-        addError = null;
+        showShareLink = true;
+
+        // Already built on a previous open — the token does not change under us, so re-fetching
+        // it would only make the panel flicker back to "Preparing the link...".
+        if (shareLink is not null) return;
+
+        var token = await EventSvc.GetOrCreateShareTokenAsync(Id);
+        if (token is not null)
+        {
+            shareLink = Nav.ToAbsoluteUri($"/events/register/{token}").ToString();
+        }
     }
 
-    private async Task AddAttendee()
+    private void CloseShareLink()
     {
-        addError = null;
-
-        if (string.IsNullOrWhiteSpace(newName))
-        {
-            addError = "Give the attendee a name.";
-            return;
-        }
-
-        // Only a sanity check, not validation: the address is optional and is a contact note for
-        // the committee, so rejecting anything more here would cost more than it catches.
-        if (!string.IsNullOrWhiteSpace(newEmail) && !newEmail.Contains('@'))
-        {
-            addError = "That does not look like an email address.";
-            return;
-        }
-
-        if (!await EventSvc.AddAttendeeAsync(Id, newName, newOrganisation, newEmail))
-        {
-            addError = "This event no longer exists.";
-            return;
-        }
-
-        CloseAddForm();
-        attendees = await EventSvc.GetAttendeesAsync(Id);
+        showShareLink = false;
+        confirmingReplace = false;
     }
 
-    private void CloseAddForm()
+    /// <summary>
+    /// Retires the current link and shows the replacement. The only way to withdraw a link once
+    /// it has been forwarded further than intended.
+    /// </summary>
+    private async Task ReplaceLink()
     {
-        showAddForm = false;
-        addError = null;
-        newName = newOrganisation = newEmail = "";
+        confirmingReplace = false;
+
+        var token = await EventSvc.RegenerateShareTokenAsync(Id);
+        shareLink = token is null ? null : Nav.ToAbsoluteUri($"/events/register/{token}").ToString();
     }
 
     private async Task SetAll(bool attended)
