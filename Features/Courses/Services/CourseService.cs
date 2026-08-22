@@ -28,6 +28,25 @@ public class CourseService(IDbContextFactory<AppDbContext> dbFactory)
         return course;
     }
 
+    /// <summary>
+    /// Rewrites an existing course, for the committee's Update action. Returns false if the
+    /// course has since been deleted. <see cref="Course.CreatedAt"/> is deliberately left alone,
+    /// so an edit does not reshuffle the library — the list is ordered by it.
+    /// </summary>
+    public async Task<bool> UpdateAsync(int id, string title, string description, string youtubeEmbedUrl)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var course = await db.Courses.FindAsync(id);
+        if (course is null) return false;
+
+        course.Title = title;
+        course.Description = description;
+        course.YoutubeEmbedUrl = youtubeEmbedUrl;
+
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     /// <summary>No-ops silently if the course no longer exists (idempotent delete).</summary>
     public async Task DeleteAsync(int id)
     {

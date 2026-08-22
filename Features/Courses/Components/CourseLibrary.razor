@@ -71,6 +71,8 @@
                 @foreach (var course in FilteredCourses)
                 {
                     <article @key="course.Id"
+                             @oncontextmenu="e => OpenMenu(e, course)"
+                             @oncontextmenu:preventDefault="canManage"
                              class="spe-card overflow-hidden border-slate-200 transition-shadow hover:shadow-lg">
                         <div class="aspect-video">
                             <iframe src="@course.YoutubeEmbedUrl" class="h-full w-full" frameborder="0"
@@ -93,6 +95,46 @@
                 }
             </div>
         }
+
+        @* ---------- Committee: right-click menu, edit dialog, delete confirmation ---------- *@
+
+        @if (menuCourse is not null)
+        {
+            <ContextMenu X="menuX" Y="menuY" Label="@menuCourse.Title"
+                         OnUpdate="StartEdit" OnDelete="StartDelete" OnClose="CloseMenu" />
+        }
+
+        @if (editCourse is not null)
+        {
+            <div class="spe-modal-backdrop" @onclick="CancelEdit">
+                <div class="spe-modal-card max-w-lg" @onclick:stopPropagation="true">
+                    <h2 class="mb-6 font-heading text-xl font-bold text-spe-cobalt">Edit Course Video</h2>
+                    <div class="flex flex-col gap-3">
+                        <input class="spe-input" placeholder="Video title" @bind="editTitle" />
+                        <input class="spe-input" placeholder="YouTube URL (watch, youtu.be, Shorts or embed)"
+                               @bind="editYoutubeUrl" />
+                        <textarea class="spe-input" rows="3" placeholder="Course description"
+                                  @bind="editDescription"></textarea>
+                    </div>
+                    @if (!string.IsNullOrEmpty(editError))
+                    {
+                        <p class="mt-3 text-sm text-red-600">@editError</p>
+                    }
+                    <div class="mt-6 flex gap-3">
+                        <button @onclick="SaveEdit" class="spe-primary-btn flex-1">Save changes</button>
+                        <button @onclick="CancelEdit"
+                                class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (deleteCourse is not null)
+        {
+            <ConfirmDialog Title="Delete this course?"
+                           Message="@($"“{deleteCourse.Title}” will be removed from the library for everyone. This cannot be undone.")"
+                           OnConfirm="ConfirmDelete" OnCancel="() => deleteCourse = null" />
+        }
     </div>
 
 @code {
@@ -106,6 +148,29 @@
     private string? formError;
     private string searchQuery = "";
 
+    /* ---------- Committee: right-click update/delete ---------- */
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    // Same audience as the Add and Delete controls: <AuthorizeView Roles="CommitteeMember,
+    // TeamLeader">. Resolved once in C# rather than left to that component, because the
+    // contextmenu handler has to decide whether to run at all — an <AuthorizeView> could hide
+    // the menu, but not stop the paired preventDefault from suppressing the browser's own
+    // right-click menu for every other reader of the page.
+    private bool canManage;
+
+    private Course? menuCourse;
+    private double menuX, menuY;
+
+    private Course? editCourse;
+    private string editTitle = "";
+    private string editDescription = "";
+    private string editYoutubeUrl = "";
+    private string? editError;
+
+    private Course? deleteCourse;
+
     private IEnumerable<Course> FilteredCourses =>
         courses?.Where(course =>
             string.IsNullOrWhiteSpace(searchQuery) ||
@@ -115,7 +180,11 @@
 
     /* ---------- Load, create, delete ---------- */
 
-    protected override async Task OnInitializedAsync() => await LoadCourses();
+    protected override async Task OnInitializedAsync()
+    {
+        canManage = await AuthStateTask.IsInAnyRoleAsync("CommitteeMember", "TeamLeader");
+        await LoadCourses();
+    }
 
     private async Task LoadCourses() => courses = await CourseSvc.GetAllAsync();
 
@@ -150,6 +219,81 @@
     {
         await CourseSvc.DeleteAsync(id);
         await LoadCourses();
+    }
+
+    /* ---------- Committee: right-click update/delete ---------- */
+
+    /// <summary>
+    /// Opens the context menu over the card. Does nothing for a member without edit rights,
+    /// whose browser then keeps its own right-click menu — the markup pairs this with
+    /// <c>@@oncontextmenu:preventDefault="canManage"</c> so the two agree.
+    /// </summary>
+    private void OpenMenu(MouseEventArgs e, Course course)
+    {
+        if (!canManage) return;
+
+        menuCourse = course;
+        (menuX, menuY) = (e.ClientX, e.ClientY);
+    }
+
+    private void CloseMenu() => menuCourse = null;
+
+    private void StartEdit()
+    {
+        if (menuCourse is null) return;
+
+        editCourse = menuCourse;
+        editTitle = editCourse.Title;
+        editDescription = editCourse.Description;
+        // The stored value is the /embed/ form. Round-tripping it through the same parser the
+        // add form uses means an unchanged URL survives a save untouched.
+        editYoutubeUrl = editCourse.YoutubeEmbedUrl;
+        editError = null;
+        CloseMenu();
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editCourse is null) return;
+
+        editError = null;
+        if (string.IsNullOrWhiteSpace(editTitle) || string.IsNullOrWhiteSpace(editYoutubeUrl))
+        {
+            editError = "Title and YouTube URL are required.";
+            return;
+        }
+
+        var embedUrl = YouTubeUrl.ToEmbedUrl(editYoutubeUrl);
+        if (embedUrl is null)
+        {
+            editError = "Please provide a valid YouTube URL.";
+            return;
+        }
+
+        await CourseSvc.UpdateAsync(editCourse.Id, editTitle, editDescription, embedUrl);
+        editCourse = null;
+        await LoadCourses();
+    }
+
+    private void CancelEdit()
+    {
+        editCourse = null;
+        editError = null;
+    }
+
+    private void StartDelete()
+    {
+        deleteCourse = menuCourse;
+        CloseMenu();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (deleteCourse is null) return;
+
+        var id = deleteCourse.Id;
+        deleteCourse = null;
+        await DeleteCourse(id);
     }
 
     private void CloseForm()

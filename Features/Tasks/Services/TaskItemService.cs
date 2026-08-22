@@ -143,6 +143,52 @@ public class TaskItemService(
     }
 
     /// <summary>
+    /// Rewrites an assignment a leader handed out — title, description, deadline and status —
+    /// for the Update action on the assigned-tasks page. Returns false if the task has since
+    /// been deleted.
+    ///
+    /// Unlike <see cref="UpdateStatusAsync"/> this sends nothing: a leader correcting their own
+    /// wording or deadline is not the member reporting progress, and mailing every leader about
+    /// a typo fix would train them to ignore the notification that matters.
+    ///
+    /// <see cref="TaskItem.AssignedToUserId"/> is not editable here. Reassigning is a different
+    /// action from editing — the new member would never be told they had been given it, because
+    /// only the admin slice's AssignTaskAsync sends that mail.
+    /// </summary>
+    public async Task<bool> UpdateAsync(int id, string title, string description, DateTime deadline, AssignmentStatus status)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var task = await db.TaskItems.FindAsync(id);
+        if (task is null) return false;
+
+        task.Title = title;
+        task.Description = description;
+        task.Deadline = deadline;
+        task.Status = status;
+
+        await db.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>
+    /// Permanently removes an assignment, for the leader's Delete action. No-ops if it is already
+    /// gone (idempotent delete).
+    ///
+    /// This is a real delete, unlike <see cref="ClearAsync"/>: a member clearing a task only
+    /// hides it from their own list precisely so the leader's record survives, whereas a leader
+    /// deleting one has decided the assignment should not exist.
+    /// </summary>
+    public async Task DeleteAsync(int id)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var task = await db.TaskItems.FindAsync(id);
+        if (task is null) return;
+
+        db.TaskItems.Remove(task);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// Emails every team leader that a member has completed a task. Leaders who have turned
     /// notification emails off in their profile are skipped, as is the member themselves when
     /// they are a leader completing their own task.

@@ -26,10 +26,11 @@ public class OpenWaterAuthService(
     /// no OpenWater record is found — used to recover access if the external service
     /// is unreachable or the account isn't yet registered there.
     /// </summary>
-    private const string FullAccessEmail = "zainaldinsabr@gmail.com";
 
+    /// #UpdateLink — the OpenWater lookup URL, the bootstrap admin address, and the join-SPE
+    private const string FullAccessEmail = "zainaldinsabr@gmail.com";
     /// <summary>Public join-SPE link shown to users whose email isn't found in OpenWater.</summary>
-    public const string JoinSpeUrl = "https://www.spe.org/en/membership/join/";
+    public const string JoinSpeUrl = "https://www.spe.org/en/join/";
 
     /// <summary>
     /// Attempts to sign the given email in. Returns whether it succeeded, whether the

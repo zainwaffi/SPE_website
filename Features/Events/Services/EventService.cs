@@ -56,6 +56,37 @@ public class EventService(IDbContextFactory<AppDbContext> dbFactory)
         return evt;
     }
 
+    /// <summary>
+    /// Rewrites the editable fields of an existing event, for the committee's Update action.
+    /// Returns false if the event has since been deleted.
+    ///
+    /// Takes the fields one by one rather than a whole <see cref="Event"/> so an edit cannot
+    /// touch what the form does not offer: <see cref="Event.Ratings"/> and
+    /// <see cref="Event.Registrations"/> stay attached, and <see cref="Event.CreatedAt"/> keeps
+    /// its original value — handing in a detached instance would blank all three.
+    /// </summary>
+    public async Task<bool> UpdateAsync(
+        int id, string title, string location, string? instagramEmbedUrl, EventCategory category, DateTime date)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var evt = await db.Events.FindAsync(id);
+        if (evt is null) return false;
+
+        evt.Title = title;
+        evt.Location = location;
+        evt.InstagramEmbedUrl = instagramEmbedUrl;
+        evt.Category = category;
+        evt.Date = date;
+
+        // Upcoming vs past is computed live from Date on every read (see GetUpcomingAndPastAsync),
+        // so this flag is display-only — but leaving it stale after a date edit would have the
+        // card contradict the section it is sitting in.
+        evt.IsUpcoming = date >= UkTime.Now - PastEventGrace;
+
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     /// <summary>No-ops silently if the event no longer exists (idempotent delete).</summary>
     public async Task DeleteAsync(int id)
     {

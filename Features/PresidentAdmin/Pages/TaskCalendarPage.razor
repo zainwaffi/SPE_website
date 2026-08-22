@@ -140,10 +140,18 @@
         members = await AdminSvc.GetAllMembersAsync();
     }
 
+    /// <summary>
+    /// Moves the assignment panel to another date, keeping whatever has already been typed.
+    ///
+    /// This used to blank the title, description and assignee as well, which made a half-written
+    /// task vanish the moment the leader corrected the date they had picked — the commonest edit
+    /// there is. Only the result banner is cleared, because it reports on the previous assignment
+    /// and would otherwise sit above an unsaved draft claiming it had been saved.
+    /// </summary>
     private void SelectDate(DateTime date)
     {
         selectedDate = date;
-        taskTitle = taskDescription = selectedUserId = successMessage = "";
+        successMessage = "";
         notification = null;
     }
 

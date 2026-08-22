@@ -23,6 +23,9 @@
             What you have handed out and where each one got to, soonest deadline first.
             Finished tasks drop off a week after their deadline; anything still outstanding stays.
         </p>
+        <p class="mt-2 text-sm text-slate-500">
+            Right-click any row to update or delete the assignment.
+        </p>
     </div>
 
     @* Tasks assigned before authorship was recorded have no author at all, and would be
@@ -85,7 +88,12 @@
                 <tbody class="divide-y divide-slate-100">
                     @foreach (var task in tasks)
                     {
-                        <tr @key="task.Id" class="transition-colors hover:bg-slate-50">
+                        @* Right-click a row for Update/Delete. The page is already TeamLeader-only,
+                           so there is no role test on the handler as there is on the public pages. *@
+                        <tr @key="task.Id"
+                            @oncontextmenu="e => OpenMenu(e, task)"
+                            @oncontextmenu:preventDefault="true"
+                            class="transition-colors hover:bg-slate-50">
                             <td class="px-6 py-4">
                                 <p class="font-semibold text-slate-800">@task.Title</p>
                                 @if (!string.IsNullOrWhiteSpace(task.Description))
@@ -134,6 +142,74 @@
             </table>
         </div>
     }
+
+    @* ---------- Right-click menu, edit dialog, delete confirmation ---------- *@
+
+    @if (menuTask is not null)
+    {
+        <ContextMenu X="menuX" Y="menuY" Label="@menuTask.Title"
+                     OnUpdate="StartEdit" OnDelete="StartDelete" OnClose="CloseMenu" />
+    }
+
+    @if (editTask is not null)
+    {
+        <div class="spe-modal-backdrop" @onclick="CancelEdit">
+            <div class="spe-modal-card max-w-lg" @onclick:stopPropagation="true">
+                <h2 class="mb-6 font-heading text-xl font-bold text-spe-cobalt">Edit Task</h2>
+
+                @* Who it is assigned to is shown but not editable. Handing the task to someone else
+                   is a different action from correcting it: only the assign flow emails the member,
+                   so a reassignment made here would never reach them. *@
+                <div class="mb-4 rounded-lg bg-slate-50 px-4 py-3">
+                    <p class="text-xs uppercase tracking-wider text-slate-400">Assigned to</p>
+                    <p class="font-semibold text-slate-800">@(editTask.AssignedTo?.FullName ?? "Member removed")</p>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-600" for="task-edit-title">Title</label>
+                        <input id="task-edit-title" class="spe-input w-full" @bind="editTitle" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-600" for="task-edit-description">Description</label>
+                        <textarea id="task-edit-description" class="spe-input w-full" rows="3" @bind="editDescription"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-600" for="task-edit-deadline">Deadline</label>
+                            <input id="task-edit-deadline" type="date" class="spe-input w-full" @bind="editDeadline" />
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-600" for="task-edit-status">Status</label>
+                            <select id="task-edit-status" class="spe-input w-full" @bind="editStatus">
+                                <option value="@AssignmentStatus.Processing">Processing</option>
+                                <option value="@AssignmentStatus.Completed">Completed</option>
+                                <option value="@AssignmentStatus.Failed">Failed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                @if (editError is not null)
+                {
+                    <p class="mt-3 text-sm text-red-500">@editError</p>
+                }
+
+                <div class="mt-6 flex gap-3">
+                    <button @onclick="SaveEdit" class="spe-primary-btn flex-1">Save changes</button>
+                    <button @onclick="CancelEdit"
+                            class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (deleteTask is not null)
+    {
+        <ConfirmDialog Title="Delete this task?"
+                       Message="@($"“{deleteTask.Title}” will be removed from the member's list and from this record. This cannot be undone.")"
+                       OnConfirm="ConfirmDelete" OnCancel="() => deleteTask = null" />
+    }
 </div>
 </DesktopOnly>
 
@@ -150,6 +226,20 @@
     private bool soonestFirst = true;
 
     private (int Active, int Completed, int Failed) counts;
+
+    /* ---------- Right-click update/delete ---------- */
+
+    private TaskItem? menuTask;
+    private double menuX, menuY;
+
+    private TaskItem? editTask;
+    private string editTitle = "";
+    private string editDescription = "";
+    private DateTime editDeadline = UkTime.Today;
+    private AssignmentStatus editStatus = AssignmentStatus.Processing;
+    private string? editError;
+
+    private TaskItem? deleteTask;
 
     protected override async Task OnInitializedAsync()
     {
@@ -184,6 +274,69 @@
             : await TaskSvc.GetAssignedByAsync(mineOnly ? userId : null, soonestFirst);
 
         counts = Count(tasks);
+    }
+
+    /* ---------- Right-click update/delete ---------- */
+
+    private void OpenMenu(MouseEventArgs e, TaskItem task)
+    {
+        menuTask = task;
+        (menuX, menuY) = (e.ClientX, e.ClientY);
+    }
+
+    private void CloseMenu() => menuTask = null;
+
+    private void StartEdit()
+    {
+        if (menuTask is null) return;
+
+        editTask = menuTask;
+        editTitle = editTask.Title;
+        editDescription = editTask.Description;
+        editDeadline = editTask.Deadline.Date;
+        editStatus = editTask.Status;
+        editError = null;
+        CloseMenu();
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editTask is null) return;
+
+        editError = null;
+        if (string.IsNullOrWhiteSpace(editTitle))
+        {
+            editError = "Give the task a title.";
+            return;
+        }
+
+        await TaskSvc.UpdateAsync(editTask.Id, editTitle.Trim(), editDescription.Trim(), editDeadline.Date, editStatus);
+        editTask = null;
+
+        // A deadline or status edit can push the task past the age-out window, so the row may
+        // legitimately disappear from this table — reload rather than patching the list in place.
+        await LoadAsync();
+    }
+
+    private void CancelEdit()
+    {
+        editTask = null;
+        editError = null;
+    }
+
+    private void StartDelete()
+    {
+        deleteTask = menuTask;
+        CloseMenu();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (deleteTask is null) return;
+
+        await TaskSvc.DeleteAsync(deleteTask.Id);
+        deleteTask = null;
+        await LoadAsync();
     }
 
     /// <summary>One pass over the list rather than three LINQ Count() calls per render.</summary>

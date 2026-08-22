@@ -1,0 +1,48 @@
+@* Confirmation step for a destructive action.
+
+   Deletes reached from the right-click menu need one, because a context menu opens under the
+   pointer: the Delete item can land where the cursor already is, so a stray second click would
+   otherwise destroy a record with no way back. window.confirm() is not an option — it is JS
+   interop, which the app deliberately does without. *@
+
+<div class="spe-modal-backdrop" @onclick="OnCancel">
+    @* Clicks inside the card must not reach the backdrop's close handler above. *@
+    <div class="spe-modal-card max-w-sm" @onclick:stopPropagation="true" role="alertdialog" aria-modal="true">
+        <div class="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <Icon Name="triangle-exclamation" Class="h-6 w-6" />
+        </div>
+
+        <h2 class="text-center font-heading text-lg font-bold text-slate-800">@Title</h2>
+        <p class="mt-2 text-center text-sm text-slate-600">@Message</p>
+
+        <div class="mt-6 flex gap-3">
+            <button type="button" @onclick="OnConfirm"
+                    class="flex-1 rounded-lg bg-red-600 py-2.5 font-heading text-sm font-bold text-white transition-colors hover:bg-red-700">
+                @ConfirmLabel
+            </button>
+            <button type="button" @onclick="OnCancel"
+                    class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "";
+
+    /// <summary>What is about to happen, in one line — normally naming the record.</summary>
+    [Parameter, EditorRequired]
+    public string Message { get; set; } = "";
+
+    [Parameter]
+    public string ConfirmLabel { get; set; } = "Delete";
+
+    [Parameter, EditorRequired]
+    public EventCallback OnConfirm { get; set; }
+
+    /// <summary>Raised by the Cancel button and by a click on the backdrop.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback OnCancel { get; set; }
+}

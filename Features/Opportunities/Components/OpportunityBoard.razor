@@ -78,7 +78,9 @@
                 {
                     <article @key="opp.Id"
                              class="spe-card cursor-pointer border-slate-200 p-6 transition-shadow hover:shadow-md"
-                             @onclick="() => GoToDetail(opp.Id)">
+                             @onclick="() => GoToDetail(opp.Id)"
+                             @oncontextmenu="e => OpenMenu(e, opp)"
+                             @oncontextmenu:preventDefault="canManage">
                         <div class="flex items-start justify-between gap-4">
                             <div class="flex-1">
                                 <h3
@@ -100,6 +102,55 @@
                     }
                 </div>
             }
+
+        @* ---------- Committee: right-click menu, edit dialog, delete confirmation ---------- *@
+
+        @if (menuOpp is not null)
+        {
+            <ContextMenu X="menuX" Y="menuY" Label="@menuOpp.Title"
+                         OnUpdate="StartEdit" OnDelete="StartDelete" OnClose="CloseMenu" />
+        }
+
+        @if (editOpp is not null)
+        {
+            <div class="spe-modal-backdrop" @onclick="CancelEdit">
+                <div class="spe-modal-card max-w-2xl" @onclick:stopPropagation="true">
+                    <h2 class="mb-6 font-heading text-xl font-bold text-spe-cobalt">Edit Opportunity</h2>
+                    <div class="flex flex-col gap-3">
+                        <input class="spe-input" placeholder="Title" @bind="editTitle" />
+                        <div>
+                            <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600"
+                                   for="opportunity-edit-body">
+                                Details
+                            </label>
+                            <textarea id="opportunity-edit-body" class="spe-input w-full font-mono text-sm" rows="12"
+                                      @bind="editDescription"></textarea>
+                            <p class="mt-1.5 text-xs text-slate-500">
+                                Markdown supported — <code>## Heading</code>, <code>- bullet</code>,
+                                <code>[link](https://example.com)</code>, <code>**bold**</code>.
+                            </p>
+                        </div>
+                        <input class="spe-input" placeholder="External URL (optional)" @bind="editUrl" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(editError))
+                    {
+                        <p class="mt-3 text-sm text-red-600">@editError</p>
+                    }
+                    <div class="mt-6 flex gap-3">
+                        <button @onclick="SaveEdit" class="spe-primary-btn flex-1">Save changes</button>
+                        <button @onclick="CancelEdit"
+                                class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (deleteOpp is not null)
+        {
+            <ConfirmDialog Title="Delete this opportunity?"
+                           Message="@($"“{deleteOpp.Title}” will be taken off the board for everyone. This cannot be undone.")"
+                           OnConfirm="ConfirmDelete" OnCancel="() => deleteOpp = null" />
+        }
         </section>
 
 
@@ -112,6 +163,29 @@
     private string newDescription = "";
     private string newUrl = "";
     private string searchQuery = "";
+
+    /* ---------- Committee: right-click update/delete ---------- */
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    // Same audience as the Add and Delete controls: <AuthorizeView Roles="CommitteeMember,
+    // TeamLeader">. Resolved once in C# rather than left to that component, because the
+    // contextmenu handler has to decide whether to run at all — an <AuthorizeView> could hide
+    // the menu, but not stop the paired preventDefault from suppressing the browser's own
+    // right-click menu for every other reader of the page.
+    private bool canManage;
+
+    private Opportunity? menuOpp;
+    private double menuX, menuY;
+
+    private Opportunity? editOpp;
+    private string editTitle = "";
+    private string editDescription = "";
+    private string editUrl = "";
+    private string? editError;
+
+    private Opportunity? deleteOpp;
 
     private IEnumerable<Opportunity> FilteredOpportunities =>
         opportunities?.Where(opp =>
@@ -134,7 +208,11 @@
 
     /* ---------- Load, create, delete ---------- */
 
-    protected override async Task OnInitializedAsync() => opportunities = await OppSvc.GetAllAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        canManage = await AuthStateTask.IsInAnyRoleAsync("CommitteeMember", "TeamLeader");
+        opportunities = await OppSvc.GetAllAsync();
+    }
 
     private async Task SaveOpp()
     {
@@ -157,6 +235,76 @@
     }
 
     private void GoToDetail(int id) => Nav.NavigateTo($"/opportunities/{id}");
+
+    /* ---------- Committee: right-click update/delete ---------- */
+
+    /// <summary>
+    /// Opens the context menu over the card. Does nothing for a member without edit rights,
+    /// whose browser then keeps its own right-click menu — the markup pairs this with
+    /// <c>@@oncontextmenu:preventDefault="canManage"</c> so the two agree.
+    /// </summary>
+    private void OpenMenu(MouseEventArgs e, Opportunity opp)
+    {
+        if (!canManage) return;
+
+        menuOpp = opp;
+        (menuX, menuY) = (e.ClientX, e.ClientY);
+    }
+
+    private void CloseMenu() => menuOpp = null;
+
+    private void StartEdit()
+    {
+        if (menuOpp is null) return;
+
+        editOpp = menuOpp;
+        editTitle = editOpp.Title;
+        editDescription = editOpp.Description;
+        editUrl = editOpp.ExternalUrl ?? "";
+        editError = null;
+        CloseMenu();
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editOpp is null) return;
+
+        editError = null;
+        if (string.IsNullOrWhiteSpace(editTitle))
+        {
+            // The add form drops a title-less save on the floor; here there is a dialog to say so in.
+            editError = "Give the opportunity a title.";
+            return;
+        }
+
+        await OppSvc.UpdateAsync(
+            editOpp.Id, editTitle, editDescription,
+            string.IsNullOrWhiteSpace(editUrl) ? null : editUrl);
+
+        editOpp = null;
+        opportunities = await OppSvc.GetAllAsync();
+    }
+
+    private void CancelEdit()
+    {
+        editOpp = null;
+        editError = null;
+    }
+
+    private void StartDelete()
+    {
+        deleteOpp = menuOpp;
+        CloseMenu();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (deleteOpp is null) return;
+
+        var id = deleteOpp.Id;
+        deleteOpp = null;
+        await DeleteOpp(id);
+    }
 
     /// <summary>
     /// Plain-text preview for the list card. The body is markdown, so showing it raw would leak

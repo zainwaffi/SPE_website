@@ -33,6 +33,25 @@ public class OpportunityService(IDbContextFactory<AppDbContext> dbFactory)
         return opp;
     }
 
+    /// <summary>
+    /// Rewrites an existing posting, for the committee's Update action. Returns false if the
+    /// posting has since been deleted. <see cref="Opportunity.CreatedAt"/> is deliberately left
+    /// alone, so an edit does not jump the posting back to the top of the board.
+    /// </summary>
+    public async Task<bool> UpdateAsync(int id, string title, string description, string? externalUrl)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var opp = await db.Opportunities.FindAsync(id);
+        if (opp is null) return false;
+
+        opp.Title = title;
+        opp.Description = description;
+        opp.ExternalUrl = externalUrl;
+
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     /// <summary>No-ops silently if the posting no longer exists (idempotent delete).</summary>
     public async Task DeleteAsync(int id)
     {

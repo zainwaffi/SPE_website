@@ -1,0 +1,69 @@
+@* Right-click menu offering Update and Delete for one committee-owned record.
+
+   The host page renders this only after someone with edit rights has actually right-clicked a
+   card, so the markup does not exist at all for anyone else — the role check lives with the
+   page's contextmenu handler rather than being repeated here. Which roles those are is the
+   page's business: the committee edits events, courses and opportunities, while assigned tasks
+   are team-leader-only and sit behind an [Authorize] attribute instead.
+
+   Position is the pointer's viewport coordinates in an inline style, clamped with CSS
+   min()/calc() against 100vw/100vh so a right-click near the right or bottom edge still puts
+   the menu fully on screen. That clamp is the only thing JS interop would have bought here,
+   and CSS already does it — so this component stays interop-free like the rest of the app. *@
+
+<div class="fixed inset-0 z-40"
+     @onclick="OnClose" @oncontextmenu="OnClose" @oncontextmenu:preventDefault="true"></div>
+
+<div class="fixed z-50 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+     style="@PositionStyle" role="menu">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        @* Which record was hit. A right-click leaves no visible selection on the card, so
+           without this there is nothing confirming the menu belongs to the one under the cursor. *@
+        <p class="truncate border-b border-slate-100 px-3 pb-2 pt-1.5 text-xs font-semibold text-slate-400"
+           title="@Label">@Label</p>
+    }
+
+    <button type="button" role="menuitem" @onclick="OnUpdate"
+            class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+        <Icon Name="pen-to-square" Class="h-4 w-4 shrink-0 text-spe-cobalt" />
+        Update
+    </button>
+
+    <button type="button" role="menuitem" @onclick="OnDelete"
+            class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50">
+        <Icon Name="trash" Class="h-4 w-4 shrink-0" />
+        Delete
+    </button>
+</div>
+
+@code {
+    /// <summary>Pointer position from the contextmenu event, in viewport (client) coordinates.</summary>
+    [Parameter, EditorRequired]
+    public double X { get; set; }
+
+    /// <inheritdoc cref="X" />
+    [Parameter, EditorRequired]
+    public double Y { get; set; }
+
+    /// <summary>Name of the record the menu acts on, shown as a heading. Omitted when blank.</summary>
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnUpdate { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnDelete { get; set; }
+
+    /// <summary>Raised on a click or right-click anywhere outside the menu.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback OnClose { get; set; }
+
+    // Built in C# rather than interpolated into the markup so the coordinates are formatted
+    // invariantly: a culture using "," as the decimal separator would emit "left: 412,5px",
+    // which is not a valid CSS length, and the browser drops the whole declaration.
+    private string PositionStyle =>
+        FormattableString.Invariant(
+            $"left: min({X:0.#}px, calc(100vw - 13rem)); top: min({Y:0.#}px, calc(100vh - 9rem));");
+}

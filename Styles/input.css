@@ -71,8 +71,14 @@
 @layer components {
   /* ---------- Page furniture: shells, headings, buttons, inputs ---------- */
 
+  /* No backdrop-blur here, deliberately. Behind a 95%-opaque white panel it was invisible,
+     and backdrop-filter makes the shell a containing block for fixed-position descendants —
+     which quietly re-anchors any `position: fixed` child (modal backdrop, right-click menu) to
+     the panel instead of the viewport. The events page had already worked around it with an
+     explicit `backdrop-blur-none`. Pages that do want a blurred panel should add
+     `backdrop-blur` themselves, and then keep fixed-position children outside the shell. */
   .spe-page-shell {
-    @apply mx-4 my-6 rounded-2xl border border-slate-200 bg-white/95 px-6 py-12 shadow-sm backdrop-blur md:mx-auto md:max-w-6xl lg:px-8;
+    @apply mx-4 my-6 rounded-2xl border border-slate-200 bg-white/95 px-6 py-12 shadow-sm md:mx-auto md:max-w-6xl lg:px-8;
   }
 
   .spe-page-kicker {
