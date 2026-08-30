@@ -1,4 +1,5 @@
-using ClosedXML.Excel;
+using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using SPE_website.Data;
 using SPE_website.Shared;
@@ -6,21 +7,33 @@ using SPE_website.Shared;
 namespace SPE_website.Features.PresidentAdmin.Services;
 
 /// <summary>
-/// Builds the committee's attendance workbook: who signed up for which event, and what they
+/// Builds the committee's attendance export: who signed up for which event, and what they
 /// said about it afterwards.
 ///
 /// Attendance and reviews are separate records — a member can sign up and never review, or
-/// review an event they never signed up for — so the detail sheet is a full outer join of the
-/// two, keyed on (member, event). That way neither is silently dropped.
+/// review an event they never signed up for — so the export is a full outer join of the two,
+/// keyed on (member, event). That way neither is silently dropped.
+///
+/// CSV rather than .xlsx: the workbook writer (ClosedXML + DocumentFormat.OpenXml + its font
+/// stack) was ~9.5 MB of the deployed app — a third of its total size — for this one download.
+/// The per-member and per-event summary sheets it used to pre-compute are all derivable from
+/// these rows with a pivot table, so no information is lost, only the pre-aggregation.
 /// </summary>
 public class AttendanceExportService(IDbContextFactory<AppDbContext> dbFactory)
 {
     private const string Anonymous = "Anonymous";
 
-    /// <summary>Suggested download filename, dated so successive exports don't overwrite each other.</summary>
-    public static string FileName() => $"spe-attendance-{UkTime.Now:yyyy-MM-dd}.xlsx";
+    private static readonly string[] Headers =
+    [
+        "Member", "University", "Event", "Event Date",
+        "Signed Up", "Attended", "Signed Up On", "Checked In On",
+        "Rating", "Comment", "Reviewed On"
+    ];
 
-    public async Task<byte[]> BuildWorkbookAsync()
+    /// <summary>Suggested download filename, dated so successive exports don't overwrite each other.</summary>
+    public static string FileName() => $"spe-attendance-{UkTime.Now:yyyy-MM-dd}.csv";
+
+    public async Task<byte[]> BuildCsvAsync()
     {
         await using var db = await dbFactory.CreateDbContextAsync();
 
@@ -52,25 +65,45 @@ public class AttendanceExportService(IDbContextFactory<AppDbContext> dbFactory)
                 r.CreatedAt))
             .ToListAsync();
 
-        return BuildWorkbook(registrations, reviews);
+        return BuildCsv(registrations, reviews);
     }
 
     /// <summary>
-    /// The pure half: given the two record sets, produce the workbook bytes. Split out from
-    /// <see cref="BuildWorkbookAsync"/> so the merge and sheet layout can be exercised without
-    /// a database.
+    /// The pure half: given the two record sets, produce the file bytes. Split out from
+    /// <see cref="BuildCsvAsync"/> so the merge and layout can be exercised without a database.
     /// </summary>
-    public static byte[] BuildWorkbook(List<AttendanceRow> registrations, List<AttendanceRow> reviews)
+    public static byte[] BuildCsv(List<AttendanceRow> registrations, List<AttendanceRow> reviews)
     {
         var merged = Merge(registrations, reviews);
 
-        using var workbook = new XLWorkbook();
-        WriteDetailSheet(workbook, merged);
-        WriteMemberSheet(workbook, merged);
-        WriteEventSheet(workbook, merged);
-
         using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
+
+        // Excel only reads a CSV as UTF-8 when the file opens with a byte-order mark. Without
+        // one it falls back to the machine's ANSI codepage and every accented name in the
+        // export comes out as mojibake.
+        using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true)))
+        {
+            writer.WriteLine(string.Join(',', Headers));
+
+            foreach (var row in merged)
+            {
+                writer.WriteLine(string.Join(',',
+                [
+                    Text(row.FullName),
+                    Text(row.University),
+                    Text(row.EventName),
+                    Day(row.EventDate),
+                    row.RegisteredAt is null ? "No" : "Yes",
+                    row.Attended ? "Yes" : "No",
+                    Moment(row.RegisteredAt),
+                    Moment(row.CheckedInAt),
+                    row.Stars?.ToString(CultureInfo.InvariantCulture) ?? "",
+                    Text(row.Comment ?? ""),
+                    Moment(row.ReviewedAt)
+                ]));
+            }
+        }
+
         return stream.ToArray();
     }
 
@@ -104,172 +137,34 @@ public class AttendanceExportService(IDbContextFactory<AppDbContext> dbFactory)
         return [.. byKey.Values.OrderBy(r => r.FullName).ThenByDescending(r => r.EventDate)];
     }
 
-    private static void WriteDetailSheet(XLWorkbook workbook, List<AttendanceRow> rows)
+    /* ---------- CSV field formatting ---------- */
+
+    private static string Day(DateTime value) =>
+        value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static string Moment(DateTime? value) =>
+        value is DateTime moment ? moment.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) : "";
+
+    private static readonly char[] NeedsQuoting = [',', '"', '\n', '\r'];
+
+    /// <summary>
+    /// RFC 4180 quoting for a text field, plus a guard against spreadsheet formula injection:
+    /// event comments are free text typed by members, and Excel evaluates any cell opening with
+    /// =, +, - or @ as a formula. A leading apostrophe forces it back to literal text. Only text
+    /// columns go through here — the numeric ones are written unquoted, so a rating is still a
+    /// number to the spreadsheet.
+    /// </summary>
+    private static string Text(string value)
     {
-        var sheet = workbook.Worksheets.Add("Attendance & Reviews");
-        var headers = new[]
+        if (value.Length > 0 && "=+-@\t\r".Contains(value[0]))
         {
-            "Member", "University", "Event", "Event Date",
-            "Signed Up", "Attended", "Signed Up On", "Checked In On",
-            "Rating", "Comment", "Reviewed On"
-        };
-
-        WriteHeader(sheet, headers);
-
-        var r = 2;
-        foreach (var row in rows)
-        {
-            sheet.Cell(r, 1).Value = row.FullName;
-            sheet.Cell(r, 2).Value = row.University;
-            sheet.Cell(r, 3).Value = row.EventName;
-            sheet.Cell(r, 4).Value = row.EventDate;
-            sheet.Cell(r, 4).Style.DateFormat.Format = "yyyy-mm-dd";
-            sheet.Cell(r, 5).Value = row.RegisteredAt is null ? "No" : "Yes";
-            sheet.Cell(r, 6).Value = row.Attended ? "Yes" : "No";
-
-            if (row.RegisteredAt is DateTime signedUp)
-            {
-                sheet.Cell(r, 7).Value = signedUp;
-                sheet.Cell(r, 7).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
-            }
-
-            if (row.CheckedInAt is DateTime checkedIn)
-            {
-                sheet.Cell(r, 8).Value = checkedIn;
-                sheet.Cell(r, 8).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
-            }
-
-            if (row.Stars is int stars) sheet.Cell(r, 9).Value = stars;
-            sheet.Cell(r, 10).Value = row.Comment ?? "";
-
-            if (row.ReviewedAt is DateTime reviewed)
-            {
-                sheet.Cell(r, 11).Value = reviewed;
-                sheet.Cell(r, 11).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
-            }
-
-            r++;
+            value = "'" + value;
         }
 
-        Finish(sheet, headers.Length, r, commentColumn: 10);
+        return value.IndexOfAny(NeedsQuoting) >= 0
+            ? $"\"{value.Replace("\"", "\"\"")}\""
+            : value;
     }
-
-    private static void WriteMemberSheet(XLWorkbook workbook, List<AttendanceRow> rows)
-    {
-        var sheet = workbook.Worksheets.Add("By Member");
-        var headers = new[] { "Member", "University", "Events Signed Up", "Events Attended", "Reviews Left", "Average Rating Given" };
-        WriteHeader(sheet, headers);
-
-        var members = rows
-            .GroupBy(x => x.FullName)
-            .Select(g => new
-            {
-                Name = g.Key,
-                University = g.Select(x => x.University).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u)) ?? "",
-                SignedUp = g.Count(x => x.RegisteredAt is not null),
-                Attended = g.Count(x => x.Attended),
-                Reviews = g.Count(x => x.Stars is not null),
-                Average = g.Where(x => x.Stars is not null).Select(x => (double)x.Stars!).DefaultIfEmpty().Average()
-            })
-            .OrderByDescending(x => x.Attended)
-            .ThenByDescending(x => x.SignedUp)
-            .ThenBy(x => x.Name);
-
-        var r = 2;
-        foreach (var m in members)
-        {
-            sheet.Cell(r, 1).Value = m.Name;
-            sheet.Cell(r, 2).Value = m.University;
-            sheet.Cell(r, 3).Value = m.SignedUp;
-            sheet.Cell(r, 4).Value = m.Attended;
-            sheet.Cell(r, 5).Value = m.Reviews;
-            if (m.Reviews > 0)
-            {
-                sheet.Cell(r, 6).Value = Math.Round(m.Average, 2);
-            }
-            r++;
-        }
-
-        Finish(sheet, headers.Length, r);
-    }
-
-    private static void WriteEventSheet(XLWorkbook workbook, List<AttendanceRow> rows)
-    {
-        var sheet = workbook.Worksheets.Add("By Event");
-        var headers = new[] { "Event", "Event Date", "Signed Up", "Attended", "Reviews", "Average Rating" };
-        WriteHeader(sheet, headers);
-
-        var events = rows
-            .GroupBy(x => new { x.EventId, x.EventName, x.EventDate })
-            .Select(g => new
-            {
-                g.Key.EventName,
-                g.Key.EventDate,
-                SignedUp = g.Count(x => x.RegisteredAt is not null),
-                Attended = g.Count(x => x.Attended),
-                Reviews = g.Count(x => x.Stars is not null),
-                Average = g.Where(x => x.Stars is not null).Select(x => (double)x.Stars!).DefaultIfEmpty().Average()
-            })
-            .OrderByDescending(x => x.EventDate);
-
-        var r = 2;
-        foreach (var e in events)
-        {
-            sheet.Cell(r, 1).Value = e.EventName;
-            sheet.Cell(r, 2).Value = e.EventDate;
-            sheet.Cell(r, 2).Style.DateFormat.Format = "yyyy-mm-dd";
-            sheet.Cell(r, 3).Value = e.SignedUp;
-            sheet.Cell(r, 4).Value = e.Attended;
-            sheet.Cell(r, 5).Value = e.Reviews;
-            if (e.Reviews > 0)
-            {
-                sheet.Cell(r, 6).Value = Math.Round(e.Average, 2);
-            }
-            r++;
-        }
-
-        Finish(sheet, headers.Length, r);
-    }
-
-    private static void WriteHeader(IXLWorksheet sheet, string[] headers)
-    {
-        for (var i = 0; i < headers.Length; i++)
-        {
-            var cell = sheet.Cell(1, i + 1);
-            cell.Value = headers[i];
-            cell.Style.Font.Bold = true;
-            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#003DA5");
-            cell.Style.Font.FontColor = XLColor.White;
-        }
-        sheet.SheetView.FreezeRows(1);
-    }
-
-    private static void Finish(IXLWorksheet sheet, int columns, int nextRow, int? commentColumn = null)
-    {
-        // AutoFilter needs at least one data row; on an empty sheet it throws.
-        if (nextRow > 2)
-        {
-            sheet.Range(1, 1, nextRow - 1, columns).SetAutoFilter();
-        }
-
-        sheet.Columns().AdjustToContents();
-
-        // Free-text comments would otherwise stretch a column across the screen.
-        if (commentColumn is int c)
-        {
-            sheet.Column(c).Width = 60;
-            sheet.Column(c).Style.Alignment.WrapText = true;
-        }
-
-        foreach (var column in sheet.Columns())
-        {
-            if (column.Width > 40 && column.ColumnNumber() != commentColumn)
-            {
-                column.Width = 40;
-            }
-        }
-    }
-
 }
 
 /// <summary>One member's relationship to one event: signed up, reviewed, or both.</summary>

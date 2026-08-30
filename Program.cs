@@ -19,8 +19,18 @@ using SPE_website.Shared.Services;
 var builder = WebApplication.CreateBuilder(args);
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
+// When a client disconnects, Blazor keeps that circuit's entire component graph in memory in
+// case the tab comes back. The defaults — 100 circuits retained for 3 minutes — assume a host
+// with memory to spare; on the 1.75 GB B1 plan they reserve headroom for tabs that were simply
+// closed. ReconnectModal.razor already handles the reconnect UX, and a client that returns
+// after the window gets a fresh page rather than an error.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options =>
+    {
+        options.DisconnectedCircuitMaxRetained = 20;
+        options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(2);
+        options.MaxBufferedUnacknowledgedRenderBatches = 5;
+    });
 
 builder.Services.AddCascadingAuthenticationState();
 
@@ -182,13 +192,10 @@ app.MapGet("/events/calendar.ics", async (EventCalendarService calendar, HttpCon
 // Attendance export. A plain GET endpoint rather than JS interop, so the admin page can offer
 // it as an ordinary link — the browser handles the download and no file is buffered over the
 // SignalR circuit.
-app.MapGet("/admin/export/attendance.xlsx", async (AttendanceExportService exportService) =>
+app.MapGet("/admin/export/attendance.csv", async (AttendanceExportService exportService) =>
 {
-    var workbook = await exportService.BuildWorkbookAsync();
-    return Results.File(
-        workbook,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        AttendanceExportService.FileName());
+    var csv = await exportService.BuildCsvAsync();
+    return Results.File(csv, "text/csv", AttendanceExportService.FileName());
 })
 .RequireAuthorization(policy => policy.RequireRole("TeamLeader"));
 

@@ -343,6 +343,50 @@ EmailSettings__ReplyTo=                  # optional; a monitored human address h
 On App Service also enable **WebSockets** and **ARR affinity** under Configuration → General
 settings.
 
+### Disk quota
+
+The App Service storage quota is shared by every app in the plan (F1 is 1 GB, B1 10 GB), and
+it covers all of `/home` — not just the app. The published app is ~18 MB, so when the quota
+fills it is almost never the app itself. The three things that actually grow:
+
+| Path | What it is | How to keep it flat |
+|------|-----------|---------------------|
+| `/home/site/deployments` | Kudu's deployment history — a copy per deploy, and this repo deploys on every push to `master` | Run-from-package on Windows (below), then delete the old folders once via Kudu |
+| `/home/LogFiles` | App Service filesystem logs | Set a retention period under App Service logs; filesystem application logging also switches itself off after 12 hours |
+| `/home/site/wwwroot` | The app | Already minimal — the attendance export is CSV precisely so the Excel writer's ~9.5 MB of dependencies stay out of the payload |
+
+**Check the host OS before applying the next part** — the setting differs, and this is not
+recorded anywhere. The workflow runs on a `windows-latest` *runner*, which says nothing about
+the App Service OS. The portal shows it on the Overview blade, or:
+
+```bash
+az webapp show --name SPE-UoA --resource-group <rg> --query "[kind, siteConfig.linuxFxVersion]"
+```
+
+**On Windows App Service**, set:
+
+```
+WEBSITE_RUN_FROM_PACKAGE=1
+```
+
+App Service then mounts the deployment zip read-only instead of extracting it and retaining the
+previous copies. Note this *relocates* the growth rather than ending it — retained packages
+accumulate under `/home/data/SitePackages`, so include that path in the periodic cleanup below.
+
+**On Linux App Service**, `WEBSITE_RUN_FROM_PACKAGE=1` is not supported — only the blob-SAS-URL
+form is, and that needs a storage account and breaks the one-step GitHub Actions deploy for no
+benefit at this scale. Skip the setting and rely on the manual cleanup alone.
+
+Either way it is safe for this app specifically because nothing writes to disk at runtime: there
+are no uploads and the attendance export is generated in memory per request. Data Protection is
+never configured explicitly (there is no `AddDataProtection` call), so the key ring falls to the
+App Service default under `%HOME%/ASP.NET/DataProtection-Keys` — outside `site/wwwroot`, and
+writable either way.
+
+One-off cleanup of what has already accumulated: go to
+`https://<app-name>.scm.azurewebsites.net` → Debug console, and delete the stale folders under
+`site/deployments`, `LogFiles`, and (on Windows, once run-from-package is on) `data/SitePackages`.
+
 No migration step is needed: `db.Database.MigrateAsync()` runs at startup, and the roles and
 the bootstrap Team Leader are seeded on the same pass. A fresh empty database is enough.
 

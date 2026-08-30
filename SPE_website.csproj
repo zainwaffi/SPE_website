@@ -6,13 +6,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <UserSecretsId>28c69674-4798-4e15-b846-a8a48a396e78</UserSecretsId>
+    <!-- The deployment target is a single-core 1.75 GB App Service B1. Server GC (the Web SDK
+         default for web projects) sizes its allocation budget to amortise collections across
+         many cores and holds committed memory long past the point this workload needs it.
+         Workstation GC collects more often with a smaller resident set — the right trade when
+         every Blazor Server circuit's component state also lives on that heap.
+         Deliberately NOT paired with ConcurrentGarbageCollection=false: that saves a little
+         more, but makes each gen2 collection a blocking pause, which stalls open circuits into
+         the "Rejoining the server…" state ReconnectModal.razor renders. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
     <!-- `dotnet publish` writes into ./publish, whose copied wwwroot assets would otherwise
          be globbed back in as build inputs and fail with BLAZOR106. -->
     <DefaultItemExcludes>$(DefaultItemExcludes);publish\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.105.1" />
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Markdig" Version="1.3.2" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
