@@ -5,9 +5,10 @@ namespace SPE_website.Data.Models;
 
 /// <summary>
 /// The chapter's member record, extending ASP.NET Identity's <see cref="IdentityUser"/>.
-/// There are no local passwords: every field here except <see cref="IdentityUser.Id"/> and the
-/// Identity-managed columns is populated/refreshed from the external OpenWater
-/// membership system on each successful login (see OpenWaterAuthService).
+/// There are no local passwords. Most fields here are populated/refreshed from the external
+/// OpenWater membership system on each successful email login (see OpenWaterAuthService);
+/// <see cref="CardNumber"/> is the exception — it belongs to the alternate card-number login
+/// (see MemberNumberAuthService) and OpenWater never touches it.
 /// </summary>
 public class ApplicationUser : IdentityUser
 {
@@ -35,6 +36,13 @@ public class ApplicationUser : IdentityUser
 
     /// <summary>External SPE/OpenWater member ID, shown on the profile page when present.</summary>
     public string? OpenWaterMemberId { get; set; }
+
+    /// <summary>
+    /// AUSA card/student number, set the first time this member signs in with it instead of
+    /// an email (see <c>MemberNumberAuthService</c>). Unset for anyone who has only ever used
+    /// the OpenWater email login.
+    /// </summary>
+    public string? CardNumber { get; set; }
 
     /// <summary>University/organization reported by OpenWater.</summary>
     public string? OpenWaterOrganization { get; set; }

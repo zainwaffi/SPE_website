@@ -130,22 +130,13 @@ public class OpenWaterAuthService(
         if (isFullAccessEmail)
         {
             user.IsStudentChapterOfficer = true;
-            return await AddMissingRolesAsync(user, "TeamLeader", "CommitteeMember");
+            return await RoleSync.AddMissingRolesAsync(userManager, user, "TeamLeader", "CommitteeMember");
         }
 
         if (!isNewUser)
             return IdentityResult.Success;
 
-        return await AddMissingRolesAsync(user, isStudentOfficer ? "CommitteeMember" : "Member");
-    }
-
-    private async Task<IdentityResult> AddMissingRolesAsync(ApplicationUser user, params string[] roles)
-    {
-        var currentRoles = await userManager.GetRolesAsync(user);
-        var missingRoles = roles.Where(r => !currentRoles.Contains(r, StringComparer.OrdinalIgnoreCase)).ToArray();
-        return missingRoles.Length > 0
-            ? await userManager.AddToRolesAsync(user, missingRoles)
-            : IdentityResult.Success;
+        return await RoleSync.AddMissingRolesAsync(userManager, user, isStudentOfficer ? "CommitteeMember" : "Member");
     }
 
     /// <summary>Copies parsed OpenWater fields onto the tracked <see cref="ApplicationUser"/> entity.</summary>

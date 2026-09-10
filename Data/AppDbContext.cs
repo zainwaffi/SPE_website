@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<TutorialTeam> TutorialTeams => Set<TutorialTeam>();
     public DbSet<MemberTeam> MemberTeams => Set<MemberTeam>();
     public DbSet<Course> Courses => Set<Course>();
+    public DbSet<Member> Members => Set<Member>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -35,6 +36,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<ApplicationUser>()
             .Property(u => u.EmailNotificationsEnabled)
             .HasDefaultValue(true);
+
+        // A second sign-in identifier for members who came in through the AUSA card-number
+        // import rather than OpenWater. Nullable and unique — Postgres treats multiple nulls
+        // as distinct, so this never collides with the many users who only have an email.
+        builder.Entity<ApplicationUser>()
+            .HasIndex(u => u.CardNumber)
+            .IsUnique();
+
+        // public.members is created and maintained entirely by "Uploading Members/MembersList.py"
+        // — EF must never generate migrations for it, only read it. Its columns are the raw
+        // snake_case names the Python script's CREATE TABLE uses, not EF's PascalCase default,
+        // so every one of them needs an explicit HasColumnName or Npgsql looks for a column
+        // ("CardNumber", quoted) that was never created.
+        builder.Entity<Member>(member =>
+        {
+            member.HasKey(m => m.CardNumber);
+            member.ToTable("members", t => t.ExcludeFromMigrations());
+
+            member.Property(m => m.CardNumber).HasColumnName("card_number");
+            member.Property(m => m.FullName).HasColumnName("full_name");
+            member.Property(m => m.MembershipType).HasColumnName("membership_type");
+            member.Property(m => m.PurchasedAt).HasColumnName("purchased_at");
+            member.Property(m => m.IsActive).HasColumnName("is_active");
+            member.Property(m => m.FirstSeen).HasColumnName("first_seen");
+            member.Property(m => m.LastSeenImport).HasColumnName("last_seen_import");
+        });
 
         // A rating always belongs to exactly one event; deleting the event removes its ratings too.
         builder.Entity<EventRating>()

@@ -32,8 +32,16 @@ what makes the tiers cumulative in practice.
 | `TeamLeader` | Chapter leadership | Everything, plus the Member Dashboard and Task Calendar |
 
 A member's **committee title** ("President", "Treasurer", …) is a display label only. It
-grants nothing. Login is password-less: the email is verified against SPE's OpenWater
-membership system, which decides the role.
+grants nothing. Login is password-less, with two paths:
+
+- **Email** — verified against SPE's OpenWater membership system, which decides the role.
+- **AUSA student/card number** — checked against the membership CSV import (see
+  [Uploading Members/](Uploading%20Members/)); valid for one year from the purchase date,
+  independent of OpenWater. The role granted follows the imported membership type
+  (`Committee` → `CommitteeMember`, otherwise `Member`).
+
+The login page accepts either in the same field — an `@` in what's typed picks the email
+path, otherwise it's treated as a student number.
 
 ---
 
@@ -72,7 +80,7 @@ Components/           Shared shell — App, Routes, MainLayout, SiteHeader, Home
   Shared/             Reusable pieces: Icon, FadeUp, Markdown, PageMeta, DesktopOnly, SortToggleButton
 Features/             One folder per feature, with Pages/ Models/ Services/ and, where a page
                       needs a circuit for only part of itself, Components/
-  Authentication/     Password-less login against SPE OpenWater
+  Authentication/     Password-less login against SPE OpenWater, or an AUSA student number
   Bursaries/          Scholarships page (static copy)
   Courses/            Public intro + members-only video library
   Events/             Events listing, sign-ups, ratings, attendee check-in
@@ -81,8 +89,10 @@ Features/             One folder per feature, with Pages/ Models/ Services/ and,
   PresidentAdmin/     Member dashboard, task calendar, attendance export
   Tasks/              Task list and assigned-task views
   Tutorials/          Internal SOP video library
-Data/                 AppDbContext and the Identity user model
+Data/                 AppDbContext, the Identity user model, and Member (read-only mapping
+                      of the externally-imported membership table)
 Shared/               Cross-feature helpers: UkTime, YouTubeUrl, MarkdownRenderer, EmailService
+Uploading Members/    Offline CSV → Supabase membership import; not part of the running app
 Styles/input.css      The only hand-written CSS. Compiles to wwwroot/tailwind.css
 assets/               Image masters. Never served — the optimiser reads from here
 wwwroot/              Served files: compiled CSS, JS, and optimised WebP images
@@ -172,6 +182,11 @@ EmailSettings__ReplyTo=""          # optional; falls back to From
 
 If `EmailSettings` is left blank the app still runs. `EmailService` reports the email as
 unsent and strikes and task assignments still save correctly.
+
+The membership CSV import (`Uploading Members/`) is a separate, manually-run tool with its
+own credential (`MEMBERS_DB_URL`) — see [its README](Uploading%20Members/README.md). It is
+not part of the app's configuration surface above, even though it points at the same
+database.
 
 ### The bootstrap administrator
 

@@ -1,6 +1,7 @@
 @page "/login"
 @using SPE_website.Features.Authentication.Services
 @inject OpenWaterAuthService OpenWaterAuthService
+@inject MemberNumberAuthService MemberNumberAuthService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Login — SPE Chapter</PageTitle>
@@ -13,7 +14,7 @@
             </div>
         </div>
         <h1 class="mb-1 text-center text-2xl font-extrabold text-black font-heading">Welcome Back</h1>
-        <p class="mb-8 text-center text-sm text-slate-500">Sign in with your SPE email</p>
+        <p class="mb-8 text-center text-sm text-slate-500">Sign in with your SPE email or student number</p>
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -33,11 +34,11 @@
             <DataAnnotationsValidator />
             <div class="space-y-4">
                 <div>
-                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-black font-heading">Email Address</label>
-                    <InputText @bind-Value="FormInput.Email" type="email"
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-black font-heading">Email or Student Number</label>
+                    <InputText @bind-Value="FormInput.Identifier" type="text"
                                class="spe-input w-full py-3 text-sm text-slate-800"
-                               placeholder="you@example.com" autocomplete="email" />
-                    <ValidationMessage For="() => FormInput.Email" class="mt-1 text-xs text-red-500" />
+                               placeholder="you@example.com or student number" autocomplete="username" />
+                    <ValidationMessage For="() => FormInput.Identifier" class="mt-1 text-xs text-red-500" />
                 </div>
                 <button type="submit" class="spe-primary-btn w-full py-3">
                     Sign In
@@ -67,12 +68,19 @@
     private async Task HandleLogin()
     {
         showJoinSpeOption = false;
-        var result = await OpenWaterAuthService.LoginWithEmailAsync(FormInput.Email);
+        var identifier = FormInput.Identifier.Trim();
+
+        // No email format is enforced on the field itself — it accepts either an SPE email
+        // or an AUSA card/student number, so the "@" is what tells the two apart.
+        var result = identifier.Contains('@')
+            ? await OpenWaterAuthService.LoginWithEmailAsync(identifier)
+            : await MemberNumberAuthService.LoginWithCardNumberAsync(identifier);
+
         if (result.Succeeded)
             NavigationManager.NavigateTo(SafeReturnUrl(), true);
         else
         {
-            errorMessage = result.Error ?? "Unable to sign in with this email.";
+            errorMessage = result.Error ?? "Unable to sign in with this email or student number.";
             showJoinSpeOption = result.ShowJoinSpeOption;
         }
     }
@@ -91,9 +99,7 @@
 
     private sealed class LoginInput
     {
-        [System.ComponentModel.DataAnnotations.Required]
-        [System.ComponentModel.DataAnnotations.EmailAddress]
-        public string Email { get; set; } = "";
-
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Enter your SPE email or student number.")]
+        public string Identifier { get; set; } = "";
     }
 }

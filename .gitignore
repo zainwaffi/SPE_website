@@ -30,6 +30,13 @@ assets/
 ## tracked, because the MSBuild target that regenerates it only runs when node_modules/
 ## exists. A deploy host without npm relies on the committed copy.
 
+## Membership import tooling — PII exports (names, card numbers) and a script that reads
+## a DB password from the environment; neither belongs in git.
+Uploading Members/__pycache__/
+Uploading Members/*.csv
+Uploading Members/.ipynb_checkpoints/
+Uploading Members/.env
+
 ## OS
 .DS_Store
 Thumbs.db

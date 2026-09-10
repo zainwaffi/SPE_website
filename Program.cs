@@ -81,6 +81,7 @@ builder.Services.AddScoped<TaskItemService>();
 builder.Services.AddScoped<TutorialService>();
 builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<OpenWaterAuthService>();
+builder.Services.AddScoped<MemberNumberAuthService>();
 builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<AttendanceExportService>();
