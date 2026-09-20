@@ -30,11 +30,9 @@ public class MemberNumberAuthService(
         if (member is null)
             return (false, true, "No membership record was found for this student/card number.");
 
-        if (!member.IsActive)
-            return (false, false, "This membership is no longer active.");
-
-        if (member.PurchasedAt < DateTime.UtcNow - MembershipLifetime)
-            return (false, false, "This membership expired more than a year ago — please renew before signing in.");
+        var membershipError = CurrentMembershipError(member);
+        if (membershipError is not null)
+            return (false, false, membershipError);
 
         var user = await userManager.Users.SingleOrDefaultAsync(u => u.CardNumber == normalizedCardNumber);
         var isNewUser = user is null;
@@ -59,5 +57,45 @@ public class MemberNumberAuthService(
 
         await signInManager.SignInAsync(user, isPersistent: false);
         return (true, false, null);
+    }
+
+    /// <summary>
+    /// Signs in a card-number account by the email its owner added on their profile, for the
+    /// case OpenWater has no record of that address. Returns null when no card-number account
+    /// holds the email, so the caller can fall back to OpenWater's "not found" answer.
+    ///
+    /// The email is self-declared and never verified, so this is the same trust as the card
+    /// number itself: whoever types it is taken to be its owner. The membership is re-checked
+    /// here so this path can't outlive a lapsed membership the card path would refuse.
+    /// </summary>
+    public async Task<(bool Succeeded, string? Error)?> LoginWithAddedEmailAsync(string email)
+    {
+        var user = await userManager.FindByEmailAsync(email.Trim());
+        if (user?.CardNumber is null)
+            return null;
+
+        await using var db = await dbContextFactory.CreateDbContextAsync();
+        var member = await db.Members.SingleOrDefaultAsync(m => m.CardNumber == user.CardNumber);
+
+        var error = member is null
+            ? "No membership record was found for the student number on this account."
+            : CurrentMembershipError(member);
+        if (error is not null)
+            return (false, error);
+
+        await signInManager.SignInAsync(user, isPersistent: false);
+        return (true, null);
+    }
+
+    /// <summary>Null when the membership can be used to sign in, otherwise the reason it can't.</summary>
+    private static string? CurrentMembershipError(Member member)
+    {
+        if (!member.IsActive)
+            return "This membership is no longer active.";
+
+        if (member.PurchasedAt < DateTime.UtcNow - MembershipLifetime)
+            return "This membership expired more than a year ago — please renew before signing in.";
+
+        return null;
     }
 }

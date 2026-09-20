@@ -72,9 +72,22 @@
 
         // No email format is enforced on the field itself — it accepts either an SPE email
         // or an AUSA card/student number, so the "@" is what tells the two apart.
-        var result = identifier.Contains('@')
-            ? await OpenWaterAuthService.LoginWithEmailAsync(identifier)
-            : await MemberNumberAuthService.LoginWithCardNumberAsync(identifier);
+        (bool Succeeded, bool ShowJoinSpeOption, string? Error) result;
+        if (identifier.Contains('@'))
+        {
+            result = await OpenWaterAuthService.LoginWithEmailAsync(identifier);
+
+            // ShowJoinSpeOption is only set when OpenWater has no record of the address. That is
+            // the one case where a card-number member may still own it, having added it on
+            // their profile — so try that before reporting the address as unknown.
+            if (!result.Succeeded && result.ShowJoinSpeOption
+                && await MemberNumberAuthService.LoginWithAddedEmailAsync(identifier) is { } addedEmail)
+                result = (addedEmail.Succeeded, false, addedEmail.Error);
+        }
+        else
+        {
+            result = await MemberNumberAuthService.LoginWithCardNumberAsync(identifier);
+        }
 
         if (result.Succeeded)
             NavigationManager.NavigateTo(SafeReturnUrl(), true);

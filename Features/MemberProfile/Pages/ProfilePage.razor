@@ -25,7 +25,22 @@
                             @(user.FullName.Length > 0 ? user.FullName[0].ToString().ToUpper() : "?")
                         </div>
                         <p class="text-sm font-bold text-white font-heading">@user.FullName</p>
-                        <p class="mt-0.5 text-xs text-white/70">@user.Email</p>
+                        <div class="relative mt-0.5 inline-block">
+                            @* Card-number sign-ins have no email until they add one, so the slot shows a prompt rather than collapsing to nothing. *@
+                            <p class="text-xs text-white/70 cursor-context-menu @(HasEmail ? "" : "italic")"
+                               title="@(HasEmail ? "Right-click to edit" : "Right-click to add")"
+                               @oncontextmenu="ShowEmailMenu" @oncontextmenu:preventDefault="true">@(HasEmail ? user.Email : "Add your email")</p>
+                            @if (showEmailMenu)
+                            {
+                                <div class="fixed inset-0 z-40" @onclick="() => showEmailMenu = false"></div>
+                                <div class="absolute left-1/2 top-full z-50 mt-1 w-32 -translate-x-1/2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                                    <button type="button" @onclick="OpenEditEmailDialog"
+                                            class="block w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                        @(HasEmail ? "Edit email" : "Add email")
+                                    </button>
+                                </div>
+                            }
+                        </div>
                     </div>
                     <div class="space-y-4 p-4">
                         <div>
@@ -174,6 +189,49 @@
     }
 </div>
 
+@* ---------- Dialog: edit email (opened from the right-click menu above) ---------- *@
+
+@if (showEmailDialog)
+{
+    <div class="spe-modal-backdrop">
+        <div class="spe-modal-card">
+            <h2 class="text-xl font-bold text-spe-blue mb-6">@(HasEmail ? "Edit Email" : "Add Email")</h2>
+
+            @if (!string.IsNullOrEmpty(emailError))
+            {
+                <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+                    @emailError
+                </div>
+            }
+
+            <input class="spe-input w-full" placeholder="you@example.com" @bind="editEmailValue" />
+            <p class="mt-2 text-xs text-slate-500">
+                @if (HasEmail)
+                {
+                    <text>If you sign in via OpenWater, this will be overwritten again from your membership
+                    record on your next login.</text>
+                }
+                else
+                {
+                    <text>Once saved, you can sign in with this email as well as your student number, and
+                    the chapter can email you notifications.</text>
+                }
+            </p>
+
+            <div class="flex gap-3 mt-6">
+                <button @onclick="ConfirmEditEmail"
+                        class="flex-1 bg-spe-blue text-white font-bold py-2.5 rounded-lg hover:bg-blue-800 transition-colors">
+                    Save
+                </button>
+                <button @onclick="() => showEmailDialog = false"
+                        class="flex-1 border border-slate-300 text-slate-600 font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? AuthStateTask { get; set; }
@@ -181,6 +239,13 @@
     private ApplicationUser? user;
     private string identityRole = "Member";
     private string? preferenceError;
+
+    private bool showEmailMenu;
+    private bool showEmailDialog;
+    private string editEmailValue = "";
+    private string? emailError;
+
+    private bool HasEmail => !string.IsNullOrWhiteSpace(user?.Email);
 
     protected override async Task OnInitializedAsync()
     {
@@ -212,5 +277,31 @@
             user.EmailNotificationsEnabled = enabled;
         else
             preferenceError = "Could not save that preference. Please reload the page and try again.";
+    }
+
+    private void ShowEmailMenu(MouseEventArgs e) => showEmailMenu = true;
+
+    private void OpenEditEmailDialog()
+    {
+        showEmailMenu = false;
+        editEmailValue = user?.Email ?? "";
+        emailError = null;
+        showEmailDialog = true;
+    }
+
+    /// <summary>Saves the member's own email edit, mirroring the admin override in AdminService.</summary>
+    private async Task ConfirmEditEmail()
+    {
+        if (user is null) return;
+
+        var result = await ProfileSvc.UpdateEmailAsync(user.Id, editEmailValue);
+        if (!result.Succeeded)
+        {
+            emailError = string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
+        }
+
+        user.Email = editEmailValue.Trim();
+        showEmailDialog = false;
     }
 }

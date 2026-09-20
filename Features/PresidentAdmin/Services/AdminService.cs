@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -157,16 +158,19 @@ public class AdminService(
     }
 
     /// <summary>
-    /// Updates a member's role and committee title, guarded by <see cref="CanManageRolesAsync"/>
+    /// Updates a member's role, committee title and email, guarded by <see cref="CanManageRolesAsync"/>
     /// (TeamLeader-only).
     ///
-    /// Name and email are deliberately NOT editable here. Both are owned by the external
-    /// OpenWater membership record and re-synced on every login, so editing them in the admin
-    /// panel would silently be undone at the member's next sign-in — and because the email is
-    /// also the Identity username, changing it would move the account the member signs in with.
+    /// Name is still not editable here — it is owned by the external OpenWater membership record
+    /// and re-synced on every login, so editing it in the admin panel would silently be undone at
+    /// the member's next sign-in. Email is the same in principle (and doubles as the Identity
+    /// username, updated alongside it), but members who sign in by card number
+    /// (see <see cref="MemberNumberAuthService"/>) never get an email from anywhere else, so an
+    /// admin override is the only way they get one. A member who signs in via OpenWater will have
+    /// this overwritten again on their next login.
     /// </summary>
     public async Task<IdentityResult> UpdateMemberDetailsAsync(
-        string actingUserId, string userId, string identityRole, string? committeeTitle, IEnumerable<Team> teams)
+        string actingUserId, string userId, string identityRole, string? committeeTitle, string? email, IEnumerable<Team> teams)
     {
         var canManageRoles = await CanManageRolesAsync(actingUserId);
         if (!canManageRoles)
@@ -174,6 +178,12 @@ public class AdminService(
 
         var user = await userManager.FindByIdAsync(userId);
         if (user is null) return IdentityResult.Failed(new IdentityError { Description = "Member not found." });
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var emailResult = await SetEmailIfChangedAsync(user, email);
+            if (!emailResult.Succeeded) return emailResult;
+        }
 
         user.CommitteeTitle = committeeTitle;
         user.IsStudentChapterOfficer = identityRole != "Member";
@@ -191,6 +201,33 @@ public class AdminService(
         await SetTeamsAsync(userId, teams);
         return result;
     }
+
+    /// <summary>
+    /// Validates and applies a new email (and mirrors it onto the Identity username, same as
+    /// <see cref="OpenWaterAuthService"/> does), unless it is unchanged. Shared by the admin
+    /// override above and a member's own self-service edit on their profile.
+    /// </summary>
+    internal static async Task<IdentityResult> SetEmailIfChangedAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, string email)
+    {
+        var trimmedEmail = email.Trim();
+        if (!new EmailAddressAttribute().IsValid(trimmedEmail))
+            return IdentityResult.Failed(new IdentityError { Description = "Enter a valid email address." });
+
+        if (string.Equals(user.Email, trimmedEmail, StringComparison.OrdinalIgnoreCase))
+            return IdentityResult.Success;
+
+        var existing = await userManager.FindByEmailAsync(trimmedEmail);
+        if (existing is not null && existing.Id != user.Id)
+            return IdentityResult.Failed(new IdentityError { Description = "Another member already uses that email." });
+
+        var emailResult = await userManager.SetEmailAsync(user, trimmedEmail);
+        if (!emailResult.Succeeded) return emailResult;
+
+        return await userManager.SetUserNameAsync(user, trimmedEmail);
+    }
+
+    private Task<IdentityResult> SetEmailIfChangedAsync(ApplicationUser user, string email) =>
+        SetEmailIfChangedAsync(userManager, user, email);
 
     /// <summary>
     /// Replaces a member's team allocation with exactly the teams given. Only the difference is

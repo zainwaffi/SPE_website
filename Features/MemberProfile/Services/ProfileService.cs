@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SPE_website.Data;
 using SPE_website.Data.Models;
+using SPE_website.Features.PresidentAdmin.Services;
 
 namespace SPE_website.Features.MemberProfile.Services;
 
@@ -9,7 +11,7 @@ namespace SPE_website.Features.MemberProfile.Services;
 /// Takes a context factory rather than a scoped context: a Blazor Server circuit outlives
 /// any single operation, and sharing one context across overlapping renders throws.
 /// </summary>
-public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
+public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, UserManager<ApplicationUser> userManager)
 {
     /// <summary>Fetches a user with their assigned tasks eager-loaded, for the profile dashboard.</summary>
     public async Task<ApplicationUser?> GetByIdAsync(string userId)
@@ -32,5 +34,18 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
                               .Where(u => u.Id == userId)
                               .ExecuteUpdateAsync(set => set.SetProperty(u => u.EmailNotificationsEnabled, enabled));
         return updated > 0;
+    }
+
+    /// <summary>
+    /// Lets a member change their own contact email, validated and applied the same way as
+    /// <see cref="AdminService.UpdateMemberDetailsAsync"/>. A member who signs in via OpenWater
+    /// will have this overwritten again from their membership record on their next login.
+    /// </summary>
+    public async Task<IdentityResult> UpdateEmailAsync(string userId, string email)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return IdentityResult.Failed(new IdentityError { Description = "Account not found." });
+
+        return await AdminService.SetEmailIfChangedAsync(userManager, user, email);
     }
 }

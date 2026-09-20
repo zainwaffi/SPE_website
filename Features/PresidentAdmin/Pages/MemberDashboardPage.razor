@@ -247,15 +247,23 @@
                 </div>
             }
 
-            @* Name and email are read-only: both come from the member's OpenWater record and
-               are re-synced on every login, so editing them here would just be overwritten. *@
+            @* Name is read-only: it comes from the member's OpenWater record and is re-synced
+               on every login, so editing it here would just be overwritten. Email can be changed
+               below — it matters for members who sign in by card number and have none set. *@
             <div class="mb-4 rounded-lg bg-slate-50 px-4 py-3">
                 <p class="font-semibold text-slate-800">@editMember.FullName</p>
-                <p class="text-xs text-slate-500">@editMember.Email</p>
-                <p class="mt-2 text-xs text-slate-400">Name and email are synced from SPE membership records.</p>
+                <p class="mt-2 text-xs text-slate-400">Name is synced from SPE membership records.</p>
             </div>
 
             <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Email</label>
+                    <input class="spe-input w-full" placeholder="member@example.com" @bind="editEmail" />
+                    <p class="mt-1 text-xs text-slate-500">
+                        A member who signs in via OpenWater will have this overwritten again from
+                        their membership record on their next login.
+                    </p>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 mb-1">Identity Role</label>
                     <select class="spe-input w-full" @bind="editIdentityRole">
@@ -356,6 +364,7 @@
     private ApplicationUser? editMember;
     private string editIdentityRole = "CommitteeMember";
     private string? editCommitteeTitle;
+    private string editEmail = "";
     private readonly HashSet<Team> editTeams = [];
     private string? editError;
 
@@ -467,6 +476,7 @@
     {
         editMember = member;
         editCommitteeTitle = member.CommitteeTitle;
+        editEmail = member.Email ?? "";
         editIdentityRole = await AdminSvc.GetPrimaryRoleAsync(member.Id);
 
         // Seeded from the row already loaded with the table, so opening the form costs no query.
@@ -494,7 +504,7 @@
 
         var member = editMember;
         var result = await AdminSvc.UpdateMemberDetailsAsync(
-            currentUserId, member.Id, editIdentityRole, editCommitteeTitle, editTeams);
+            currentUserId, member.Id, editIdentityRole, editCommitteeTitle, editEmail, editTeams);
 
         if (!result.Succeeded)
         {
@@ -502,8 +512,10 @@
             return;
         }
 
-        // Only the title and teams are editable, so the alphabetical-by-name ordering can't change.
+        // Title, email and teams are editable, so the alphabetical-by-name ordering can't change
+        // (name itself is untouched here).
         member.CommitteeTitle = editCommitteeTitle;
+        member.Email = editEmail.Trim();
         member.Teams = [.. editTeams.Select(t => new MemberTeam { UserId = member.Id, Team = t })];
 
         editMember = null;
