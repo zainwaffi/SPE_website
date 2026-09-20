@@ -18,6 +18,10 @@ appsettings.Development.json
 secrets.json
 appsettings.json
 
+## Agent Skills
+CLAUDE.md
+AGENTS.md
+
 ## Node
 node_modules/
 
